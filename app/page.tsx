@@ -456,13 +456,6 @@ export default function HomePage() {
             <span className="px-4 py-1.5 rounded-full bg-[#23232b] text-white text-xs font-semibold border border-[#353540]">
               Buscar
             </span>
-            <Link
-              href="/admin"
-              className="px-4 py-1.5 rounded-full bg-[#1b1b22] hover:bg-[#282832] text-gray-300 hover:text-white text-xs font-semibold border border-transparent hover:border-[#353540] transition-colors flex items-center gap-1.5"
-            >
-              <Settings className="w-3.5 h-3.5 text-vibra-400" />
-              <span>Admin Tiendas</span>
-            </Link>
           </div>
         </div>
       </header>

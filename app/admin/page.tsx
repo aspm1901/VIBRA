@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Store, PriceLevel, PurchaseType, StoreGarment } from "@/types";
 import {
   ArrowLeft,
@@ -16,6 +17,7 @@ import {
   Image as ImageIcon,
   Pencil,
   X,
+  LogOut,
 } from "lucide-react";
 
 const STYLES_LIST = [
@@ -55,8 +57,18 @@ interface GarmentDraft {
 export default function AdminPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+      router.replace("/admin/login");
+    } catch {
+      router.replace("/");
+    }
+  };
 
   // Edit Mode State
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
@@ -370,13 +382,23 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleResetStores}
-            className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1d1d24] border border-[#2b2b36] hover:border-[#3d3d4d] transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-vibra-400" />
-            <span className="hidden sm:inline">Restablecer 3 tiendas</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetStores}
+              className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1d1d24] border border-[#2b2b36] hover:border-[#3d3d4d] transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-vibra-400" />
+              <span className="hidden sm:inline">Restablecer 3 tiendas</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              title="Cerrar sesión de administrador"
+              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/20 border border-red-900/40 hover:bg-red-950/40 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5 text-red-400" />
+              <span>Salir</span>
+            </button>
+          </div>
         </div>
       </header>
 
