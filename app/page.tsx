@@ -23,6 +23,8 @@ import {
   MessageCircle,
   MapPin,
   Shirt,
+  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -1029,19 +1031,23 @@ export default function HomePage() {
                 <div
                   key={item.store.id}
                   onClick={() => setSelectedStoreItem(item)}
-                  className="group bg-[#181820] hover:bg-[#20202a] border border-[#2a2a38] hover:border-[#444458] rounded-3xl p-5 md:p-6 transition-all cursor-pointer shadow-md hover:shadow-xl flex items-center justify-between gap-4"
+                  className="group bg-[#181820] hover:bg-[#20202b] border border-[#2a2a38] hover:border-vibra-500/50 rounded-3xl p-5 sm:p-6 transition-all cursor-pointer shadow-md hover:shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden"
                 >
-                  {/* Izquierda: Miniatura de la Prenda o Prendas */}
-                  <div className="flex items-center gap-4.5 min-w-0">
+                  {/* Borde sutil interactivo en hover */}
+                  <div className="absolute top-0 left-0 bottom-0 w-1 bg-vibra-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Lado Izquierdo: Imagen + Información */}
+                  <div className="flex items-start sm:items-center gap-5 sm:gap-6 min-w-0 flex-1">
+                    {/* Miniatura de la Prenda o Prendas (con margen y sombra limpia) */}
                     {searchMode === "look" &&
                     item.matchingGarments &&
                     item.matchingGarments.length > 1 ? (
-                      <div className="flex items-center -space-x-4 shrink-0">
+                      <div className="flex items-center -space-x-5 shrink-0 pt-1 sm:pt-0">
                         {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
                           <div
                             key={mg.id}
-                            className={`relative w-16 h-20 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
-                              gIdx === 1 ? "z-10 ring-2 ring-[#181820]" : "z-0"
+                            className={`relative w-20 h-26 sm:w-22 sm:h-28 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
+                              gIdx === 1 ? "z-10 ring-4 ring-[#181820]" : "z-0"
                             }`}
                             title={mg.name}
                           >
@@ -1055,27 +1061,29 @@ export default function HomePage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="relative w-18 h-22 sm:w-20 sm:h-24 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0]">
+                      <div className="relative w-22 h-28 sm:w-24 sm:h-30 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2.5 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0] transition-transform group-hover:scale-105">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.bestGarment.photoUrl}
                           alt={item.bestGarment.name}
-                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                          className="max-h-full max-w-full object-contain drop-shadow-sm"
                         />
                       </div>
                     )}
 
-                    {/* Centro: Info de la tienda */}
-                    <div className="min-w-0">
-                      <h4 className="text-lg sm:text-xl font-bold text-white group-hover:text-vibra-300 transition-colors truncate">
-                        {item.store.name}
-                      </h4>
+                    {/* Información textual de la tienda */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-lg sm:text-xl font-extrabold text-white group-hover:text-vibra-300 transition-colors truncate tracking-tight">
+                          {item.store.name}
+                        </h4>
+                      </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-300 mt-1.5 font-medium">
+                      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-300 font-medium">
                         <span className="font-bold text-white">
                           {item.store.gallery}
                         </span>
-                        <span className="text-slate-500">•</span>
+                        <span className="text-slate-600">•</span>
                         <span className="bg-[#23232e] text-slate-200 px-2.5 py-0.5 rounded-lg border border-[#333342] text-xs font-semibold">
                           Piso {item.store.floor}
                         </span>
@@ -1084,7 +1092,7 @@ export default function HomePage() {
                         </span>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-300 mt-2 font-normal leading-relaxed line-clamp-2">
+                      <p className="text-xs sm:text-sm text-slate-300 pt-0.5 font-normal leading-relaxed line-clamp-2">
                         {inputType === "estilo"
                           ? `Especialidad en el estilo · Prenda destacada: ${item.bestGarment.name}`
                           : searchMode === "look"
@@ -1098,8 +1106,8 @@ export default function HomePage() {
                           : `Mismo estilo afín · ${item.bestGarment.name}`}
                       </p>
 
-                      {/* Botones de acción directa: WhatsApp y Cómo llegar */}
-                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[#252532]">
+                      {/* Botones de acción directa con botón explícito 'Ver tienda' */}
+                      <div className="flex flex-wrap items-center gap-2 pt-2">
                         <a
                           href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
                             `Hola ${item.store.name}, vi su tienda en VIBRA (${Math.round(item.resonanceScore * 100)}% de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
@@ -1115,17 +1123,17 @@ export default function HomePage() {
                         <button
                           type="button"
                           onClick={() => setSelectedStoreItem(item)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#23232e] hover:bg-[#2c2c3b] text-slate-300 hover:text-white text-xs font-semibold border border-[#333342] transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#262634] hover:bg-vibra-500/20 text-slate-200 hover:text-vibra-300 text-xs font-bold border border-[#38384a] hover:border-vibra-500/50 transition-all shadow-sm"
                         >
-                          <MapPin className="w-3.5 h-3.5 text-vibra-400" />
-                          <span>Cómo llegar</span>
+                          <span>Ver catálogo y ubicación</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-vibra-400 group-hover:translate-x-0.5 transition-transform" />
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Derecha: Indicador de Resonancia con Porcentaje y Arcos */}
-                  <div className="shrink-0 pl-2">
+                  {/* Lado Derecho: Indicador de Resonancia */}
+                  <div className="shrink-0 self-end sm:self-center pl-2 sm:pl-4 sm:border-l sm:border-[#2b2b3a] flex flex-row sm:flex-col items-center justify-between sm:justify-center w-full sm:w-auto">
                     <RadarArcIcon
                       score={item.resonanceScore}
                       band={item.band}
