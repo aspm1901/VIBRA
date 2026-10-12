@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       filters.searchMode || (image || exampleId ? "prenda" : "estilo");
 
     // 1. Obtener vector y análisis de estilos
-    const stores = getAllStores();
+    const stores = await getAllStores();
     const allGarments = stores.flatMap((s) => s.garments);
 
     if (searchMode === "estilo") {
@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Filtrar y puntuar tiendas
-    const allStores = getAllStores();
+    const allStores = await getAllStores();
     const rankedItems: SearchResultItem[] = [];
     let passedFiltersCount = 0;
 

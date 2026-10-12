@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { Store, StoreGarment } from "@/types";
+import { supabase, isSupabaseConfigured, getSupabaseAdmin } from "@/lib/supabase";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORES_FILE = path.join(DATA_DIR, "stores.json");
@@ -146,56 +147,186 @@ export const DEFAULT_STORES: Store[] = [
   },
 ];
 
+// Caché en memoria para máxima velocidad de búsqueda
+let memoryCache: { stores: Store[]; timestamp: number } | null = null;
+const CACHE_TTL_MS = 15000; // 15 segundos
+
+function mapRowToStore(row: any): Store {
+  return {
+    id: row.id,
+    name: row.name,
+    gallery: row.gallery,
+    galleryAddress: row.gallery_address || row.galleryAddress || "",
+    floor: row.floor || 1,
+    stand: row.stand || "",
+    referenceLocation: row.reference_location || row.referenceLocation || "",
+    whatsapp: row.whatsapp || "",
+    priceLevel: row.price_level || row.priceLevel || "medio",
+    styles: Array.isArray(row.styles) ? row.styles : [],
+    categories: Array.isArray(row.categories) ? row.categories : [],
+    sizes: Array.isArray(row.sizes) ? row.sizes : [],
+    purchaseType: row.purchase_type || row.purchaseType || "cualquiera",
+    standPhotoUrl: row.stand_photo_url || row.standPhotoUrl || "",
+    instagram: row.instagram || "",
+    updatedAt: row.updated_at || row.updatedAt || "",
+    garments: Array.isArray(row.garments) ? row.garments : [],
+  };
+}
+
+function mapStoreToRow(store: Store): any {
+  return {
+    id: store.id,
+    name: store.name,
+    gallery: store.gallery,
+    gallery_address: store.galleryAddress,
+    floor: store.floor,
+    stand: store.stand,
+    reference_location: store.referenceLocation,
+    whatsapp: store.whatsapp,
+    price_level: store.priceLevel,
+    styles: store.styles,
+    categories: store.categories,
+    sizes: store.sizes,
+    purchase_type: store.purchaseType,
+    stand_photo_url: store.standPhotoUrl,
+    instagram: store.instagram,
+    updated_at: store.updatedAt,
+    garments: store.garments,
+  };
+}
+
 function ensureDataFile() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(STORES_FILE)) {
-    fs.writeFileSync(STORES_FILE, JSON.stringify(DEFAULT_STORES, null, 2), "utf8");
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(STORES_FILE)) {
+      fs.writeFileSync(STORES_FILE, JSON.stringify(DEFAULT_STORES, null, 2), "utf8");
+    }
+  } catch (e) {
+    // En entornos serverless de solo lectura (como Vercel) fs puede fallar
   }
 }
 
-export function getAllStores(): Store[] {
+export function getLocalStores(): Store[] {
   ensureDataFile();
   try {
-    const raw = fs.readFileSync(STORES_FILE, "utf8");
-    return JSON.parse(raw) as Store[];
+    if (fs.existsSync(STORES_FILE)) {
+      const raw = fs.readFileSync(STORES_FILE, "utf8");
+      return JSON.parse(raw) as Store[];
+    }
+    return DEFAULT_STORES;
   } catch (error) {
     console.error("Error al leer stores.json:", error);
     return DEFAULT_STORES;
   }
 }
 
-export function getStoreById(id: string): Store | null {
-  const stores = getAllStores();
+export async function getAllStores(): Promise<Store[]> {
+  const now = Date.now();
+  if (memoryCache && now - memoryCache.timestamp < CACHE_TTL_MS) {
+    return memoryCache.stores;
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(mapRowToStore);
+        memoryCache = { stores: mapped, timestamp: now };
+        return mapped;
+      }
+    } catch (err) {
+      console.warn("Fallo temporal en Supabase, recurriendo a almacenamiento local:", err);
+    }
+  }
+
+  const local = getLocalStores();
+  memoryCache = { stores: local, timestamp: now };
+  return local;
+}
+
+export async function getStoreById(id: string): Promise<Store | null> {
+  const stores = await getAllStores();
   return stores.find((s) => s.id === id) || null;
 }
 
-export function saveStore(store: Store): void {
-  ensureDataFile();
-  const stores = getAllStores();
-  const index = stores.findIndex((s) => s.id === store.id);
+export async function saveStore(store: Store): Promise<void> {
+  memoryCache = null; // Invalidar caché
 
-  if (index >= 0) {
-    stores[index] = store;
-  } else {
-    stores.unshift(store); // Insertar al inicio para que aparezca primero en admin
+  // 1. Guardar en Supabase si está disponible
+  if (isSupabaseConfigured) {
+    try {
+      const adminClient = getSupabaseAdmin();
+      if (adminClient) {
+        const row = mapStoreToRow(store);
+        const { error } = await adminClient.from("stores").upsert(row);
+        if (error) {
+          console.error("Error al guardar tienda en Supabase:", error);
+        }
+      }
+    } catch (err) {
+      console.error("Excepción al guardar en Supabase:", err);
+    }
   }
 
-  fs.writeFileSync(STORES_FILE, JSON.stringify(stores, null, 2), "utf8");
+  // 2. Guardar en archivo local (para desarrollo offline)
+  try {
+    ensureDataFile();
+    const stores = getLocalStores();
+    const index = stores.findIndex((s) => s.id === store.id);
+
+    if (index >= 0) {
+      stores[index] = store;
+    } else {
+      stores.unshift(store);
+    }
+
+    fs.writeFileSync(STORES_FILE, JSON.stringify(stores, null, 2), "utf8");
+  } catch (err) {
+    // Si corre en Vercel (read-only), ya quedó guardado en Supabase
+  }
 }
 
-export function deleteStore(id: string): boolean {
-  ensureDataFile();
-  const stores = getAllStores();
-  const filtered = stores.filter((s) => s.id !== id);
-  if (filtered.length === stores.length) return false;
+export async function deleteStore(id: string): Promise<boolean> {
+  memoryCache = null;
 
-  fs.writeFileSync(STORES_FILE, JSON.stringify(filtered, null, 2), "utf8");
-  return true;
+  let deletedInSupabase = false;
+  if (isSupabaseConfigured) {
+    try {
+      const adminClient = getSupabaseAdmin();
+      if (adminClient) {
+        const { error } = await adminClient.from("stores").delete().eq("id", id);
+        if (!error) deletedInSupabase = true;
+      }
+    } catch (err) {
+      console.error("Error al eliminar tienda en Supabase:", err);
+    }
+  }
+
+  try {
+    ensureDataFile();
+    const stores = getLocalStores();
+    const filtered = stores.filter((s) => s.id !== id);
+    if (filtered.length !== stores.length) {
+      fs.writeFileSync(STORES_FILE, JSON.stringify(filtered, null, 2), "utf8");
+      return true;
+    }
+  } catch (err) {
+    return deletedInSupabase;
+  }
+
+  return deletedInSupabase;
 }
 
 export function resetStores(): void {
-  ensureDataFile();
-  fs.writeFileSync(STORES_FILE, JSON.stringify(DEFAULT_STORES, null, 2), "utf8");
+  memoryCache = null;
+  try {
+    ensureDataFile();
+    fs.writeFileSync(STORES_FILE, JSON.stringify(DEFAULT_STORES, null, 2), "utf8");
+  } catch (err) {}
 }

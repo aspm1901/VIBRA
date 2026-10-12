@@ -16,7 +16,7 @@ function ensureUploadsDir() {
 }
 
 export async function GET() {
-  const stores = getAllStores();
+  const stores = await getAllStores();
   return NextResponse.json({ stores });
 }
 
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       garments: processedGarments,
     };
 
-    saveStore(newStore);
+    await saveStore(newStore);
 
     return NextResponse.json({
       success: true,
@@ -166,7 +166,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const stores = getAllStores();
+    const stores = await getAllStores();
     const existingStore = stores.find((s) => s.id === id);
     if (!existingStore) {
       return NextResponse.json({ error: "Tienda no encontrada." }, { status: 404 });
@@ -244,7 +244,7 @@ export async function PUT(req: NextRequest) {
       garments: finalGarments,
     };
 
-    saveStore(updatedStore);
+    await saveStore(updatedStore);
 
     return NextResponse.json({
       success: true,
@@ -276,7 +276,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Falta id de la tienda a eliminar." }, { status: 400 });
     }
 
-    const deleted = deleteStore(id);
+    const deleted = await deleteStore(id);
     if (!deleted) {
       return NextResponse.json({ error: "Tienda no encontrada." }, { status: 404 });
     }
