@@ -585,8 +585,8 @@ export default function HomePage() {
                   <Camera className="w-4 h-4 text-vibra-400" />
                   <span>
                     {searchMode === "look"
-                      ? "📷 Tomar foto o subir outfit"
-                      : "📷 Tomar o subir foto"}
+                      ? "Tomar foto o subir outfit"
+                      : "Tomar o subir foto"}
                   </span>
                 </button>
 
