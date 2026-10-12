@@ -47,6 +47,9 @@ export const DEFAULT_STORES: Store[] = [
     purchaseType: "envio",
     standPhotoUrl: "/images/stands/stand_santa_rosa_214.svg",
     instagram: "@textiles.aurora",
+    latitude: -12.0662726,
+    longitude: -77.0131215,
+    googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-12.0662726,-77.0131215",
     updatedAt: "Hace 14 días",
     garments: [
       {
@@ -85,6 +88,9 @@ export const DEFAULT_STORES: Store[] = [
     purchaseType: "cualquiera",
     standPhotoUrl: "/images/stands/stand_santa_rosa_410.svg",
     instagram: "@saten_co_lima",
+    latitude: -12.0662726,
+    longitude: -77.0131215,
+    googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-12.0662726,-77.0131215",
     updatedAt: "Hace 8 días",
     garments: [
       {
@@ -123,6 +129,9 @@ export const DEFAULT_STORES: Store[] = [
     purchaseType: "presencial",
     standPhotoUrl: "/images/stands/stand_el_rey_402.svg",
     instagram: "@nochedorada.gamarra",
+    latitude: -12.06495,
+    longitude: -77.01255,
+    googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-12.06495,-77.01255",
     updatedAt: "Hace 3 días",
     garments: [
       {
@@ -152,11 +161,24 @@ let memoryCache: { stores: Store[]; timestamp: number } | null = null;
 const CACHE_TTL_MS = 15000; // 15 segundos
 
 function mapRowToStore(row: any): Store {
+  const lat = row.latitude ?? null;
+  const lng = row.longitude ?? null;
+  const gallery = row.gallery || "";
+  const galleryAddress = row.gallery_address || row.galleryAddress || "";
+  let mapsUrl = row.google_maps_url || row.googleMapsUrl || "";
+  if (!mapsUrl) {
+    if (lat && lng) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    } else if (galleryAddress || gallery) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gallery}, ${galleryAddress}, Gamarra, Lima`)}`;
+    }
+  }
+
   return {
     id: row.id,
     name: row.name,
-    gallery: row.gallery,
-    galleryAddress: row.gallery_address || row.galleryAddress || "",
+    gallery,
+    galleryAddress,
     floor: row.floor || 1,
     stand: row.stand || "",
     referenceLocation: row.reference_location || row.referenceLocation || "",
@@ -170,6 +192,9 @@ function mapRowToStore(row: any): Store {
     instagram: row.instagram || "",
     updatedAt: row.updated_at || row.updatedAt || "",
     garments: Array.isArray(row.garments) ? row.garments : [],
+    latitude: lat ? Number(lat) : undefined,
+    longitude: lng ? Number(lng) : undefined,
+    googleMapsUrl: mapsUrl,
   };
 }
 
@@ -192,6 +217,9 @@ function mapStoreToRow(store: Store): any {
     instagram: store.instagram,
     updated_at: store.updatedAt,
     garments: store.garments,
+    latitude: store.latitude,
+    longitude: store.longitude,
+    google_maps_url: store.googleMapsUrl,
   };
 }
 

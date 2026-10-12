@@ -19,6 +19,11 @@ import {
   X,
   LogOut,
   Camera,
+  MapPin,
+  Search,
+  Navigation,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 
 const STYLES_LIST = [
@@ -47,6 +52,16 @@ const CATEGORIES_LIST = [
   "Conjuntos",
   "Chompas",
 ];
+
+const POPULAR_GAMARRA_GALLERIES = [
+  { name: "Galería Santa Rosa", address: "Agustín Gamarra 789, La Victoria 15018", lat: -12.0662726, lng: -77.0131215 },
+  { name: "Galería El Rey", address: "Jirón Agustín Gamarra 1000, La Victoria 15018", lat: -12.06495, lng: -77.01255 },
+  { name: "Galería San Pedro", address: "Jirón General Gamarra 1160, La Victoria 15018", lat: -12.0638, lng: -77.0122 },
+  { name: "Galería Guizado", address: "Jirón Agustín Gamarra 640, La Victoria 15018", lat: -12.0678, lng: -77.0135 },
+  { name: "Gama Moda Plaza", address: "Av. Aviación 1050, La Victoria 15018", lat: -12.0642, lng: -77.0108 },
+  { name: "Parque Cánepa", address: "Jirón Agustín Gamarra 1100, La Victoria 15018", lat: -12.0645, lng: -77.0128 },
+];
+
 
 interface GarmentDraft {
   name: string;
@@ -91,12 +106,103 @@ export default function AdminPage() {
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("cualquiera");
   const [standPhotoBase64, setStandPhotoBase64] = useState<string | null>(null);
 
+  // Google Maps / Ubicación Autocomplete State
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [googleMapsUrl, setGoogleMapsUrl] = useState<string>("");
+  const [placeSearchInput, setPlaceSearchInput] = useState<string>("");
+  const [placePredictions, setPlacePredictions] = useState<any[]>([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
+  const [showPlaceDropdown, setShowPlaceDropdown] = useState<boolean>(false);
+  const [sessionToken, setSessionToken] = useState<string>(() => Math.random().toString(36).substring(2, 15));
+
   // Prendas a subir para la tienda (nuevas)
   const [garmentsDraft, setGarmentsDraft] = useState<GarmentDraft[]>([]);
 
   useEffect(() => {
     fetchStores();
   }, []);
+
+  // Autocomplete debounce para Google Maps Places API
+  useEffect(() => {
+    if (!placeSearchInput || placeSearchInput.trim().length < 2) {
+      setPlacePredictions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingPlaces(true);
+        const res = await fetch(
+          `/api/places/autocomplete?input=${encodeURIComponent(placeSearchInput)}&sessionToken=${sessionToken}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setPlacePredictions(data.predictions || []);
+          setShowPlaceDropdown(true);
+        }
+      } catch (err) {
+        console.error("Error al buscar lugares:", err);
+      } finally {
+        setIsSearchingPlaces(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [placeSearchInput, sessionToken]);
+
+  const handleSelectPrediction = async (prediction: any) => {
+    setShowPlaceDropdown(false);
+    setPlaceSearchInput("");
+
+    if (prediction.latitude && prediction.longitude) {
+      setGallery(prediction.mainText);
+      setGalleryAddress(prediction.secondaryText || prediction.fullText);
+      setLatitude(prediction.latitude);
+      setLongitude(prediction.longitude);
+      setGoogleMapsUrl(`https://www.google.com/maps/search/?api=1&query=${prediction.latitude},${prediction.longitude}`);
+      setSessionToken(Math.random().toString(36).substring(2, 15));
+      return;
+    }
+
+    try {
+      setIsSearchingPlaces(true);
+      const res = await fetch(
+        `/api/places/details?placeId=${encodeURIComponent(prediction.placeId)}&sessionToken=${sessionToken}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setGallery(data.name || prediction.mainText);
+        setGalleryAddress(data.formattedAddress || prediction.secondaryText);
+        setLatitude(data.latitude);
+        setLongitude(data.longitude);
+        setGoogleMapsUrl(
+          data.googleMapsUri ||
+            (data.latitude && data.longitude
+              ? `https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.formattedAddress || prediction.mainText)}`)
+        );
+      } else {
+        setGallery(prediction.mainText);
+        setGalleryAddress(prediction.secondaryText || prediction.fullText);
+      }
+    } catch {
+      setGallery(prediction.mainText);
+      setGalleryAddress(prediction.secondaryText || prediction.fullText);
+    } finally {
+      setIsSearchingPlaces(false);
+      setSessionToken(Math.random().toString(36).substring(2, 15));
+    }
+  };
+
+  const handleSelectQuickGallery = (gal: (typeof POPULAR_GAMARRA_GALLERIES)[0]) => {
+    setGallery(gal.name);
+    setGalleryAddress(gal.address);
+    setLatitude(gal.lat);
+    setLongitude(gal.lng);
+    setGoogleMapsUrl(`https://www.google.com/maps/search/?api=1&query=${gal.lat},${gal.lng}`);
+    setShowPlaceDropdown(false);
+  };
 
   const fetchStores = async () => {
     try {
@@ -127,6 +233,9 @@ export default function AdminPage() {
     setPurchaseType(store.purchaseType || "cualquiera");
     setStandPhotoBase64(null);
     setCurrentStandPhotoUrl(store.standPhotoUrl || null);
+    setLatitude(store.latitude);
+    setLongitude(store.longitude);
+    setGoogleMapsUrl(store.googleMapsUrl || "");
     setExistingGarments(store.garments || []);
     setGarmentsDraft([]);
     setStatusMessage(null);
@@ -149,6 +258,11 @@ export default function AdminPage() {
     setPurchaseType("cualquiera");
     setStandPhotoBase64(null);
     setCurrentStandPhotoUrl(null);
+    setLatitude(undefined);
+    setLongitude(undefined);
+    setGoogleMapsUrl("");
+    setPlaceSearchInput("");
+    setShowPlaceDropdown(false);
     setExistingGarments([]);
     setGarmentsDraft([]);
     setStatusMessage(null);
@@ -255,6 +369,9 @@ export default function AdminPage() {
           sizes: selectedSizes,
           purchaseType,
           standPhotoBase64,
+          latitude,
+          longitude,
+          googleMapsUrl,
           existingGarments,
           newGarmentsData: garmentsDraft,
         };
@@ -292,6 +409,9 @@ export default function AdminPage() {
           sizes: selectedSizes,
           purchaseType,
           standPhotoBase64,
+          latitude,
+          longitude,
+          googleMapsUrl,
           garmentsData: garmentsDraft,
         };
 
@@ -468,35 +588,155 @@ export default function AdminPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nombre y Galería */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
-                  Nombre de la Tienda *
+            {/* Nombre de la Tienda */}
+            <div>
+              <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                Nombre de la Tienda *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Denim Studio"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[#1e1e27] border border-[#30303e] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
+              />
+            </div>
+
+            {/* SECCIÓN DETECTOR DE UBICACIÓN GOOGLE MAPS */}
+            <div className="p-4 bg-[#1b1b24] border border-[#2e2e3e] rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-vibra-400" />
+                  <span>Ubicación y Galería en Google Maps *</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Denim Studio"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#1e1e27] border border-[#30303e] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
-                />
+                <span className="text-[10px] text-gray-400 font-medium">Detector en tiempo real</span>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
-                  Galería *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Galería Guizado"
-                  value={gallery}
-                  onChange={(e) => setGallery(e.target.value)}
-                  className="w-full bg-[#1e1e27] border border-[#30303e] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
-                />
+              {/* Buscador de lugares con Autocomplete de Google Places */}
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={placeSearchInput}
+                    onChange={(e) => {
+                      setPlaceSearchInput(e.target.value);
+                      setShowPlaceDropdown(true);
+                    }}
+                    onFocus={() => {
+                      if (placePredictions.length > 0) setShowPlaceDropdown(true);
+                    }}
+                    placeholder="Escribe la galería o dirección (ej. Galería Santa Rosa, Jr. Gamarra 789...)"
+                    className="w-full bg-[#15151c] border border-[#353548] focus:border-vibra-500 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors"
+                  />
+                  {isSearchingPlaces && (
+                    <Loader2 className="w-4 h-4 text-vibra-400 animate-spin absolute right-3 pointer-events-none" />
+                  )}
+                </div>
+
+                {/* Dropdown flotante con las sugerencias reales */}
+                {showPlaceDropdown && placePredictions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#171722] border border-[#3c3c52] rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto">
+                    {placePredictions.map((pred, pIdx) => (
+                      <button
+                        key={pred.placeId || pIdx}
+                        type="button"
+                        onClick={() => handleSelectPrediction(pred)}
+                        className="w-full px-3.5 py-2.5 text-left hover:bg-[#252536] border-b border-[#242434] last:border-0 flex items-start gap-2.5 transition-colors group"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-vibra-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-white truncate group-hover:text-vibra-300 transition-colors">
+                            {pred.mainText}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate">
+                            {pred.secondaryText || pred.fullText}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Atajos de Galerías de Gamarra */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mr-1">
+                  Galerías Gamarra:
+                </span>
+                {POPULAR_GAMARRA_GALLERIES.map((gal) => (
+                  <button
+                    key={gal.name}
+                    type="button"
+                    onClick={() => handleSelectQuickGallery(gal)}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all ${
+                      gallery === gal.name
+                        ? "bg-vibra-500/20 text-vibra-300 border-vibra-500 font-bold shadow-sm"
+                        : "bg-[#16161e] text-gray-300 border-[#2b2b3a] hover:bg-[#22222e] hover:border-[#38384a]"
+                    }`}
+                  >
+                    {gal.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Campos confirmados de Galería y Dirección */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#292938]">
+                <div>
+                  <label className="text-[11px] font-semibold text-gray-300 block mb-1">
+                    Galería *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Galería Guizado"
+                    value={gallery}
+                    onChange={(e) => setGallery(e.target.value)}
+                    className="w-full bg-[#15151c] border border-[#2e2e3d] rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-gray-300 block mb-1">
+                    Dirección exacta (Calle / Cuadra) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Jr. Gamarra 789, La Victoria"
+                    value={galleryAddress}
+                    onChange={(e) => setGalleryAddress(e.target.value)}
+                    className="w-full bg-[#15151c] border border-[#2e2e3d] rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
+                  />
+                </div>
+              </div>
+
+              {/* Indicador de Ubicación Verificada en Google Maps */}
+              {(latitude || googleMapsUrl) && (
+                <div className="flex items-center justify-between p-2.5 bg-emerald-950/30 border border-emerald-800/40 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="text-[11px] text-emerald-300 font-medium">
+                      Punto verificado en Google Maps {latitude && longitude ? `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})` : ""}
+                    </span>
+                  </div>
+                  <a
+                    href={
+                      googleMapsUrl ||
+                      (latitude && longitude
+                        ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gallery}, ${galleryAddress}`)}`)
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-vibra-300 hover:text-white px-2 py-1 rounded-lg bg-[#252535] hover:bg-[#2d2d40] transition-colors"
+                  >
+                    <span>Probar mapa</span>
+                    <ExternalLink className="w-3 h-3 text-vibra-400" />
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Piso, Stand y WhatsApp */}

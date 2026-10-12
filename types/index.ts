@@ -33,6 +33,9 @@ export interface Store {
   instagram?: string;
   updatedAt: string;
   garments: StoreGarment[];
+  latitude?: number;
+  longitude?: number;
+  googleMapsUrl?: string;
 }
 
 export interface SearchResultItem {

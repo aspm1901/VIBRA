@@ -25,6 +25,7 @@ import {
   Shirt,
   ExternalLink,
   ChevronRight,
+  Navigation,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -1120,12 +1121,29 @@ export default function HomePage() {
                           <MessageCircle className="w-3.5 h-3.5" />
                           <span>WhatsApp</span>
                         </a>
+                        <a
+                          href={
+                            item.store.googleMapsUrl ||
+                            (item.store.latitude && item.store.longitude
+                              ? `https://www.google.com/maps/search/?api=1&query=${item.store.latitude},${item.store.longitude}`
+                              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.store.gallery}, ${item.store.galleryAddress || "Gamarra, La Victoria, Lima"}`)}`)
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#222230] hover:bg-[#2c2c3e] text-slate-300 hover:text-white text-xs font-semibold border border-[#343448] transition-all shadow-sm active:scale-95"
+                          title="Abrir ubicación en Google Maps"
+                        >
+                          <Navigation className="w-3.5 h-3.5 text-vibra-400" />
+                          <span>Google Maps</span>
+                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                        </a>
                         <button
                           type="button"
                           onClick={() => setSelectedStoreItem(item)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#262634] hover:bg-vibra-500/20 text-slate-200 hover:text-vibra-300 text-xs font-bold border border-[#38384a] hover:border-vibra-500/50 transition-all shadow-sm"
                         >
-                          <span>Ver catálogo y ubicación</span>
+                          <span>Ver catálogo</span>
                           <ChevronRight className="w-3.5 h-3.5 text-vibra-400 group-hover:translate-x-0.5 transition-transform" />
                         </button>
                       </div>

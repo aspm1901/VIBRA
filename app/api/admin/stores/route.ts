@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
       sizes = ["S", "M", "L"],
       purchaseType = "cualquiera",
       standPhotoBase64,
+      latitude,
+      longitude,
+      googleMapsUrl,
       garmentsData = [], // Array de { name, category, styles, imageBase64 }
     } = body;
 
@@ -119,6 +122,13 @@ export async function POST(req: NextRequest) {
       standPhotoUrl,
       updatedAt: "Recién agregada",
       garments: processedGarments,
+      latitude: latitude ? Number(latitude) : undefined,
+      longitude: longitude ? Number(longitude) : undefined,
+      googleMapsUrl:
+        googleMapsUrl ||
+        (latitude && longitude
+          ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gallery}, ${galleryAddress || "Gamarra, Lima"}`)}`),
     };
 
     await saveStore(newStore);
@@ -156,6 +166,9 @@ export async function PUT(req: NextRequest) {
       sizes = ["S", "M", "L"],
       purchaseType = "cualquiera",
       standPhotoBase64,
+      latitude,
+      longitude,
+      googleMapsUrl,
       existingGarments = [],
       newGarmentsData = [],
     } = body;
@@ -255,6 +268,14 @@ export async function PUT(req: NextRequest) {
       standPhotoUrl,
       updatedAt: "Actualizada recientemente",
       garments: finalGarments,
+      latitude: latitude !== undefined ? (latitude ? Number(latitude) : undefined) : existingStore.latitude,
+      longitude: longitude !== undefined ? (longitude ? Number(longitude) : undefined) : existingStore.longitude,
+      googleMapsUrl:
+        googleMapsUrl ||
+        (latitude && longitude
+          ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+          : existingStore.googleMapsUrl ||
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gallery}, ${galleryAddress || existingStore.galleryAddress || "Gamarra, Lima"}`)}`),
     };
 
     await saveStore(updatedStore);
