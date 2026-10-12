@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 280" width="100%" height="100%">
+  <rect width="500" height="280" fill="#e4dfd7" rx="12"/>
+  <rect x="30" y="25" width="440" height="50" fill="#222326" rx="4"/>
+  <text x="50" y="58" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">Noche Dorada</text>
+  <text x="430" y="58" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="end">402</text>
+  
+  <rect x="40" y="95" width="420" height="8" fill="#a8a39c" rx="4"/>
+  <rect x="50" y="103" width="6" height="140" fill="#a8a39c"/>
+  <rect x="444" y="103" width="6" height="140" fill="#a8a39c"/>
+  <rect x="40" y="240" width="420" height="6" fill="#a8a39c"/>
+
+  <!-- Prendas tonos dorado, oliva, negro, champagne -->
+  <rect x="75" y="110" width="40" height="135" fill="#8f7d45" rx="4"/>
+  <rect x="130" y="110" width="40" height="120" fill="#232326" rx="4"/>
+  <rect x="185" y="110" width="40" height="140" fill="#c4b37d" rx="4"/>
+  <rect x="240" y="110" width="40" height="125" fill="#8f7d45" rx="4"/>
+  <rect x="295" y="110" width="40" height="130" fill="#232326" rx="4"/>
+  <rect x="350" y="110" width="40" height="135" fill="#c4b37d" rx="4"/>
+</svg>

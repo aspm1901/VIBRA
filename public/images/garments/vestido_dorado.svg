@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="100%" height="100%">
+  <rect width="300" height="400" fill="#f1ece7" rx="16"/>
+  <!-- Escote palabra de honor / corazón -->
+  <path d="M100 90 Q125 105 150 95 Q175 105 200 90 L190 170 L110 170 Z" fill="#8f7d45"/>
+  <!-- Cintura ajustada -->
+  <path d="M110 170 L190 170 L175 230 L125 230 Z" fill="#7d6d39"/>
+  <!-- Falda sirena / acampanada -->
+  <path d="M125 230 L175 230 L220 350 L80 350 Z" fill="#8f7d45"/>
+  <!-- Brillos dorados sutiles -->
+  <path d="M135 110 L140 160 L148 240 L160 350" stroke="#b8a665" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+</svg>
