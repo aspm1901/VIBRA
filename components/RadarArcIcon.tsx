@@ -53,10 +53,10 @@ export const RadarArcIcon: React.FC<RadarArcIconProps> = ({ score, band, classNa
 
       {/* Puntaje numérico y etiqueta de banda */}
       <div className="text-center mt-1">
-        <span className="text-sm font-bold text-gray-100 block tracking-tight">
+        <span className="text-base font-extrabold text-white block tracking-tight">
           {score.toFixed(2).replace(".", ",")}
         </span>
-        <span className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">
+        <span className="text-xs uppercase font-bold text-vibra-300 tracking-wider">
           {band}
         </span>
       </div>

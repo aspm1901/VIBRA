@@ -95,61 +95,61 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
         )}
 
         {/* Badges de Ubicación */}
-        <div className="grid grid-cols-3 gap-2 mt-5 bg-[#23232b] p-3 rounded-2xl border border-[#2e2e38]">
+        <div className="grid grid-cols-3 gap-2.5 mt-5 bg-[#20202a] p-3.5 rounded-2xl border border-[#2d2d3c]">
           <div className="text-left px-2">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Galería</span>
-            <span className="text-sm font-semibold text-white truncate block">{store.gallery}</span>
+            <span className="text-xs uppercase font-bold text-slate-400 block tracking-wider">Galería</span>
+            <span className="text-base font-bold text-white truncate block mt-0.5">{store.gallery}</span>
           </div>
-          <div className="text-left px-2 border-l border-[#353540]">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Piso</span>
-            <span className="text-sm font-semibold text-white block">{store.floor}</span>
+          <div className="text-left px-2 border-l border-[#353545]">
+            <span className="text-xs uppercase font-bold text-slate-400 block tracking-wider">Piso</span>
+            <span className="text-base font-bold text-white block mt-0.5">{store.floor}</span>
           </div>
-          <div className="text-left px-2 border-l border-[#353540]">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Stand</span>
-            <span className="text-sm font-semibold text-white block">{store.stand}</span>
+          <div className="text-left px-2 border-l border-[#353545]">
+            <span className="text-xs uppercase font-bold text-slate-400 block tracking-wider">Stand</span>
+            <span className="text-base font-bold text-white block mt-0.5">{store.stand}</span>
           </div>
         </div>
 
         {/* Referencia física de llegada */}
-        <p className="text-xs text-gray-400 mt-2.5 flex items-start gap-1.5">
-          <MapPin className="w-3.5 h-3.5 text-vibra-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-slate-300 mt-3 flex items-start gap-2 leading-relaxed">
+          <MapPin className="w-4 h-4 text-vibra-400 shrink-0 mt-0.5" />
           <span>{store.referenceLocation} ({store.galleryAddress})</span>
         </p>
 
         {/* Explicación de Resonancia */}
-        <div className="mt-4 p-3 bg-vibra-950/40 border border-vibra-900/60 rounded-xl text-xs text-vibra-200 leading-relaxed">
+        <div className="mt-4 p-4 bg-vibra-950/60 border border-vibra-800/80 rounded-2xl text-sm text-vibra-100 leading-relaxed shadow-sm">
           {item.searchMode === "estilo" ? (
             <>
               <strong>Resonancia por Estilo {formattedScore}:</strong> La tienda coincide en{" "}
-              <strong>{matchingStylesCount} de {totalSearchedStyles}</strong> estilos buscados, destacando su especialidad y variedad para esta estética en Gamarra.
+              <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos buscados, destacando su especialidad y variedad para esta estética en Gamarra.
             </>
           ) : item.searchMode === "look" ? (
             <>
               <strong>Resonancia para Look Completo {formattedScore}:</strong> Evaluado con un{" "}
-              <strong>70% en afinidad estética del outfit</strong> ({matchingStylesCount}/{totalSearchedStyles} estilos) y{" "}
-              <strong>30% en armonía visual ({formattedPhotoSim})</strong> para ayudarte a armar este look.
+              <strong className="text-white">70% en afinidad estética del outfit</strong> ({matchingStylesCount}/{totalSearchedStyles} estilos) y{" "}
+              <strong className="text-white">30% en armonía visual ({formattedPhotoSim})</strong> para ayudarte a armar este look.
             </>
           ) : (
             <>
               <strong>Resonancia {formattedScore} con tu prenda:</strong> Fidelidad de silueta y corte visual de{" "}
-              <strong>{formattedPhotoSim}</strong> con <strong>{matchingStylesCount} de {totalSearchedStyles}</strong> estilos afines.
+              <strong className="text-white">{formattedPhotoSim}</strong> con <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos afines.
             </>
           )}
         </div>
 
         {/* Estilos que declara la tienda */}
         <div className="mt-5">
-          <span className="text-xs font-semibold text-gray-300 block mb-2">
+          <span className="text-sm font-bold text-slate-200 block mb-2.5">
             Estilos que declara la tienda:
           </span>
           <div className="flex flex-wrap gap-2">
             {store.styles.map((style, idx) => (
               <span
                 key={style}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                className={`text-xs sm:text-sm px-4 py-2 rounded-full font-semibold ${
                   idx === 0
-                    ? "bg-vibra-700/80 text-white border border-vibra-500/50"
-                    : "bg-[#25252e] text-gray-300 border border-[#353542]"
+                    ? "bg-vibra-700 text-white border border-vibra-500 shadow-sm"
+                    : "bg-[#252532] text-slate-200 border border-[#38384a]"
                 }`}
               >
                 {style} {idx === 0 && "· principal"}
@@ -160,10 +160,10 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
         {/* Así se ve el stand */}
         <div className="mt-6">
-          <span className="text-xs font-semibold text-gray-300 block mb-2">
-            Así se ve el stand:
+          <span className="text-sm font-bold text-slate-200 block mb-2">
+            Así se ve el stand físico:
           </span>
-          <div className="w-full h-44 bg-[#e4dfd7] rounded-2xl flex items-center justify-center overflow-hidden border border-[#d6cfc4]">
+          <div className="w-full h-48 bg-[#e8e3dc] rounded-2xl flex items-center justify-center overflow-hidden border border-[#d6cfc4] shadow-inner">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={store.standPhotoUrl}
@@ -171,57 +171,57 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
               className="w-full h-full object-contain"
             />
           </div>
-          <p className="text-[11px] text-gray-500 mt-1.5">
-            Foto de ubicación: sirve para reconocer el stand físico al caminar por la galería.
+          <p className="text-xs text-slate-400 mt-2 font-normal leading-relaxed">
+            Foto de ubicación: sirve para reconocer el stand físico al caminar por los pasillos de la galería.
           </p>
         </div>
 
         {/* Detalles de la tienda (Nivel de precio, Tallas, Compra) */}
-        <div className="grid grid-cols-2 gap-y-4 gap-x-6 mt-6 pt-5 border-t border-[#2e2e38] text-xs">
+        <div className="grid grid-cols-2 gap-y-4 gap-x-6 mt-6 pt-5 border-t border-[#2e2e38] text-sm">
           <div>
-            <span className="text-gray-400 block mb-0.5">Nivel de precio</span>
-            <span className="font-bold text-white text-sm">
+            <span className="text-slate-400 text-xs block mb-1">Nivel de precio</span>
+            <span className="font-bold text-white text-base">
               {store.priceLevel === "economico" ? "S/ · Económico" : store.priceLevel === "medio" ? "S/ S/ · Medio" : "S/ S/ S/ · Alto"}
             </span>
-            <span className="text-[10px] text-gray-500 block">Referencial según su prenda más vendida.</span>
+            <span className="text-xs text-slate-400 block mt-0.5">Referencial según su prenda más vendida.</span>
           </div>
 
           <div>
-            <span className="text-gray-400 block mb-0.5">Modalidad de compra</span>
-            <span className="font-bold text-white text-sm">
+            <span className="text-slate-400 text-xs block mb-1">Modalidad de compra</span>
+            <span className="font-bold text-white text-base">
               {store.purchaseType === "envio" ? "En tienda y con envío" : store.purchaseType === "presencial" ? "Solo presencial" : "Cualquiera"}
             </span>
           </div>
 
           <div>
-            <span className="text-gray-400 block mb-0.5">Tallas disponibles</span>
-            <span className="font-bold text-white text-sm">{store.sizes.join(", ")}</span>
+            <span className="text-slate-400 text-xs block mb-1">Tallas disponibles</span>
+            <span className="font-bold text-white text-base">{store.sizes.join(", ")}</span>
           </div>
 
           <div>
-            <span className="text-gray-400 block mb-0.5">Última actualización de catálogo</span>
-            <span className="font-bold text-white text-sm">{store.updatedAt}</span>
+            <span className="text-slate-400 text-xs block mb-1">Última actualización</span>
+            <span className="font-bold text-white text-base">{store.updatedAt}</span>
           </div>
 
           <div>
-            <span className="text-gray-400 block mb-0.5">Categorías</span>
-            <span className="font-bold text-white text-sm">{store.categories.join(", ")}</span>
+            <span className="text-slate-400 text-xs block mb-1">Categorías</span>
+            <span className="font-bold text-white text-base">{store.categories.join(", ")}</span>
           </div>
 
           {store.instagram && (
             <div>
-              <span className="text-gray-400 block mb-0.5">Instagram</span>
-              <span className="font-bold text-vibra-300 text-sm">{store.instagram}</span>
+              <span className="text-slate-400 text-xs block mb-1">Instagram</span>
+              <span className="font-bold text-vibra-300 text-base">{store.instagram}</span>
             </div>
           )}
         </div>
 
         {/* Cuadro de mensaje pre-armado de WhatsApp */}
-        <div className="mt-6 p-3.5 bg-[#141418] rounded-2xl border border-[#2a2a34]">
-          <span className="text-[11px] text-gray-400 block mb-1 font-medium">
-            Mensaje que se enviará a la vendedora:
+        <div className="mt-6 p-4 bg-[#14141a] rounded-2xl border border-[#282836]">
+          <span className="text-xs text-slate-400 block mb-1.5 font-medium">
+            Mensaje que se enviará automáticamente a la vendedora:
           </span>
-          <p className="text-xs text-gray-200 italic font-mono bg-[#1c1c24] p-2.5 rounded-xl border border-[#2c2c38]">
+          <p className="text-xs sm:text-sm text-slate-200 italic font-mono bg-[#1c1c26] p-3 rounded-xl border border-[#2e2e3e] leading-relaxed">
             &ldquo;{whatsappMessage}&rdquo;
           </p>
         </div>
@@ -231,10 +231,10 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 w-full py-4 bg-vibra-500 hover:bg-vibra-600 active:scale-[0.99] text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-vibra-950/40 text-sm"
+          className="mt-4 w-full py-4 bg-[#25D366] hover:bg-[#20ba59] active:scale-[0.99] text-slate-950 font-extrabold rounded-2xl transition-all flex items-center justify-center gap-2.5 shadow-xl text-base"
         >
           <MessageCircle className="w-5 h-5 fill-current" />
-          <span>Escribir por WhatsApp</span>
+          <span>Escribir por WhatsApp a la tienda</span>
         </a>
       </div>
     </div>

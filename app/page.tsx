@@ -473,28 +473,28 @@ export default function HomePage() {
         <section className="lg:col-span-5 flex flex-col gap-6">
           {/* Título Principal y Bajada */}
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.08]">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.08]">
               Muéstralo. <br />
               Encuéntralo <br />
-              <span className="text-gray-400">cerca.</span>
+              <span className="text-vibra-300">cerca.</span>
             </h1>
-            <p className="text-xs text-gray-400 mt-3 leading-relaxed max-w-md">
+            <p className="text-sm md:text-base text-slate-300 mt-3 leading-relaxed max-w-md font-normal">
               Sube una foto de una prenda o de un look. Vibra la compara con las imágenes que
               publican las tiendas de Gamarra y ordena las que resuenan con más intensidad.
             </p>
           </div>
 
           {/* Toggle "Con foto" / "Por estilo" */}
-          <div className="flex p-1 bg-[#1a1a20] rounded-2xl border border-[#2b2b36] w-fit">
+          <div className="flex p-1.5 bg-[#181820] rounded-2xl border border-[#2b2b3a] w-fit shadow-md">
             <button
               onClick={() => {
                 setInputType("foto");
                 executeSearch({ overrideSearchMode: searchMode === "look" ? "look" : "prenda" });
               }}
-              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 inputType === "foto"
-                  ? "bg-[#282832] text-white shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
+                  ? "bg-[#2c2c3a] text-white shadow-sm ring-1 ring-white/10"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Con foto
@@ -504,10 +504,10 @@ export default function HomePage() {
                 setInputType("estilo");
                 executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
               }}
-              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 inputType === "estilo"
-                  ? "bg-[#282832] text-white shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
+                  ? "bg-[#2c2c3a] text-white shadow-sm ring-1 ring-white/10"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Por estilo
@@ -527,14 +527,14 @@ export default function HomePage() {
                     setSearchMode("prenda");
                     executeSearch({ overrideSearchMode: "prenda" });
                   }}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
                     searchMode === "prenda"
-                      ? "bg-[#22222a] border-vibra-500/60 shadow-sm"
-                      : "bg-[#18181f] border-[#292934] hover:bg-[#1e1e26]"
+                      ? "bg-[#22222e] border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
+                      : "bg-[#181820] border-[#292938] hover:bg-[#1e1e28]"
                   }`}
                 >
-                  <span className="text-xs font-bold text-white block">Una prenda</span>
-                  <span className="text-[10px] text-gray-400 block mt-0.5 leading-snug">
+                  <span className="text-sm font-bold text-white block">Una prenda</span>
+                  <span className="text-xs text-slate-300 block mt-1 leading-snug font-normal">
                     Recortas la prenda. Máxima fidelidad de corte y silueta.
                   </span>
                 </button>
@@ -545,14 +545,14 @@ export default function HomePage() {
                     setSearchMode("look");
                     executeSearch({ overrideSearchMode: "look" });
                   }}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
                     searchMode === "look"
-                      ? "bg-[#22222a] border-vibra-500/60 shadow-sm"
-                      : "bg-[#18181f] border-[#292934] hover:bg-[#1e1e26]"
+                      ? "bg-[#22222e] border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
+                      : "bg-[#181820] border-[#292938] hover:bg-[#1e1e28]"
                   }`}
                 >
-                  <span className="text-xs font-bold text-white block">Look completo</span>
-                  <span className="text-[10px] text-gray-400 block mt-0.5 leading-snug">
+                  <span className="text-sm font-bold text-white block">Look completo</span>
+                  <span className="text-xs text-slate-300 block mt-1 leading-snug font-normal">
                     Outfit o Pinterest. Resultado por estilo y armonía visual.
                   </span>
                 </button>
@@ -588,14 +588,14 @@ export default function HomePage() {
                   className="hidden"
                 />
 
-                <h3 className="text-base font-bold text-white mt-4">{garmentTitle}</h3>
+                <h3 className="text-lg font-extrabold text-white mt-4 tracking-tight">{garmentTitle}</h3>
 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-xs text-gray-400 hover:text-vibra-300 mt-1 flex items-center gap-1 transition-colors"
+                  className="text-xs sm:text-sm text-slate-300 hover:text-vibra-300 mt-1.5 flex items-center gap-1.5 transition-colors font-medium"
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Upload className="w-4 h-4 text-vibra-300" />
                   <span>
                     {searchMode === "look"
                       ? "Sube una foto de outfit o collage de Pinterest"
@@ -604,12 +604,12 @@ export default function HomePage() {
                 </button>
 
                 {/* Tags de estilos detectados */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
                     Detectado por IA:
                   </span>
                   {detectedInfo.category && (
-                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-vibra-950 text-vibra-300 border border-vibra-800/80 font-bold">
+                    <span className="text-xs px-3 py-1 rounded-full bg-vibra-950 text-vibra-300 border border-vibra-800 font-bold shadow-sm">
                       {detectedInfo.category}
                     </span>
                   )}
@@ -619,7 +619,7 @@ export default function HomePage() {
                   ).map((style) => (
                     <span
                       key={style}
-                      className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#272733] text-gray-200 border border-[#39394a]"
+                      className="text-xs px-3 py-1 rounded-full bg-[#242430] text-slate-200 border border-[#353545] font-semibold"
                     >
                       {style}
                     </span>
@@ -629,12 +629,12 @@ export default function HomePage() {
 
               {/* Referencias de ejemplo adaptadas al modo */}
               <div>
-                <span className="text-xs font-semibold text-gray-400 block mb-2.5">
+                <span className="text-sm font-bold text-slate-200 block mb-2.5">
                   {searchMode === "look"
                     ? "Prueba con looks y outfits de referencia:"
                     : "O prueba con una prenda de ejemplo:"}
                 </span>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2.5">
                   {(searchMode === "look" ? EXAMPLES : EXAMPLES.filter((e) => !e.isLook))
                     .slice(0, 4)
                     .map((ex) => {
@@ -643,13 +643,13 @@ export default function HomePage() {
                         <button
                           key={ex.id}
                           onClick={() => handleSelectExample(ex)}
-                          className={`p-2 rounded-2xl border flex flex-col items-center text-center transition-all ${
+                          className={`p-2.5 rounded-2xl border flex flex-col items-center text-center transition-all ${
                             isSelected
-                              ? "bg-[#252530] border-vibra-400 ring-2 ring-vibra-500/30"
-                              : "bg-[#18181f] border-[#292934] hover:bg-[#202028]"
+                              ? "bg-[#252532] border-vibra-400 ring-2 ring-vibra-500/40 shadow-md"
+                              : "bg-[#181820] border-[#292938] hover:bg-[#20202a]"
                           }`}
                         >
-                          <div className="w-full h-16 bg-[#f1ece7] rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5">
+                          <div className="w-full h-16 bg-[#f5f1ec] rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 border border-[#dfd9d0]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={ex.image}
@@ -657,7 +657,7 @@ export default function HomePage() {
                               className="max-h-full max-w-full object-contain"
                             />
                           </div>
-                          <span className="text-[10px] font-bold text-gray-200 truncate w-full block">
+                          <span className="text-xs font-semibold text-slate-200 truncate w-full block">
                             {ex.title}
                           </span>
                         </button>
@@ -667,49 +667,49 @@ export default function HomePage() {
               </div>
 
               {/* Prenda / Look Identificado por IA */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#181820] border border-[#2b2b38]">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-vibra-950 text-vibra-400 border border-vibra-900/60 flex items-center justify-center shrink-0">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-[#181820] border border-[#2c2c3a] shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-vibra-950 text-vibra-400 border border-vibra-900/60 flex items-center justify-center shrink-0">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">
+                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider block">
                       {searchMode === "look" ? "Outfit analizado" : "Prenda identificada"}
                     </span>
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-sm sm:text-base font-extrabold text-white">
                       {detectedInfo.category || garmentTitle}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded-md bg-emerald-950/40 border border-emerald-900/40">
+                <span className="text-xs text-emerald-400 font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-800/60">
                   IA Activa
                 </span>
               </div>
 
               {/* Estilos interactivos */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-400">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-sm font-bold text-slate-200">
                     Estilos{" "}
-                    <span className="text-gray-500 text-[10px] font-normal">
+                    <span className="text-slate-400 text-xs font-normal">
                       (detectados por IA, puedes ajustar)
                     </span>
                   </span>
-                  <span className="text-[10px] text-vibra-400 font-medium">
+                  <span className="text-xs text-vibra-300 font-bold">
                     {selectedStyles.length} seleccionados
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {STYLES.map((st) => {
                     const isSelected = selectedStyles.includes(st);
                     return (
                       <button
                         key={st}
                         onClick={() => toggleStyle(st)}
-                        className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                        className={`text-xs sm:text-sm px-4 py-2 rounded-full transition-all font-semibold ${
                           isSelected
-                            ? "bg-vibra-500 text-white font-bold shadow-md shadow-vibra-950/40"
-                            : "bg-[#1f1f26] text-gray-300 hover:bg-[#292934] border border-[#2b2b36]"
+                            ? "bg-vibra-500 text-white font-bold shadow-md shadow-vibra-950/60 ring-1 ring-white/20"
+                            : "bg-[#1d1d26] text-slate-200 hover:bg-[#282836] hover:text-white border border-[#2d2d3c]"
                         }`}
                       >
                         {st}
@@ -1038,24 +1038,24 @@ export default function HomePage() {
 
           {/* Listado Directo de Tiendas (Ordenado por Resonancia) */}
           {!isSearching && displayedResults.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {displayedResults.map((item, idx) => (
                 <div
                   key={item.store.id}
                   onClick={() => setSelectedStoreItem(item)}
-                  className="group bg-[#191920] hover:bg-[#202028] border border-[#2c2c38] hover:border-[#404052] rounded-3xl p-4 md:p-5 transition-all cursor-pointer shadow-md hover:shadow-xl flex items-center justify-between gap-4"
+                  className="group bg-[#181820] hover:bg-[#20202a] border border-[#2a2a38] hover:border-[#444458] rounded-3xl p-5 md:p-6 transition-all cursor-pointer shadow-md hover:shadow-xl flex items-center justify-between gap-4"
                 >
                   {/* Izquierda: Miniatura de la Prenda o Prendas */}
-                  <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex items-center gap-4.5 min-w-0">
                     {searchMode === "look" &&
                     item.matchingGarments &&
                     item.matchingGarments.length > 1 ? (
-                      <div className="flex items-center -space-x-3.5 shrink-0">
+                      <div className="flex items-center -space-x-4 shrink-0">
                         {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
                           <div
                             key={mg.id}
-                            className={`relative w-14 h-18 bg-[#f1ece7] rounded-2xl flex items-center justify-center p-1 overflow-hidden shadow-md border border-[#d8d2c8] transition-transform group-hover:scale-105 ${
-                              gIdx === 1 ? "z-10 ring-2 ring-[#191920]" : "z-0"
+                            className={`relative w-16 h-20 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
+                              gIdx === 1 ? "z-10 ring-2 ring-[#181820]" : "z-0"
                             }`}
                             title={mg.name}
                           >
@@ -1069,7 +1069,7 @@ export default function HomePage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="relative w-16 h-20 bg-[#f1ece7] rounded-2xl flex items-center justify-center p-1.5 shrink-0 overflow-hidden shadow-inner border border-[#d8d2c8]">
+                      <div className="relative w-18 h-22 sm:w-20 sm:h-24 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.bestGarment.photoUrl}
@@ -1081,25 +1081,24 @@ export default function HomePage() {
 
                     {/* Centro: Info de la tienda */}
                     <div className="min-w-0">
-                      <h4 className="text-base font-bold text-white group-hover:text-vibra-300 transition-colors truncate">
+                      <h4 className="text-lg sm:text-xl font-bold text-white group-hover:text-vibra-300 transition-colors truncate">
                         {item.store.name}
                       </h4>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mt-1">
-                        <span className="font-semibold text-gray-200">
+                      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-300 mt-1.5 font-medium">
+                        <span className="font-bold text-white">
                           {item.store.gallery}
                         </span>
-                        <span>•</span>
-                        <span>
-                          Piso <strong className="text-gray-200">{item.store.floor}</strong>
+                        <span className="text-slate-500">•</span>
+                        <span className="bg-[#23232e] text-slate-200 px-2.5 py-0.5 rounded-lg border border-[#333342] text-xs font-semibold">
+                          Piso {item.store.floor}
                         </span>
-                        <span>•</span>
-                        <span>
-                          Stand <strong className="text-gray-200">{item.store.stand}</strong>
+                        <span className="bg-[#23232e] text-slate-200 px-2.5 py-0.5 rounded-lg border border-[#333342] text-xs font-semibold">
+                          Stand {item.store.stand}
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-gray-400 mt-1.5 truncate">
+                      <p className="text-xs sm:text-sm text-slate-300 mt-2 font-normal leading-relaxed truncate">
                         {inputType === "estilo"
                           ? `Especialidad en el estilo · Prenda destacada: ${item.bestGarment.name}`
                           : searchMode === "look"
@@ -1128,8 +1127,8 @@ export default function HomePage() {
           )}
 
           {/* Footer Informativo */}
-          <div className="p-4 bg-[#16161b] rounded-2xl border border-[#24242c] text-[11px] text-gray-500 leading-relaxed mt-2">
-            La resonancia mide qué tan parecida es cada tienda a tu búsqueda visual y de estilo, no existencias ni colores disponibles en tiempo real. Confirma disponibilidad por WhatsApp antes de ir físicamente.
+          <div className="p-4 sm:p-5 bg-[#16161e] rounded-2xl border border-[#282836] text-xs sm:text-sm text-slate-300 leading-relaxed mt-4 shadow-sm">
+            💡 <strong>Nota útil:</strong> La resonancia mide la afinidad visual y estética de cada tienda con tu referencia, no el stock ni colores en tiempo real. Te recomendamos confirmar disponibilidad por WhatsApp antes de ir físicamente.
           </div>
         </section>
       </main>
