@@ -14,15 +14,15 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
   const { store, bestGarment, matchingGarments, resonanceScore, photoSimilarity, matchingStylesCount, totalSearchedStyles } = item;
 
-  const formattedScore = resonanceScore.toFixed(2).replace(".", ",");
-  const formattedPhotoSim = photoSimilarity.toFixed(2).replace(".", ",");
+  const percentageScore = `${Math.round(resonanceScore * 100)}%`;
+  const formattedPhotoSim = `${Math.round(photoSimilarity * 100)}%`;
 
   const garmentsMention =
     item.searchMode === "look" && matchingGarments && matchingGarments.length > 1
       ? matchingGarments.map((g) => g.name).join(" y ")
       : bestGarment.name;
 
-  const whatsappMessage = `Hola ${store.name}, los encontré en Vibra (resonancia ${formattedScore}). ¿Tienen disponibilidad de ${garmentsMention}? Estoy en la ${store.gallery}, stand ${store.stand}.`;
+  const whatsappMessage = `Hola ${store.name}, los encontré en Vibra (${percentageScore} de afinidad). ¿Tienen disponibilidad de ${garmentsMention}?`;
   const whatsappUrl = `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
@@ -120,19 +120,16 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
         <div className="mt-4 p-4 bg-vibra-950/60 border border-vibra-800/80 rounded-2xl text-sm text-vibra-100 leading-relaxed shadow-sm">
           {item.searchMode === "estilo" ? (
             <>
-              <strong>Resonancia por Estilo {formattedScore}:</strong> La tienda coincide en{" "}
-              <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos buscados, destacando su especialidad y variedad para esta estética en Gamarra.
+              <strong>Afinidad por Estilo {percentageScore}:</strong> La tienda coincide en{" "}
+              <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos buscados, destacando su especialidad para esta estética en Gamarra.
             </>
           ) : item.searchMode === "look" ? (
             <>
-              <strong>Resonancia para Look Completo {formattedScore}:</strong> Evaluado con un{" "}
-              <strong className="text-white">70% en afinidad estética del outfit</strong> ({matchingStylesCount}/{totalSearchedStyles} estilos) y{" "}
-              <strong className="text-white">30% en armonía visual ({formattedPhotoSim})</strong> para ayudarte a armar este look.
+              <strong>Afinidad para Look Completo {percentageScore}:</strong> Coincidencia estilística del outfit y prendas afines disponibles para armar este conjunto.
             </>
           ) : (
             <>
-              <strong>Resonancia {formattedScore} con tu prenda:</strong> Fidelidad de silueta y corte visual de{" "}
-              <strong className="text-white">{formattedPhotoSim}</strong> con <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos afines.
+              <strong>Parecido {percentageScore} con tu prenda:</strong> Fidelidad de silueta y corte visual ({formattedPhotoSim}) con <strong className="text-white">{matchingStylesCount} de {totalSearchedStyles}</strong> estilos afines.
             </>
           )}
         </div>

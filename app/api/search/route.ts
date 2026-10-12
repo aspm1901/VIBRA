@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       filters?: SearchFilters;
     };
 
-    let queryVector: number[] = [];
+    let queryVector: number[] | null = null;
     let detectedInfo: {
       category: string;
       garmentFamily?: string;
@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
 
       // Si la IA de visión no respondió, inferimos tipo de prenda y estilos
       // a partir de las fotos del catálogo más parecidas (el embedding sí funcionó).
-      if (analysis.isFallback && queryVector.length > 0) {
+      if (analysis.isFallback && queryVector && queryVector.length > 0) {
         const neighbors = allGarments
-          .filter((g) => g.embedding && g.embedding.length === queryVector.length)
-          .map((g) => ({ g, sim: cosineSimilarity(queryVector, g.embedding!) }))
+          .filter((g) => g.embedding && g.embedding.length === queryVector!.length)
+          .map((g) => ({ g, sim: cosineSimilarity(queryVector!, g.embedding!) }))
           .sort((a, b) => b.sim - a.sim)
           .slice(0, 3);
 
@@ -196,15 +196,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (searchMode !== "estilo" && queryVector.length === 0) {
-      return NextResponse.json(
-        { error: "No se proporcionó imagen ni ejemplo válido." },
-        { status: 400 }
-      );
+    let isApproximateSearch = false;
+    if (searchMode !== "estilo" && (!queryVector || queryVector.length === 0)) {
+      if (detectedInfo.category && detectedInfo.category !== "Prenda de referencia") {
+        isApproximateSearch = true;
+      } else {
+        return NextResponse.json(
+          { error: "No se proporcionó imagen ni ejemplo válido." },
+          { status: 400 }
+        );
+      }
     }
 
-    // 2. Filtrar y puntuar tiendas
-    const allStores = await getAllStores();
+    // 2. Filtrar y puntuar tiendas (reusando stores ya obtenido arriba)
+    const allStores = stores;
     const rankedItems: SearchResultItem[] = [];
     let passedFiltersCount = 0;
 
@@ -276,30 +281,23 @@ export async function POST(req: NextRequest) {
           store.styles
         );
 
-        let resonance = storeStyleScore;
-        // Si el estilo coincide a nivel tienda:
-        if (storeStyleScore > 0) {
-          // Bonificación de especialidad si coincide el estilo insignia (#1)
-          if (
-            store.styles[0] &&
-            activeStyles.some(
-              (s) => s.toLowerCase().trim() === store.styles[0].toLowerCase().trim()
-            )
-          ) {
-            resonance = Math.min(1.0, resonance + 0.10);
-          }
-          // Bonificación por variedad en catálogo
-          if (store.garments.length > 0 && matchingGarmentsCount > 0) {
-            resonance = Math.min(
-              1.0,
-              resonance + (matchingGarmentsCount / store.garments.length) * 0.10
-            );
-          }
-        } else if (matchingGarmentsCount > 0 || maxAffinity >= 0.50) {
-          // La tienda no lo declaró en sus 3 tags principales, pero su catálogo SÍ tiene prendas de este estilo
-          const catalogRatio = store.garments.length > 0 ? matchingGarmentsCount / store.garments.length : 0;
-          resonance = Math.min(0.75, 0.45 + catalogRatio * 0.25 + (maxAffinity > 1 ? 0.05 : 0));
+        // Calibración T6: Base según estilo de tienda (0.55 a 0.85)
+        let resonance = 0.55 + 0.30 * storeStyleScore;
+        // Bonificación de especialidad si coincide el estilo insignia (#1) (+0.06)
+        if (
+          store.styles[0] &&
+          activeStyles.some(
+            (s) => s.toLowerCase().trim() === store.styles[0].toLowerCase().trim()
+          )
+        ) {
+          resonance += 0.06;
         }
+        // Bonificación por variedad en catálogo (hasta +0.07)
+        if (store.garments.length > 0 && matchingGarmentsCount > 0) {
+          resonance += (matchingGarmentsCount / store.garments.length) * 0.07;
+        }
+        // Tope de seguridad
+        resonance = Math.min(0.98, resonance);
 
         resonance = Number(resonance.toFixed(2));
         const band = determineBand(resonance);
@@ -330,7 +328,7 @@ export async function POST(req: NextRequest) {
         const scoredGarments = store.garments
           .map((garment) => {
             const sim =
-              garment.embedding && garment.embedding.length > 0 && queryVector.length > 0
+              garment.embedding && garment.embedding.length > 0 && queryVector && queryVector.length > 0
                 ? cosineSimilarity(queryVector, garment.embedding)
                 : 0;
             const garmentAffinity = calculateGarmentStyleAffinity(garment, activeStyles);
@@ -429,22 +427,26 @@ export async function POST(req: NextRequest) {
       let bestGarment = store.garments[0];
       let maxPhotoSim = 0;
       let bestFamilyRelation: "same" | "different" | "neutral" = "neutral";
+      let additionalMatchesCount = 0;
       let maxComparisonScore = -1;
 
       for (const garment of store.garments) {
         if (!garment.embedding || garment.embedding.length === 0) continue;
-        const sim = cosineSimilarity(queryVector, garment.embedding);
+        const sim = queryVector && queryVector.length > 0 ? cosineSimilarity(queryVector, garment.embedding) : 0;
 
-        const garmentFamily = extractGarmentFamily(garment.name, garment.category);
+        const garmentFamily = garment.garmentFamily || extractGarmentFamily(garment.name, garment.category);
         
         let familyRelation: "same" | "different" | "neutral" = "neutral";
         if (queryFamily !== "otro" && garmentFamily !== "otro") {
           familyRelation = queryFamily === garmentFamily ? "same" : "different";
         }
 
+        // Conteo de prendas de catálogo adicionales del mismo tipo con similitud aceptable (para bono de variedad)
+        if (familyRelation === "same" && sim >= 0.65) {
+          additionalMatchesCount++;
+        }
+
         // PRIORIDAD SEMÁNTICA:
-        // Si la prenda es de la misma familia (ej. Casaca con Casaca), se le da prioridad superior
-        // para que nunca un polo gane a una casaca solo por el color
         let comparisonScore = sim;
         if (familyRelation === "same") {
           comparisonScore = sim * 1.35;
@@ -469,12 +471,33 @@ export async function POST(req: NextRequest) {
       );
 
       // Resonancia final inteligente calibrada 4.0
-      const { resonance, visualScore, band } = calculateResonanceScore(
+      let { resonance, visualScore, band } = calculateResonanceScore(
         maxPhotoSim,
         styleMatchScore,
         bestFamilyRelation,
         "prenda"
       );
+
+      // Bono de color (+0.04) si coinciden tonos en prendas del mismo tipo
+      if (bestFamilyRelation === "same" && detectedInfo.primaryColor && bestGarment.primaryColor) {
+        const queryColor = detectedInfo.primaryColor.toLowerCase();
+        const garmentColor = bestGarment.primaryColor.toLowerCase();
+        const baseColors = ["blanco", "negro", "azul", "denim", "burdeos", "rojo", "beige", "verde", "amarillo", "mostaza", "rosa", "marfil", "dorado"];
+        const sharedColor = baseColors.some((c) => queryColor.includes(c) && garmentColor.includes(c));
+        if (sharedColor) {
+          resonance += 0.04;
+        }
+      }
+
+      // Bono de variedad (+0.02 por prenda adicional con sim >= 0.65, máx +0.06)
+      if (additionalMatchesCount > 1) {
+        const varietyBonus = Math.min(0.06, (additionalMatchesCount - 1) * 0.02);
+        resonance += varietyBonus;
+      }
+
+      // Resonancia máxima tope 0.99
+      resonance = Number(Math.min(0.99, resonance).toFixed(2));
+      band = determineBand(resonance);
 
       rankedItems.push({
         store,

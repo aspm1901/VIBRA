@@ -20,6 +20,9 @@ import {
   Zap,
   Layers,
   SlidersHorizontal,
+  MessageCircle,
+  MapPin,
+  Shirt,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -477,33 +480,59 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Toggle "Con foto" / "Por estilo" */}
-          <div className="flex p-1.5 bg-[#181820] rounded-2xl border border-[#2b2b3a] w-fit shadow-md">
+          {/* Selector Unificado: 3 Opciones Directas de Frente (T9) */}
+          <div className="grid grid-cols-3 gap-2 p-1.5 bg-[#181820] rounded-2xl border border-[#2b2b3a] shadow-md">
             <button
+              type="button"
               onClick={() => {
                 setInputType("foto");
-                executeSearch({ overrideSearchMode: searchMode === "look" ? "look" : "prenda" });
+                setSearchMode("prenda");
+                executeSearch({ overrideSearchMode: "prenda" });
               }}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                inputType === "foto"
-                  ? "bg-[#2c2c3a] text-white shadow-sm ring-1 ring-white/10"
-                  : "text-slate-400 hover:text-white"
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                inputType === "foto" && searchMode === "prenda"
+                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
+                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
               }`}
             >
-              Con foto
+              <Shirt className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "foto" && searchMode === "prenda" ? "text-vibra-400" : "text-slate-400"}`} />
+              <span className="text-xs sm:text-sm font-bold block">Una prenda</span>
+              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Máxima fidelidad</span>
             </button>
+
             <button
+              type="button"
+              onClick={() => {
+                setInputType("foto");
+                setSearchMode("look");
+                executeSearch({ overrideSearchMode: "look" });
+              }}
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                inputType === "foto" && searchMode === "look"
+                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
+                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
+              }`}
+            >
+              <Layers className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "foto" && searchMode === "look" ? "text-vibra-400" : "text-slate-400"}`} />
+              <span className="text-xs sm:text-sm font-bold block">Look completo</span>
+              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Outfit o collage</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 setInputType("estilo");
                 executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
               }}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
                 inputType === "estilo"
-                  ? "bg-[#2c2c3a] text-white shadow-sm ring-1 ring-white/10"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
+                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
               }`}
             >
-              Por estilo
+              <Sparkles className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "estilo" ? "text-vibra-400" : "text-slate-400"}`} />
+              <span className="text-xs sm:text-sm font-bold block">Por estilo</span>
+              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Sin subir foto</span>
             </button>
           </div>
 
@@ -512,44 +541,6 @@ export default function HomePage() {
           {/* ======================================================== */}
           {inputType === "foto" ? (
             <div className="space-y-5">
-              {/* Toggle de Modo: "Una prenda" vs "Look completo" */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchMode("prenda");
-                    executeSearch({ overrideSearchMode: "prenda" });
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all ${
-                    searchMode === "prenda"
-                      ? "bg-[#22222e] border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
-                      : "bg-[#181820] border-[#292938] hover:bg-[#1e1e28]"
-                  }`}
-                >
-                  <span className="text-sm font-bold text-white block">Una prenda</span>
-                  <span className="text-xs text-slate-300 block mt-1 leading-snug font-normal">
-                    Recortas la prenda. Máxima fidelidad de corte y silueta.
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchMode("look");
-                    executeSearch({ overrideSearchMode: "look" });
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all ${
-                    searchMode === "look"
-                      ? "bg-[#22222e] border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
-                      : "bg-[#181820] border-[#292938] hover:bg-[#1e1e28]"
-                  }`}
-                >
-                  <span className="text-sm font-bold text-white block">Look completo</span>
-                  <span className="text-xs text-slate-300 block mt-1 leading-snug font-normal">
-                    Outfit o Pinterest. Resultado por estilo y armonía visual.
-                  </span>
-                </button>
-              </div>
 
               {/* Tarjeta de Foto Activa (Visor Ovalado / Carga) */}
               <div
@@ -577,6 +568,7 @@ export default function HomePage() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -586,13 +578,13 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-xs sm:text-sm text-slate-300 hover:text-vibra-300 mt-1.5 flex items-center gap-1.5 transition-colors font-medium"
+                  className="mt-3 px-5 py-2.5 rounded-2xl bg-[#282836] hover:bg-[#343446] border border-[#3e3e52] text-white text-xs sm:text-sm font-bold flex items-center gap-2 transition-all active:scale-95 shadow-md"
                 >
-                  <Upload className="w-4 h-4 text-vibra-300" />
+                  <Camera className="w-4 h-4 text-vibra-400" />
                   <span>
                     {searchMode === "look"
-                      ? "Sube una foto de outfit o collage de Pinterest"
-                      : "Toca para subir tu propia foto"}
+                      ? "📷 Tomar foto o subir outfit"
+                      : "📷 Tomar o subir foto"}
                   </span>
                 </button>
 
@@ -816,9 +808,9 @@ export default function HomePage() {
               <span className="text-xs font-semibold text-gray-400 block mb-2">Nivel de precio</span>
               <div className="flex gap-2">
                 {[
-                  { id: "economico", label: "S/ Económico" },
-                  { id: "medio", label: "S/ S/ Medio" },
-                  { id: "alto", label: "S/ S/ S/ Alto" },
+                  { id: "economico", name: "Económico", symbol: "S/" },
+                  { id: "medio", name: "Medio", symbol: "S/S/" },
+                  { id: "alto", name: "Alto", symbol: "S/S/S/" },
                 ].map((p) => {
                   const isSelected = selectedPrice === p.id;
                   return (
@@ -828,13 +820,14 @@ export default function HomePage() {
                         const newPrice = isSelected ? undefined : (p.id as PriceLevel);
                         setSelectedPrice(newPrice);
                       }}
-                      className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                      className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium inline-flex items-center gap-1.5 ${
                         isSelected
                           ? "bg-white text-gray-950 font-bold shadow"
                           : "bg-[#1f1f26] text-gray-300 hover:bg-[#292934] border border-[#2b2b36]"
                       }`}
                     >
-                      {p.label}
+                      <span className="text-[10px] opacity-70 font-mono">{p.symbol}</span>
+                      <span>{p.name}</span>
                     </button>
                   );
                 })}
@@ -1091,7 +1084,7 @@ export default function HomePage() {
                         </span>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-300 mt-2 font-normal leading-relaxed truncate">
+                      <p className="text-xs sm:text-sm text-slate-300 mt-2 font-normal leading-relaxed line-clamp-2">
                         {inputType === "estilo"
                           ? `Especialidad en el estilo · Prenda destacada: ${item.bestGarment.name}`
                           : searchMode === "look"
@@ -1104,14 +1097,39 @@ export default function HomePage() {
                           ? `Prenda similar en silueta · ${item.bestGarment.name}`
                           : `Mismo estilo afín · ${item.bestGarment.name}`}
                       </p>
+
+                      {/* Botones de acción directa: WhatsApp y Cómo llegar */}
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[#252532]">
+                        <a
+                          href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                            `Hola ${item.store.name}, vi su tienda en VIBRA (${Math.round(item.resonanceScore * 100)}% de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm shadow-emerald-950/40 active:scale-95"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStoreItem(item)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#23232e] hover:bg-[#2c2c3b] text-slate-300 hover:text-white text-xs font-semibold border border-[#333342] transition-colors"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-vibra-400" />
+                          <span>Cómo llegar</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Derecha: Indicador de Resonancia con Arcos */}
+                  {/* Derecha: Indicador de Resonancia con Porcentaje y Arcos */}
                   <div className="shrink-0 pl-2">
                     <RadarArcIcon
                       score={item.resonanceScore}
                       band={item.band}
+                      isStyleMode={inputType === "estilo"}
                     />
                   </div>
                 </div>

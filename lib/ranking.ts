@@ -134,14 +134,17 @@ export function scalePerceptualSimilarity(
     if (rawCosine < FLOOR) {
       score = Math.max(0.20, (rawCosine / FLOOR) * 0.40);
     } else if (rawCosine < 0.65) {
-      // Mismo tipo de prenda en colores muy contrastantes: 0.55 a 0.70
-      score = 0.55 + ((rawCosine - FLOOR) / (0.65 - FLOOR)) * 0.15;
+      // Mismo tipo de prenda en colores contrastantes: 0.52 a 0.68
+      score = 0.52 + ((rawCosine - FLOOR) / (0.65 - FLOOR)) * 0.16;
     } else if (rawCosine < 0.80) {
-      // Mismo tipo de prenda, silueta y textura idéntica (ej. Denim blanco vs Denim azul): 0.75 a 0.88
-      score = 0.75 + ((rawCosine - 0.65) / (0.80 - 0.65)) * 0.13;
+      // Misma silueta y estilo: 0.70 a 0.84
+      score = 0.70 + ((rawCosine - 0.65) / (0.80 - 0.65)) * 0.14;
+    } else if (rawCosine < 0.92) {
+      // Alta fidelidad: 0.85 a 0.94
+      score = 0.85 + ((rawCosine - 0.80) / (0.92 - 0.80)) * 0.09;
     } else {
-      // Prenda idéntica en modelo y color: 0.90 a 1.00
-      score = 0.90 + ((rawCosine - 0.80) / 0.20) * 0.10;
+      // Prenda casi idéntica: 0.95 a 0.98
+      score = 0.95 + ((rawCosine - 0.92) / 0.08) * 0.03;
     }
   } else if (familyRelation === "different") {
     // Familias distintas (ej. Casaca vs Polo o Pantalón)
@@ -410,9 +413,10 @@ export function doesStoreSellFamily(
   if (family === "otro") return true;
 
   // 1. ¿Tiene alguna prenda en catálogo que pertenezca a esta familia?
-  const hasGarment = (store.garments || []).some(
-    (g) => extractGarmentFamily(g.name, g.category) === family
-  );
+  const hasGarment = (store.garments || []).some((g: any) => {
+    const fam = g.garmentFamily || extractGarmentFamily(g.name, g.category);
+    return fam === family;
+  });
   if (hasGarment) return true;
 
   // 2. ¿Declara en sus categorías que confecciona/vende esta familia?

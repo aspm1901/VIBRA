@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { getAllStores, saveStore, deleteStore, resetStores } from "@/lib/stores-db";
 import { generateImageEmbedding, detectGarmentStyles } from "@/lib/ai/gemini";
+import { uploadImageToStorage } from "@/lib/supabase";
 import { PriceLevel, PurchaseType, Store, StoreGarment } from "@/types";
 
 export const maxDuration = 60;
-
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "stores");
-
-function ensureUploadsDir() {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  }
-}
 
 export async function GET() {
   const stores = await getAllStores();
@@ -22,7 +13,6 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    ensureUploadsDir();
     const body = await req.json();
 
     const {
@@ -54,14 +44,15 @@ export async function POST(req: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // 1. Guardar foto del stand si existe
+    // 1. Guardar foto del stand si existe (en Supabase Storage)
     let standPhotoUrl = "/images/stands/stand_santa_rosa_214.svg";
-    if (standPhotoBase64) {
-      const standFilename = `${storeId}_stand_${Date.now()}.jpg`;
-      const standFilePath = path.join(UPLOADS_DIR, standFilename);
-      const cleanStandBase64 = standPhotoBase64.replace(/^data:image\/\w+;base64,/, "");
-      fs.writeFileSync(standFilePath, Buffer.from(cleanStandBase64, "base64"));
-      standPhotoUrl = `/uploads/stores/${standFilename}`;
+    if (standPhotoBase64 && standPhotoBase64.startsWith("data:image")) {
+      const standFilename = `stores/${storeId}/stand_${Date.now()}.jpg`;
+      try {
+        standPhotoUrl = await uploadImageToStorage(standPhotoBase64, standFilename);
+      } catch (uploadErr) {
+        console.warn("Fallo subida a Supabase storage para stand, usando default:", uploadErr);
+      }
     }
 
     // 2. Procesar y vectorizar cada prenda con IA
@@ -71,12 +62,13 @@ export async function POST(req: NextRequest) {
       const g = garmentsData[i];
       let photoUrl = "/images/garments/vestido_burdeos.svg";
 
-      if (g.imageBase64) {
-        const garmentFilename = `${storeId}_garment_${i + 1}_${Date.now()}.jpg`;
-        const garmentFilePath = path.join(UPLOADS_DIR, garmentFilename);
-        const cleanBase64 = g.imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        fs.writeFileSync(garmentFilePath, Buffer.from(cleanBase64, "base64"));
-        photoUrl = `/uploads/stores/${garmentFilename}`;
+      if (g.imageBase64 && g.imageBase64.startsWith("data:image")) {
+        const garmentFilename = `stores/${storeId}/garment_${Date.now()}_${i + 1}.jpg`;
+        try {
+          photoUrl = await uploadImageToStorage(g.imageBase64, garmentFilename);
+        } catch (uploadErr) {
+          console.warn("Fallo subida a Supabase storage para prenda, usando default:", uploadErr);
+        }
       }
 
       // Vectorización con Gemini Embedding 2 y análisis visual con Gemini Vision
@@ -84,6 +76,13 @@ export async function POST(req: NextRequest) {
         generateImageEmbedding(g.imageBase64 || ""),
         g.imageBase64 ? detectGarmentStyles(g.imageBase64) : null,
       ]);
+
+      if (!embedding || embedding.length === 0) {
+        return NextResponse.json(
+          { error: `No se pudo generar el vector de IA para la prenda "${g.name || i + 1}". Intenta nuevamente con otra imagen.` },
+          { status: 503 }
+        );
+      }
 
       const manualStyles = g.styles && g.styles.length > 0 ? g.styles : styles;
       const aiStyles = visionAnalysis?.styles || [];
@@ -97,6 +96,9 @@ export async function POST(req: NextRequest) {
         category: g.category || visionAnalysis?.category || categories[0] || "Prenda",
         styles: combinedStyles.length > 0 ? combinedStyles : ["Casual"],
         embedding,
+        garmentFamily: visionAnalysis?.garmentFamily,
+        primaryColor: visionAnalysis?.primaryColor,
+        description: visionAnalysis?.description,
       });
     }
 
@@ -137,7 +139,6 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    ensureUploadsDir();
     const body = await req.json();
 
     const {
@@ -175,11 +176,12 @@ export async function PUT(req: NextRequest) {
     // 1. Guardar nueva foto de stand si se proporcionó
     let standPhotoUrl = existingStore.standPhotoUrl;
     if (standPhotoBase64 && standPhotoBase64.startsWith("data:image")) {
-      const standFilename = `${id}_stand_${Date.now()}.jpg`;
-      const standFilePath = path.join(UPLOADS_DIR, standFilename);
-      const cleanStandBase64 = standPhotoBase64.replace(/^data:image\/\w+;base64,/, "");
-      fs.writeFileSync(standFilePath, Buffer.from(cleanStandBase64, "base64"));
-      standPhotoUrl = `/uploads/stores/${standFilename}`;
+      const standFilename = `stores/${id}/stand_${Date.now()}.jpg`;
+      try {
+        standPhotoUrl = await uploadImageToStorage(standPhotoBase64, standFilename);
+      } catch (uploadErr) {
+        console.warn("Fallo subida a Supabase storage para stand PUT:", uploadErr);
+      }
     }
 
     // 2. Procesar y vectorizar nuevas prendas
@@ -188,18 +190,26 @@ export async function PUT(req: NextRequest) {
       const g = newGarmentsData[i];
       let photoUrl = "/images/garments/vestido_burdeos.jpg";
 
-      if (g.imageBase64) {
-        const garmentFilename = `${id}_garment_${Date.now()}_${i + 1}.jpg`;
-        const garmentFilePath = path.join(UPLOADS_DIR, garmentFilename);
-        const cleanBase64 = g.imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        fs.writeFileSync(garmentFilePath, Buffer.from(cleanBase64, "base64"));
-        photoUrl = `/uploads/stores/${garmentFilename}`;
+      if (g.imageBase64 && g.imageBase64.startsWith("data:image")) {
+        const garmentFilename = `stores/${id}/garment_${Date.now()}_${i + 1}.jpg`;
+        try {
+          photoUrl = await uploadImageToStorage(g.imageBase64, garmentFilename);
+        } catch (uploadErr) {
+          console.warn("Fallo subida a Supabase storage para prenda PUT:", uploadErr);
+        }
       }
 
       const [embedding, visionAnalysis] = await Promise.all([
         generateImageEmbedding(g.imageBase64 || ""),
         g.imageBase64 ? detectGarmentStyles(g.imageBase64) : null,
       ]);
+
+      if (!embedding || embedding.length === 0) {
+        return NextResponse.json(
+          { error: `No se pudo generar el vector de IA para la nueva prenda "${g.name || i + 1}". Intenta nuevamente.` },
+          { status: 503 }
+        );
+      }
 
       const manualStyles = g.styles && g.styles.length > 0 ? g.styles : styles;
       const aiStyles = visionAnalysis?.styles || [];
@@ -213,6 +223,9 @@ export async function PUT(req: NextRequest) {
         category: g.category || visionAnalysis?.category || categories[0] || "Tops",
         styles: combinedStyles.length > 0 ? combinedStyles : ["Casual"],
         embedding,
+        garmentFamily: visionAnalysis?.garmentFamily,
+        primaryColor: visionAnalysis?.primaryColor,
+        description: visionAnalysis?.description,
       });
     }
 
@@ -259,7 +272,6 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
-
 
 export async function DELETE(req: NextRequest) {
   try {

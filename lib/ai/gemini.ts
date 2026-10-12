@@ -48,32 +48,6 @@ export async function optimizeImageForAi(
   }
 }
 
-/**
- * Genera un vector simulado determinista basado en el contenido de la imagen
- * (Salvavidas por si no hay API key o si se cae la red)
- */
-function generateDeterministicFallbackVector(seedString: string, dimension = 3072): number[] {
-  let hash = 0;
-  for (let i = 0; i < seedString.length; i++) {
-    hash = (hash << 5) - hash + seedString.charCodeAt(i);
-    hash |= 0;
-  }
-
-  const vector: number[] = [];
-  let current = Math.abs(hash) || 1234567;
-  let norm = 0;
-
-  for (let i = 0; i < dimension; i++) {
-    current = (current * 1664525 + 1013904223) % 4294967296;
-    const val = (current / 4294967296) * 2 - 1;
-    vector.push(val);
-    norm += val * val;
-  }
-
-  const sqrtNorm = Math.sqrt(norm) || 1;
-  return vector.map((v) => Number((v / sqrtNorm).toFixed(6)));
-}
-
 function withTimeout<T>(promise: Promise<T>, ms: number, fallbackValue: T): Promise<T> {
   return Promise.race([
     promise,
@@ -82,54 +56,61 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallbackValue: T): Prom
 }
 
 /**
- * Genera el embedding multimodal de una imagen (vector numérico de 3072 dimensiones)
+ * Genera el embedding multimodal de una imagen con reintento y timeout de 12 segundos.
+ * Retorna null en caso de fallo estricto (no inventa vectores aleatorios).
  */
 export async function generateImageEmbedding(
   base64Data: string,
   mimeType = "image/jpeg"
-): Promise<number[]> {
+): Promise<number[] | null> {
   const client = getClient();
-
-  if (!client) {
-    console.warn("GEMINI_API_KEY no configurada. Usando vector de fallback determinista.");
-    return generateDeterministicFallbackVector(base64Data.slice(0, 500));
+  if (!client || !base64Data) {
+    return null;
   }
 
-  try {
-    const { cleanBase64, mimeType: optMime } = await optimizeImageForAi(base64Data);
+  const tryEmbed = async (): Promise<number[] | null> => {
+    try {
+      const { cleanBase64, mimeType: optMime } = await optimizeImageForAi(base64Data);
 
-    const embedPromise = client.models.embedContent({
-      model: "gemini-embedding-2",
-      contents: [
-        {
-          inlineData: {
-            data: cleanBase64,
-            mimeType: optMime,
+      const embedPromise = client.models.embedContent({
+        model: "gemini-embedding-2",
+        contents: [
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: optMime,
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
 
-    const response = await withTimeout(embedPromise, 6000, null);
-    if (!response) {
-      console.warn("Embedding tardó más de 6s. Usando vector determinista rápido.");
-      return generateDeterministicFallbackVector(cleanBase64.slice(0, 500));
+      const response = await withTimeout(embedPromise, 12000, null);
+      if (!response) {
+        return null;
+      }
+
+      const values =
+        (response as any).embedding?.values ||
+        (response as any).embeddings?.[0]?.values;
+
+      if (values && Array.isArray(values) && values.length > 0) {
+        return values;
+      }
+      return null;
+    } catch (err) {
+      console.warn("Intento de embedding falló:", err);
+      return null;
     }
+  };
 
-    const values =
-      (response as any).embedding?.values ||
-      (response as any).embeddings?.[0]?.values;
+  // Intento 1
+  let result = await tryEmbed();
+  if (result) return result;
 
-    if (values && Array.isArray(values) && values.length > 0) {
-      return values;
-    }
-
-    console.warn("Respuesta de embedding vacía. Usando fallback.");
-    return generateDeterministicFallbackVector(cleanBase64.slice(0, 500));
-  } catch (error) {
-    console.error("Error al generar embedding con Gemini:", error);
-    return generateDeterministicFallbackVector(base64Data.slice(0, 500));
-  }
+  // Reintento único
+  console.log("Reintentando embedding con Gemini...");
+  result = await tryEmbed();
+  return result;
 }
 
 export interface GarmentAnalysisResult {
@@ -148,8 +129,56 @@ const VISION_MODELS = [
   "gemini-3.5-flash",      // Backup de capacidad
 ];
 
+export const VALID_STYLES = [
+  "Casual",
+  "Elegante",
+  "Urbano",
+  "Fiesta",
+  "Oficina",
+  "Minimalista",
+  "Boho",
+  "Romántico",
+  "Y2K",
+  "Vintage",
+  "Playa",
+  "Deportivo",
+];
+
+export const VALID_GARMENT_FAMILIES = [
+  "casaca",
+  "polo_top",
+  "blusa",
+  "chompa",
+  "pantalon_jean",
+  "vestido",
+  "falda_short",
+  "conjunto",
+  "otro",
+];
+
 /**
- * Analiza la prenda y extrae categoría, título y estilos con reintentos automáticos
+ * Normaliza y valida que los estilos devueltos pertenezcan a los 12 oficiales
+ */
+export function sanitizeStyles(rawStyles: string[] = []): string[] {
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const validMap = new Map(VALID_STYLES.map((v) => [norm(v), v]));
+
+  const filtered = rawStyles
+    .map((s) => validMap.get(norm(s)))
+    .filter((s): s is string => Boolean(s));
+
+  const unique = Array.from(new Set(filtered));
+  return unique.length > 0 ? unique.slice(0, 3) : ["Casual"];
+}
+
+/**
+ * Analiza la prenda y extrae categoría, título y estilos con esquema estricto y reintentos en paralelo
  */
 export async function detectGarmentStyles(
   base64Data: string,
@@ -177,7 +206,7 @@ export async function detectGarmentStyles(
           description: "Prenda para búsqueda visual en Gamarra",
         };
 
-  if (!client) {
+  if (!client || !base64Data) {
     return fallback;
   }
 
@@ -190,13 +219,13 @@ Eres un estilista y clasificador experto de moda para VIBRA (buscador de moda en
 La imagen contiene un LOOK COMPLETO / OUTFIT (foto de cuerpo entero, modelo vestida o collage de prendas de Pinterest).
 Tu tarea es analizar el outfit como un TODO:
 1. "category": "Look completo / Outfit"
-2. "garmentFamily": La familia de la prenda protagonista o superior del look (una de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto)
-3. "styles": Máximo 2 o 3 estilos que describan la estética general del outfit completo, seleccionados ÚNICAMENTE de este vocabulario de 12 estilos: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo
-4. "garmentTitle": Título del outfit indicando sus prendas clave (ej. 'Look sastre: Blazer marfil con top y palazzo', 'Look casual: Casaca denim con wide leg y polo')
-5. "primaryColor": Paleta predominante de colores del conjunto (ej. 'Marfil y tonos neutros', 'Total denim azul', 'Negro y blanco')
+2. "garmentFamily": La familia de la prenda protagonista o superior del look (una de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto, otro)
+3. "styles": Máximo 2 o 3 estilos que describan la estética general del outfit completo, seleccionados ÚNICAMENTE de: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo
+4. "garmentTitle": Título del outfit indicando sus prendas clave (ej. 'Look sastre: Blazer marfil con top y palazzo')
+5. "primaryColor": Paleta predominante de colores del conjunto (ej. 'Marfil y tonos neutros')
 6. "description": Breve descripción del estilo general y la vibra del look
 
-Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
+Devuelve ESTRICTAMENTE un objeto JSON con este formato:
 {
   "category": "Look completo / Outfit",
   "garmentFamily": "casaca",
@@ -209,20 +238,40 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
       : `
 Eres un estilista y clasificador experto de moda para VIBRA (buscador visual de ropa en Gamarra).
 Analiza la prenda principal en la imagen.
-
 Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 {
-  "category": "Tipo de prenda en lenguaje natural y preciso (ej. 'Casaca denim', 'Chaqueta', 'Blazer sastre', 'Polo básico', 'Vestido de noche', 'Jean wide leg', 'Chompa de punto', 'Blusa satinada', 'Falda midi', 'Short')",
-  "garmentFamily": "Una sola de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto",
-  "styles": ["Máximo 2 o 3 estilos seleccionados ÚNICAMENTE de este vocabulario de 12 estilos: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo"],
-  "garmentTitle": "Título descriptivo corto y preciso de la prenda (ej. 'Casaca denim blanca clásica', 'Vestido burdeos de fiesta', 'Polo básico blanco')",
+  "category": "Tipo de prenda en lenguaje natural y preciso (ej. 'Casaca denim', 'Blazer sastre', 'Polo básico', 'Vestido de noche', 'Jean wide leg', 'Chompa de punto')",
+  "garmentFamily": "Una sola de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto, otro",
+  "styles": ["Máximo 2 o 3 estilos seleccionados ÚNICAMENTE de: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo"],
+  "garmentTitle": "Título descriptivo corto y preciso de la prenda (ej. 'Casaca denim clásica', 'Vestido burdeos de fiesta')",
   "primaryColor": "Color principal de la prenda (ej. 'Blanco', 'Azul denim', 'Burdeos', 'Negro', 'Beige')",
   "description": "Una frase corta sobre el corte, material y silueta"
 }
 `;
 
-  // Consultar todos los modelos EN PARALELO: gana el primero que devuelva un JSON válido.
-  // Así, si Google tiene un modelo saturado, no esperamos en cola uno tras otro.
+  // Esquema estricto
+  const responseSchema = {
+    type: "OBJECT",
+    properties: {
+      category: { type: "STRING" },
+      garmentFamily: {
+        type: "STRING",
+        enum: VALID_GARMENT_FAMILIES,
+      },
+      styles: {
+        type: "ARRAY",
+        items: {
+          type: "STRING",
+          enum: VALID_STYLES,
+        },
+      },
+      garmentTitle: { type: "STRING" },
+      primaryColor: { type: "STRING" },
+      description: { type: "STRING" },
+    },
+    required: ["category", "garmentFamily", "styles", "garmentTitle"],
+  };
+
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
     const response = await client.models.generateContent({
       model: modelName,
@@ -235,7 +284,10 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
           ],
         },
       ],
-      config: { responseMimeType: "application/json" },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema as any,
+      },
     });
 
     let text = response.text?.trim() || "";
@@ -243,11 +295,12 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
-    const parsed = JSON.parse(text) as GarmentAnalysisResult;
+    const parsed = JSON.parse(text);
+
     return {
       category: parsed.category || "Prenda",
       garmentFamily: (parsed.garmentFamily || "otro").toLowerCase().trim(),
-      styles: Array.isArray(parsed.styles) && parsed.styles.length > 0 ? parsed.styles : ["Casual"],
+      styles: sanitizeStyles(parsed.styles),
       garmentTitle: parsed.garmentTitle || "Prenda analizada",
       primaryColor: parsed.primaryColor || "",
       description: parsed.description || "",
@@ -270,6 +323,6 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
   const result = await withTimeout(firstSuccess, 9000, null);
   if (result) return result;
 
-  console.warn("Ningún modelo de visión respondió a tiempo. Usando respaldo por similitud visual.");
+  console.warn("Ningún modelo de visión respondió a tiempo. Usando respaldo básico.");
   return { ...fallback, isFallback: true };
 }

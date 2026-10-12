@@ -9,7 +9,10 @@ export interface StoreGarment {
   photoUrl: string;
   category: string;
   styles: string[];
-  embedding: number[]; // 768-dim vector from gemini-embedding-2
+  embedding: number[]; // 768 o 3072-dim vector from gemini-embedding-2
+  garmentFamily?: string;
+  primaryColor?: string;
+  description?: string;
 }
 
 export interface Store {

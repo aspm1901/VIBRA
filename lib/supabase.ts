@@ -27,3 +27,37 @@ export function getSupabaseAdmin() {
 }
 
 export const STORAGE_BUCKET_NAME = "vibra-media";
+
+/**
+ * Sube una imagen base64 a Supabase Storage y retorna su URL pública
+ */
+export async function uploadImageToStorage(
+  base64Data: string,
+  storagePath: string
+): Promise<string> {
+  const adminClient = getSupabaseAdmin();
+  if (!adminClient) {
+    throw new Error("Supabase no está configurado para almacenamiento.");
+  }
+
+  const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(cleanBase64, "base64");
+
+  const { error } = await adminClient.storage
+    .from(STORAGE_BUCKET_NAME)
+    .upload(storagePath, buffer, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("Error al subir imagen a Supabase Storage:", error);
+    throw error;
+  }
+
+  const { data } = adminClient.storage
+    .from(STORAGE_BUCKET_NAME)
+    .getPublicUrl(storagePath);
+
+  return data.publicUrl;
+}
