@@ -18,6 +18,7 @@ import {
   Pencil,
   X,
   LogOut,
+  Camera,
 } from "lucide-react";
 
 const STYLES_LIST = [
@@ -801,52 +802,99 @@ export default function AdminPage() {
             </div>
 
             {/* Foto del Stand (Opcional) */}
-            <div className="pt-3 border-t border-[#292936]">
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-300 block">
+            <div className="pt-4 border-t border-[#292936]">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-white flex items-center gap-2">
+                  <StoreIcon className="w-4 h-4 text-vibra-400" />
                   Foto del Frontis del Stand (Opcional)
                 </label>
-                {standPhotoBase64 && (
-                  <button
-                    type="button"
-                    onClick={() => setStandPhotoBase64(null)}
-                    className="text-[10px] text-rose-400 hover:underline"
-                  >
-                    Descartar nueva foto
-                  </button>
-                )}
+                <span className="text-[10px] text-gray-500 font-medium">Recomendado</span>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleStandFileChange}
-                className="text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#252532] file:text-vibra-300 hover:file:bg-[#2e2e3d] cursor-pointer"
-              />
-              {standPhotoBase64 ? (
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="w-32 h-20 bg-[#e4dfd7] rounded-xl overflow-hidden border border-[#3b3b4a]">
+              <p className="text-[11px] text-gray-400 mb-3">
+                Sube una foto del letrero o fachada de tu stand en la galería. Ayuda a que las clientas reconozcan el puesto físicamente en los pasillos de Gamarra.
+              </p>
+
+              {standPhotoBase64 || currentStandPhotoUrl ? (
+                <div className="p-3 bg-[#1a1a23] border border-[#2e2e3d] rounded-2xl flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative w-full sm:w-44 h-28 bg-[#121216] rounded-xl overflow-hidden border border-[#38384a] flex-shrink-0 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={standPhotoBase64}
-                      alt="Nuevo stand preview"
-                      className="w-full h-full object-contain"
+                      src={standPhotoBase64 || currentStandPhotoUrl || ""}
+                      alt="Frontis del stand"
+                      className="w-full h-full object-cover"
                     />
+                    {standPhotoBase64 && (
+                      <span className="absolute top-2 left-2 bg-emerald-500/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm shadow">
+                        NUEVA
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[11px] text-emerald-400 font-medium">Nueva foto seleccionada</span>
-                </div>
-              ) : currentStandPhotoUrl ? (
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="w-32 h-20 bg-[#e4dfd7] rounded-xl overflow-hidden border border-[#3b3b4a]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={currentStandPhotoUrl}
-                      alt="Stand actual"
-                      className="w-full h-full object-contain"
-                    />
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                      {standPhotoBase64 ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-semibold text-emerald-300">
+                            Nueva foto seleccionada
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <StoreIcon className="w-4 h-4 text-vibra-400" />
+                          <span className="text-xs font-semibold text-gray-200">
+                            Foto actual del stand
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mb-3">
+                      {standPhotoBase64
+                        ? "Esta imagen se subirá a Supabase Storage y se asignará al stand al guardar la tienda."
+                        : "Esta foto ya está guardada y se muestra a las clientas en la ficha y mapa del stand."}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#252535] hover:bg-[#2e2e42] border border-[#3d3d52] rounded-xl text-xs font-semibold text-vibra-300 hover:text-white transition-colors">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{standPhotoBase64 ? "Elegir otra foto" : "Cambiar foto del stand"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleStandFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {standPhotoBase64 && (
+                        <button
+                          type="button"
+                          onClick={() => setStandPhotoBase64(null)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#25191f] hover:bg-[#321c25] border border-rose-900/50 rounded-xl text-xs font-medium text-rose-300 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>Descartar cambio</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-gray-400">Foto actual del stand</span>
                 </div>
-              ) : null}
+              ) : (
+                <label className="w-full h-28 border-2 border-dashed border-[#343444] hover:border-vibra-400 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#1a1a23] hover:bg-[#21212d] group">
+                  <div className="w-10 h-10 rounded-xl bg-[#262633] group-hover:bg-vibra-500/20 text-vibra-400 flex items-center justify-center mb-1.5 transition-colors">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-gray-200">
+                    Subir foto del frontis del stand
+                  </span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">
+                    JPG, PNG o WebP · Foto del letrero, pasillo o fachada del puesto
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleStandFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
 
             {/* Botón Guardar / Actualizar */}
