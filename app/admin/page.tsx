@@ -687,15 +687,18 @@ export default function AdminPage() {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-vibra-400" />
-                  <span>Ubicación y Galería en Google Maps *</span>
+                  <span>Buscador de Ubicación en Google Maps *</span>
                 </label>
-                <span className="text-[10px] text-gray-400 font-medium">Detector en tiempo real</span>
+                <span className="text-[10px] text-vibra-300 font-medium">Detector en tiempo real</span>
               </div>
+              <p className="text-[11px] text-gray-400 leading-snug">
+                Escribe aquí cualquier calle, cuadra o galería de Lima para detectar las coordenadas exactas de Google Maps:
+              </p>
 
               {/* Buscador de lugares con Autocomplete de Google Places */}
               <div className="relative">
                 <div className="relative flex items-center">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+                  <Search className="w-4 h-4 text-vibra-400 absolute left-3 pointer-events-none" />
                   <input
                     type="text"
                     value={placeSearchInput}
@@ -706,8 +709,8 @@ export default function AdminPage() {
                     onFocus={() => {
                       if (placePredictions.length > 0) setShowPlaceDropdown(true);
                     }}
-                    placeholder="Escribe la galería o dirección (ej. Galería Santa Rosa, Jr. Gamarra 789...)"
-                    className="w-full bg-[#15151c] border border-[#353548] focus:border-vibra-500 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors"
+                    placeholder="Escribe aquí (ej. Madre de Dios 371, Jr. Gamarra 1000, Galería Santa Rosa...)"
+                    className="w-full bg-[#15151c] border border-vibra-500/50 focus:border-vibra-400 rounded-xl pl-9 pr-9 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors shadow-inner"
                   />
                   {isSearchingPlaces && (
                     <Loader2 className="w-4 h-4 text-vibra-400 animate-spin absolute right-3 pointer-events-none" />
@@ -715,26 +718,37 @@ export default function AdminPage() {
                 </div>
 
                 {/* Dropdown flotante con las sugerencias reales */}
-                {showPlaceDropdown && placePredictions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#171722] border border-[#3c3c52] rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto">
-                    {placePredictions.map((pred, pIdx) => (
-                      <button
-                        key={pred.placeId || pIdx}
-                        type="button"
-                        onClick={() => handleSelectPrediction(pred)}
-                        className="w-full px-3.5 py-2.5 text-left hover:bg-[#252536] border-b border-[#242434] last:border-0 flex items-start gap-2.5 transition-colors group"
-                      >
-                        <MapPin className="w-3.5 h-3.5 text-vibra-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-white truncate group-hover:text-vibra-300 transition-colors">
-                            {pred.mainText}
-                          </p>
-                          <p className="text-[11px] text-gray-400 truncate">
-                            {pred.secondaryText || pred.fullText}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                {showPlaceDropdown && placeSearchInput.trim().length >= 2 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#171722] border border-[#3c3c52] rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                    {isSearchingPlaces && placePredictions.length === 0 ? (
+                      <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-vibra-400" />
+                        <span>Consultando Google Maps en tiempo real...</span>
+                      </div>
+                    ) : placePredictions.length > 0 ? (
+                      placePredictions.map((pred, pIdx) => (
+                        <button
+                          key={pred.placeId || pIdx}
+                          type="button"
+                          onClick={() => handleSelectPrediction(pred)}
+                          className="w-full px-3.5 py-2.5 text-left hover:bg-[#252536] border-b border-[#242434] last:border-0 flex items-start gap-2.5 transition-colors group"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-vibra-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate group-hover:text-vibra-300 transition-colors">
+                              {pred.mainText}
+                            </p>
+                            <p className="text-[11px] text-gray-400 truncate">
+                              {pred.secondaryText || pred.fullText}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-3 text-[11px] text-gray-400">
+                        No se encontraron sugerencias en Google Maps. Puedes completar los campos de Galería y Dirección abajo manualmente.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -777,9 +791,25 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-gray-300 block mb-1">
-                    Dirección exacta (Calle / Cuadra) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-semibold text-gray-300">
+                      Dirección exacta (Calle / Cuadra) *
+                    </label>
+                    {galleryAddress && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlaceSearchInput(galleryAddress);
+                          setShowPlaceDropdown(true);
+                        }}
+                        className="text-[10px] text-vibra-400 hover:text-vibra-300 hover:underline flex items-center gap-1 transition-colors"
+                        title="Buscar esta dirección en Google Maps"
+                      >
+                        <Search className="w-2.5 h-2.5" />
+                        <span>Detectar en mapa</span>
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
