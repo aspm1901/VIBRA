@@ -211,11 +211,11 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
       onClick={onCancel}
     >
       <div
-        className="relative w-full max-w-lg bg-[#18181b] border border-[#2e2e38] rounded-3xl p-5 md:p-6 text-white shadow-2xl flex flex-col animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg bg-[#18181b] border border-[#2e2e38] rounded-3xl p-4 sm:p-5 md:p-6 text-white shadow-2xl flex flex-col my-auto max-h-[96vh] overflow-y-auto animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -275,7 +275,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
         </div>
 
         {/* Área del Cropper */}
-        <div className="relative w-full h-84 md:h-[400px] bg-black rounded-2xl overflow-hidden mb-3 border border-[#2e2e38]">
+        <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] bg-black rounded-2xl overflow-hidden mb-3 border border-[#2e2e38]">
           <Cropper
             image={imageSrc}
             crop={crop}
