@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { Store, PriceLevel, PurchaseType, StoreGarment } from "@/types";
 import {
@@ -521,16 +522,27 @@ export default function AdminPage() {
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>VIBRA</span>
-                <span className="text-xs bg-vibra-950 text-vibra-400 font-semibold px-2 py-0.5 rounded-full border border-vibra-900/60">
-                  Panel Admin
-                </span>
-              </h1>
-              <p className="text-[11px] text-gray-400">
-                Carga tiendas de prueba y genera vectores automáticos con IA
-              </p>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 shrink-0">
+                <NextImage
+                  src="/logo_vibra_white.png"
+                  alt="Vibra Logo"
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <span>VIBRA</span>
+                  <span className="text-xs bg-vibra-950 text-vibra-400 font-semibold px-2 py-0.5 rounded-full border border-vibra-900/60">
+                    Panel Admin
+                  </span>
+                </h1>
+                <p className="text-[11px] text-gray-400">
+                  Carga tiendas de prueba y genera vectores automáticos con IA
+                </p>
+              </div>
             </div>
           </div>
 

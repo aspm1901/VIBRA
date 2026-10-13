@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import NextImage from "next/image";
 import { RadarArcIcon } from "@/components/RadarArcIcon";
 import { StoreDetailModal } from "@/components/StoreDetailModal";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
@@ -467,11 +468,21 @@ function VibraApp() {
       {/* Barra de navegación superior minimalista */}
       <header className="border-b border-[#24242c] bg-[#151518]/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl sm:text-4xl font-black tracking-tight text-white lowercase select-none">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-2 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 group-hover:border-vibra-500/60 group-hover:shadow-[0_0_16px_rgba(244,63,94,0.25)] transition-all">
+              <NextImage
+                src="/logo_vibra_white.png"
+                alt="Vibra Logo"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain transition-transform group-hover:scale-105"
+                priority
+              />
+            </div>
+            <span className="text-3xl sm:text-4xl font-black tracking-tight text-white lowercase select-none group-hover:text-vibra-100 transition-colors">
               vibra
             </span>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Botón interactivo 'Mi Ruta' */}
