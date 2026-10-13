@@ -182,6 +182,24 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     setCrop({ x: 0, y: 0 });
   };
 
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onCancel]);
+
   const currentAspect =
     aspectMode === "full"
       ? naturalAspect
@@ -190,8 +208,14 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
       : 3 / 4;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-lg bg-[#18181b] border border-[#2e2e38] rounded-3xl p-5 md:p-6 text-white shadow-2xl flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onCancel}
+    >
+      <div
+        className="relative w-full max-w-lg bg-[#18181b] border border-[#2e2e38] rounded-3xl p-5 md:p-6 text-white shadow-2xl flex flex-col animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#2e2e38]">
           <div className="flex items-center gap-2">

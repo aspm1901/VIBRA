@@ -30,10 +30,35 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
       ? `https://www.google.com/maps/search/?api=1&query=${store.latitude},${store.longitude}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.gallery}, ${store.galleryAddress || "Gamarra, La Victoria, Lima"}`)}`);
 
+  React.useEffect(() => {
+    // Bloquear scroll de la página de fondo
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-xl bg-[#1a1a1f] border border-[#2e2e38] rounded-3xl p-6 md:p-8 text-gray-100 shadow-2xl my-8 max-h-[90vh] overflow-y-auto scrollbar-thin"
+        className="relative w-full max-w-xl bg-[#1a1a1f] border border-[#2e2e38] rounded-3xl p-6 md:p-8 text-gray-100 shadow-2xl my-auto max-h-[90vh] overflow-y-auto overscroll-contain scrollbar-thin animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con botón cerrar */}
