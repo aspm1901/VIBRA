@@ -59,3 +59,11 @@ export interface SearchFilters {
   purchaseType?: PurchaseType;
   searchMode?: "prenda" | "look" | "estilo";
 }
+
+export interface RouteItem {
+  storeId: string;
+  store: Store;
+  addedAt: number;
+  visited?: boolean;
+}
+

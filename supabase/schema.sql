@@ -55,3 +55,21 @@ DROP POLICY IF EXISTS "Subida de fotos de prendas y stands" ON storage.objects;
 CREATE POLICY "Subida de fotos de prendas y stands"
   ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'vibra-media' OR bucket_id = 'VIBRA-Media');
+
+-- 4. Tabla para rutas de compra guardadas ("Mi Ruta")
+CREATE TABLE IF NOT EXISTS public.user_routes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  route_items JSONB DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_user_route UNIQUE (user_id)
+);
+
+ALTER TABLE public.user_routes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir a usuarios gestionar su propia ruta" ON public.user_routes;
+CREATE POLICY "Permitir a usuarios gestionar su propia ruta"
+  ON public.user_routes FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+

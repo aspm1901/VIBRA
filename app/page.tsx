@@ -26,7 +26,12 @@ import {
   ExternalLink,
   ChevronRight,
   Navigation,
+  Compass,
+  Plus,
+  Check,
 } from "lucide-react";
+import { RouteProvider, useRoute } from "@/components/RouteContext";
+import { RouteDrawer } from "@/components/RouteDrawer";
 
 const CATEGORIES = [
   "Tops",
@@ -136,7 +141,17 @@ const EXAMPLES = [
   },
 ];
 
-export default function HomePage() {
+function VibraApp() {
+  const {
+    routeItems,
+    addToRoute,
+    removeFromRoute,
+    isInRoute,
+    setIsRouteDrawerOpen,
+    user,
+    signInWithGoogle,
+  } = useRoute();
+
   // Estado de modo
   const [searchMode, setSearchMode] = useState<"prenda" | "look" | "estilo">("prenda");
   const [inputType, setInputType] = useState<"foto" | "estilo">("foto");
@@ -458,10 +473,75 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-4 py-1.5 rounded-full bg-[#23232b] text-white text-xs font-semibold border border-[#353540]">
-              Buscar
-            </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Botón interactivo 'Mi Ruta' */}
+            <button
+              type="button"
+              onClick={() => setIsRouteDrawerOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1f1f2b] hover:bg-[#282838] text-white text-xs sm:text-sm font-semibold border border-[#343448] hover:border-vibra-500/60 transition-all shadow-sm active:scale-95"
+              aria-label="Abrir mi ruta de compras"
+            >
+              <Compass className="w-4 h-4 text-vibra-400" />
+              <span>Mi Ruta</span>
+              {routeItems.length > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-vibra-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse">
+                  {routeItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Perfil o Acceso con Google */}
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setIsRouteDrawerOpen(true)}
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-[#1b1b24] hover:bg-[#242432] border border-[#2f2f42] text-xs transition-colors"
+                title={user.email || "Tu cuenta"}
+              >
+                {user.user_metadata?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt={user.email || "Usuario"}
+                    className="w-6 h-6 rounded-full object-cover border border-vibra-500/60"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-vibra-600 text-white font-bold flex items-center justify-center text-[10px]">
+                    {(user.email?.[0] || "U").toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden sm:inline font-medium text-slate-200 max-w-[90px] truncate">
+                  {user.user_metadata?.full_name?.split(" ")[0] || "Mi Perfil"}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={signInWithGoogle}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1b1b24] hover:bg-[#252533] text-slate-300 hover:text-white text-xs font-medium border border-[#2e2e40] transition-colors active:scale-95"
+                title="Iniciar sesión con Google para sincronizar tu ruta"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Entrar</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -1107,8 +1187,38 @@ export default function HomePage() {
                           : `Mismo estilo afín · ${item.bestGarment.name}`}
                       </p>
 
-                      {/* Botones de acción directa con botón explícito 'Ver tienda' */}
+                      {/* Botones de acción directa con botón explícito 'Ver catálogo' y '+ Mi Ruta' */}
                       <div className="flex flex-wrap items-center gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInRoute(item.store.id)) {
+                              removeFromRoute(item.store.id);
+                            } else {
+                              addToRoute(item.store);
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
+                            isInRoute(item.store.id)
+                              ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
+                              : "bg-[#222230] hover:bg-[#2c2c3e] text-slate-300 hover:text-white border-[#343448] hover:border-vibra-500/50"
+                          }`}
+                          title={isInRoute(item.store.id) ? "Quitar de mi ruta" : "Guardar en mi ruta"}
+                        >
+                          {isInRoute(item.store.id) ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>En tu ruta</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5 text-vibra-400" />
+                              <span>+ Mi Ruta</span>
+                            </>
+                          )}
+                        </button>
+
                         <a
                           href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
                             `Hola ${item.store.name}, vi su tienda en VIBRA (${Math.round(item.resonanceScore * 100)}% de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
@@ -1186,6 +1296,16 @@ export default function HomePage() {
           onCancel={() => setRawImageForCrop(null)}
         />
       )}
+      {/* Drawer de Mi Ruta */}
+      <RouteDrawer />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <RouteProvider>
+      <VibraApp />
+    </RouteProvider>
   );
 }
