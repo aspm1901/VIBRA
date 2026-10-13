@@ -539,7 +539,7 @@ export default function AdminPage() {
                     Panel Admin
                   </span>
                 </h1>
-                <p className="text-[11px] text-gray-400">
+                <p className="text-[11px] text-gray-400 hidden sm:block">
                   Carga tiendas de prueba y genera vectores automáticos con IA
                 </p>
               </div>

@@ -73,7 +73,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-[#1a1a1f] border border-[#2e2e38] rounded-3xl p-6 md:p-8 text-gray-100 shadow-2xl my-auto max-h-[90vh] overflow-y-auto overscroll-contain scrollbar-thin animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-xl bg-[#1a1a1f] border border-[#2e2e38] rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 text-gray-100 shadow-2xl my-auto max-h-[90vh] overflow-y-auto overscroll-contain scrollbar-thin animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con botón cerrar */}
@@ -153,7 +153,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
               </span>
               <span className="text-[11px] text-slate-400 font-normal">Toca para ver en grande</span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {store.garments.map((g) => {
                 const isSelected = (selectedGarment?.id || bestGarment.id) === g.id;
                 const isBestMatch = g.id === bestGarment.id;
@@ -221,7 +221,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -231,7 +231,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
                   addToRoute(store);
                 }
               }}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
                 inRoute
                   ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
                   : "bg-[#28283a] hover:bg-[#34344e] text-slate-200 hover:text-white border-vibra-500/40 hover:border-vibra-500/80 shadow-sm"
@@ -254,7 +254,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
               href={googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#28283a] hover:bg-[#34344e] border border-[#3e3e56] text-xs font-bold text-vibra-300 hover:text-white transition-all shadow-sm active:scale-95"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#28283a] hover:bg-[#34344e] border border-[#3e3e56] text-xs font-bold text-vibra-300 hover:text-white transition-all shadow-sm active:scale-95"
             >
               <Navigation className="w-3.5 h-3.5 text-vibra-400" />
               <span>Google Maps</span>
@@ -353,31 +353,31 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           </div>
 
           {store.instagram && (
-            <div>
+            <div className="min-w-0">
               <span className="text-slate-400 text-xs block mb-1">Instagram</span>
               <a
                 href={`https://instagram.com/${store.instagram.replace(/^@/, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-bold text-pink-400 hover:text-pink-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors"
+                className="font-bold text-pink-400 hover:text-pink-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors max-w-full"
               >
-                <span>{store.instagram.startsWith("@") ? store.instagram : `@${store.instagram}`}</span>
-                <ExternalLink className="w-3.5 h-3.5 text-pink-400/70" />
+                <span className="truncate max-w-[120px] sm:max-w-none">{store.instagram.startsWith("@") ? store.instagram : `@${store.instagram}`}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-pink-400/70 shrink-0" />
               </a>
             </div>
           )}
 
           {store.tiktok && (
-            <div>
+            <div className="min-w-0">
               <span className="text-slate-400 text-xs block mb-1">TikTok</span>
               <a
                 href={`https://tiktok.com/@${store.tiktok.replace(/^@/, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-bold text-cyan-400 hover:text-cyan-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors"
+                className="font-bold text-cyan-400 hover:text-cyan-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors max-w-full"
               >
-                <span>{store.tiktok.startsWith("@") ? store.tiktok : `@${store.tiktok}`}</span>
-                <ExternalLink className="w-3.5 h-3.5 text-cyan-400/70" />
+                <span className="truncate max-w-[120px] sm:max-w-none">{store.tiktok.startsWith("@") ? store.tiktok : `@${store.tiktok}`}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-cyan-400/70 shrink-0" />
               </a>
             </div>
           )}
