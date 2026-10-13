@@ -746,32 +746,36 @@ function VibraApp() {
               </div>
 
               {/* Prenda / Look Identificado */}
-              <div className="bg-gradient-to-r from-[#1b1b26] to-[#161620] border border-[#2d2d40] rounded-2xl p-4 flex items-center justify-between shadow-md">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-vibra-500/15 text-vibra-400 border border-vibra-500/30 flex items-center justify-center shrink-0 shadow-sm">
+              <div className="bg-gradient-to-r from-[#1b1b26] to-[#161620] border border-[#2d2d40] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-vibra-500/15 text-vibra-400 border border-vibra-500/30 flex items-center justify-center shrink-0 shadow-sm">
                     {searchMode === "look" ? (
-                      <Layers className="w-5 h-5" />
+                      <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
                     ) : (
-                      <Shirt className="w-5 h-5" />
+                      <Shirt className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                      <span className="text-[10px] sm:text-[11px] text-slate-400 uppercase font-bold tracking-wider">
                         {searchMode === "look" ? "Outfit analizado" : "Prenda identificada"}
                       </span>
                       <span className="w-1.5 h-1.5 rounded-full bg-vibra-400 animate-pulse" />
                     </div>
-                    <span className="text-base sm:text-lg font-extrabold text-white block truncate leading-snug">
+                    <span className="text-sm sm:text-base md:text-lg font-extrabold text-white block leading-tight sm:leading-snug break-words">
                       {detectedInfo.category || garmentTitle}
                     </span>
                   </div>
                 </div>
 
-                <div className="shrink-0 pl-2">
-                  <span className="text-xs text-slate-300 font-semibold px-3 py-1.5 rounded-xl bg-[#222230] border border-[#343448] flex items-center gap-1.5 shadow-sm">
-                    <Sparkles className="w-3.5 h-3.5 text-vibra-400" />
-                    <span>{selectedStyles.length} estilos afines</span>
+                <div className="shrink-0">
+                  <span className="text-[11px] sm:text-xs text-slate-300 font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#222230] border border-[#343448] flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                    <Sparkles className="w-3.5 h-3.5 text-vibra-400 shrink-0" />
+                    <span>
+                      <strong className="text-white font-bold">{selectedStyles.length}</strong>
+                      <span className="hidden sm:inline"> estilos afines</span>
+                      <span className="sm:hidden"> estilos</span>
+                    </span>
                   </span>
                 </div>
               </div>
