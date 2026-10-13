@@ -194,8 +194,10 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow || "";
+      document.documentElement.style.overflow = originalHtmlOverflow || "";
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onCancel]);

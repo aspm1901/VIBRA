@@ -10,6 +10,33 @@ interface StoreDetailModalProps {
 }
 
 export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClose }) => {
+  React.useEffect(() => {
+    if (!item) return;
+
+    // Bloquear scroll de la página de fondo
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      // Restauración absoluta e inmediata del scroll
+      document.body.style.overflow = originalBodyOverflow || "";
+      document.documentElement.style.overflow = originalHtmlOverflow || "";
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [item, onClose]);
+
   if (!item) return null;
 
   const { store, bestGarment, matchingGarments, resonanceScore, photoSimilarity, matchingStylesCount, totalSearchedStyles } = item;
@@ -29,28 +56,6 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
     (store.latitude && store.longitude
       ? `https://www.google.com/maps/search/?api=1&query=${store.latitude},${store.longitude}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.gallery}, ${store.galleryAddress || "Gamarra, La Victoria, Lima"}`)}`);
-
-  React.useEffect(() => {
-    // Bloquear scroll de la página de fondo
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
 
   return (
     <div

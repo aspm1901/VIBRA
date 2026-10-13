@@ -1171,10 +1171,12 @@ export default function HomePage() {
       </main>
 
       {/* Modal de Detalle de Tienda */}
-      <StoreDetailModal
-        item={selectedStoreItem}
-        onClose={() => setSelectedStoreItem(null)}
-      />
+      {selectedStoreItem && (
+        <StoreDetailModal
+          item={selectedStoreItem}
+          onClose={() => setSelectedStoreItem(null)}
+        />
+      )}
 
       {/* Modal de Recorte Táctil */}
       {rawImageForCrop && (
