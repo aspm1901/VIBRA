@@ -146,12 +146,18 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
         {/* Catálogo de prendas de este stand (si tiene más de 1) */}
         {store.garments && store.garments.length > 1 && (
           <div className="mt-4 p-3.5 bg-[#1e1e28] rounded-2xl border border-[#2e2e40]">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <span>Catálogo de este stand</span>
-                <span className="text-vibra-400">({store.garments.length} prendas)</span>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                  Catálogo del stand
+                </span>
+                <span className="text-xs font-extrabold text-vibra-400 whitespace-nowrap">
+                  ({store.garments.length} {store.garments.length === 1 ? "prenda" : "prendas"})
+                </span>
+              </div>
+              <span className="text-[10px] sm:text-xs text-slate-400 font-normal whitespace-nowrap shrink-0">
+                Toca para ampliar
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">Toca para ver en grande</span>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {store.garments.map((g) => {

@@ -1134,45 +1134,57 @@ function VibraApp() {
                 <div
                   key={item.store.id}
                   onClick={() => setSelectedStoreItem(item)}
-                  className="group bg-[#181820] hover:bg-[#20202b] border border-[#2a2a38] hover:border-vibra-500/50 rounded-3xl p-5 sm:p-6 transition-all cursor-pointer shadow-md hover:shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden"
+                  className="group bg-[#181820] hover:bg-[#20202b] border border-[#2a2a38] hover:border-vibra-500/50 rounded-3xl p-4 sm:p-6 transition-all cursor-pointer shadow-md hover:shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden"
                 >
                   {/* Borde sutil interactivo en hover */}
                   <div className="absolute top-0 left-0 bottom-0 w-1 bg-vibra-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                  {/* Lado Izquierdo: Imagen + Información */}
-                  <div className="flex items-start sm:items-center gap-5 sm:gap-6 min-w-0 flex-1">
-                    {/* Miniatura de la Prenda o Prendas (con margen y sombra limpia) */}
-                    {searchMode === "look" &&
-                    item.matchingGarments &&
-                    item.matchingGarments.length > 1 ? (
-                      <div className="flex items-center -space-x-5 shrink-0 pt-1 sm:pt-0">
-                        {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
-                          <div
-                            key={mg.id}
-                            className={`relative w-20 h-26 sm:w-22 sm:h-28 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
-                              gIdx === 1 ? "z-10 ring-4 ring-[#181820]" : "z-0"
-                            }`}
-                            title={mg.name}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={mg.photoUrl}
-                              alt={mg.name}
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="relative w-22 h-28 sm:w-24 sm:h-30 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2.5 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0] transition-transform group-hover:scale-105">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.bestGarment.photoUrl}
-                          alt={item.bestGarment.name}
-                          className="max-h-full max-w-full object-contain drop-shadow-sm"
+                  {/* Lado Izquierdo: Imagen (+ Resonancia en móvil) + Información */}
+                  <div className="flex items-start sm:items-center gap-3.5 sm:gap-6 min-w-0 flex-1 w-full">
+                    {/* Contenedor de la prenda + Radar debajo en móvil */}
+                    <div className="flex flex-col items-center shrink-0">
+                      {/* Miniatura de la Prenda o Prendas (con margen y sombra limpia) */}
+                      {searchMode === "look" &&
+                      item.matchingGarments &&
+                      item.matchingGarments.length > 1 ? (
+                        <div className="flex items-center -space-x-5 shrink-0 pt-1 sm:pt-0">
+                          {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
+                            <div
+                              key={mg.id}
+                              className={`relative w-20 h-26 sm:w-22 sm:h-28 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
+                                gIdx === 1 ? "z-10 ring-4 ring-[#181820]" : "z-0"
+                              }`}
+                              title={mg.name}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={mg.photoUrl}
+                                alt={mg.name}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="relative w-20 h-26 sm:w-24 sm:h-30 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2.5 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0] transition-transform group-hover:scale-105">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.bestGarment.photoUrl}
+                            alt={item.bestGarment.name}
+                            className="max-h-full max-w-full object-contain drop-shadow-sm"
+                          />
+                        </div>
+                      )}
+
+                      {/* Solo en celulares (<sm): Indicador de Resonancia DEBAJO de la prenda */}
+                      <div className="flex sm:hidden mt-2.5 flex-col items-center justify-center">
+                        <RadarArcIcon
+                          score={item.resonanceScore}
+                          band={item.band}
+                          isStyleMode={inputType === "estilo"}
                         />
                       </div>
-                    )}
+                    </div>
 
                     {/* Información textual de la tienda */}
                     <div className="min-w-0 flex-1 space-y-1.5">
@@ -1282,8 +1294,8 @@ function VibraApp() {
                     </div>
                   </div>
 
-                  {/* Lado Derecho: Indicador de Resonancia */}
-                  <div className="shrink-0 self-end sm:self-center pl-2 sm:pl-4 sm:border-l sm:border-[#2b2b3a] flex flex-row sm:flex-col items-center justify-between sm:justify-center w-full sm:w-auto">
+                  {/* Lado Derecho: Indicador de Resonancia (Solo en computadoras sm:flex, oculto en celulares) */}
+                  <div className="hidden sm:flex shrink-0 self-center pl-4 border-l border-[#2b2b3a] flex-col items-center justify-center w-auto">
                     <RadarArcIcon
                       score={item.resonanceScore}
                       band={item.band}
