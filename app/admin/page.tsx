@@ -104,7 +104,11 @@ export default function AdminPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["Tops"]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(["S", "M", "L"]);
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("cualquiera");
+  const [instagram, setInstagram] = useState("");
+  const [tiktok, setTiktok] = useState("");
   const [standPhotoBase64, setStandPhotoBase64] = useState<string | null>(null);
+  const [isReadingGarments, setIsReadingGarments] = useState(false);
+  const [isReadingStand, setIsReadingStand] = useState(false);
 
   // Google Maps / Ubicación Autocomplete State
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
@@ -236,6 +240,8 @@ export default function AdminPage() {
     setLatitude(store.latitude);
     setLongitude(store.longitude);
     setGoogleMapsUrl(store.googleMapsUrl || "");
+    setInstagram(store.instagram || "");
+    setTiktok(store.tiktok || "");
     setExistingGarments(store.garments || []);
     setGarmentsDraft([]);
     setStatusMessage(null);
@@ -256,6 +262,8 @@ export default function AdminPage() {
     setSelectedCategories(["Tops"]);
     setSelectedSizes(["S", "M", "L"]);
     setPurchaseType("cualquiera");
+    setInstagram("");
+    setTiktok("");
     setStandPhotoBase64(null);
     setCurrentStandPhotoUrl(null);
     setLatitude(undefined);
@@ -288,7 +296,11 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    setIsReadingGarments(true);
+    const filesArray = Array.from(files);
+    let loadedCount = 0;
+
+    filesArray.forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
@@ -301,6 +313,16 @@ export default function AdminPage() {
             imageBase64: base64,
           },
         ]);
+        loadedCount++;
+        if (loadedCount === filesArray.length) {
+          setIsReadingGarments(false);
+        }
+      };
+      reader.onerror = () => {
+        loadedCount++;
+        if (loadedCount === filesArray.length) {
+          setIsReadingGarments(false);
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -312,9 +334,14 @@ export default function AdminPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsReadingStand(true);
     const reader = new FileReader();
     reader.onload = () => {
       setStandPhotoBase64(reader.result as string);
+      setIsReadingStand(false);
+    };
+    reader.onerror = () => {
+      setIsReadingStand(false);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -372,6 +399,8 @@ export default function AdminPage() {
           latitude,
           longitude,
           googleMapsUrl,
+          instagram: instagram.trim() || undefined,
+          tiktok: tiktok.trim() || undefined,
           existingGarments,
           newGarmentsData: garmentsDraft,
         };
@@ -412,6 +441,8 @@ export default function AdminPage() {
           latitude,
           longitude,
           googleMapsUrl,
+          instagram: instagram.trim() || undefined,
+          tiktok: tiktok.trim() || undefined,
           garmentsData: garmentsDraft,
         };
 
@@ -790,6 +821,51 @@ export default function AdminPage() {
               />
             </div>
 
+            {/* Redes Sociales: Instagram y TikTok (Opcionales) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                  Instagram <span className="text-slate-500 font-normal">(opcional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-semibold select-none">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="tienda.gamarra"
+                    value={instagram.replace(/^@/, "")}
+                    onChange={(e) => {
+                      const val = e.target.value.trim().replace(/^@/, "");
+                      setInstagram(val ? `@${val}` : "");
+                    }}
+                    className="w-full bg-[#1e1e27] border border-[#30303e] rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                  TikTok <span className="text-slate-500 font-normal">(opcional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-semibold select-none">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="tienda_tiktok"
+                    value={tiktok.replace(/^@/, "")}
+                    onChange={(e) => {
+                      const val = e.target.value.trim().replace(/^@/, "");
+                      setTiktok(val ? `@${val}` : "");
+                    }}
+                    className="w-full bg-[#1e1e27] border border-[#30303e] rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Nivel de Precio y Modalidad */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -965,13 +1041,22 @@ export default function AdminPage() {
 
               {/* Botón de carga múltiple */}
               <label className="w-full h-24 border-2 border-dashed border-[#343444] hover:border-vibra-400 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#1a1a23] hover:bg-[#21212d]">
-                <Upload className="w-6 h-6 text-vibra-400 mb-1" />
-                <span className="text-xs font-bold text-gray-200">
-                  {editingStoreId
-                    ? "Subir nuevas fotos de prendas para sumar a la tienda"
-                    : "Subir fotos de prendas (puedes seleccionar varias)"}
-                </span>
-                <span className="text-[10px] text-gray-500 mt-0.5">JPG, PNG o WebP</span>
+                {isReadingGarments ? (
+                  <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+                    <Loader2 className="w-6 h-6 text-vibra-400 animate-spin" />
+                    <span className="text-xs font-bold text-white">Cargando fotos seleccionadas...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-vibra-400 mb-1" />
+                    <span className="text-xs font-bold text-gray-200">
+                      {editingStoreId
+                        ? "Subir nuevas fotos de prendas para sumar a la tienda"
+                        : "Subir fotos de prendas (puedes seleccionar varias)"}
+                    </span>
+                    <span className="text-[10px] text-gray-500 mt-0.5">JPG, PNG o WebP</span>
+                  </>
+                )}
                 <input
                   type="file"
                   multiple
@@ -1118,15 +1203,24 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <label className="w-full h-28 border-2 border-dashed border-[#343444] hover:border-vibra-400 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#1a1a23] hover:bg-[#21212d] group">
-                  <div className="w-10 h-10 rounded-xl bg-[#262633] group-hover:bg-vibra-500/20 text-vibra-400 flex items-center justify-center mb-1.5 transition-colors">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-gray-200">
-                    Subir foto del frontis del stand
-                  </span>
-                  <span className="text-[10px] text-gray-500 mt-0.5">
-                    JPG, PNG o WebP · Foto del letrero, pasillo o fachada del puesto
-                  </span>
+                  {isReadingStand ? (
+                    <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+                      <Loader2 className="w-6 h-6 text-vibra-400 animate-spin" />
+                      <span className="text-xs font-bold text-white">Cargando foto del stand...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 rounded-xl bg-[#262633] group-hover:bg-vibra-500/20 text-vibra-400 flex items-center justify-center mb-1.5 transition-colors">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-gray-200">
+                        Subir foto del frontis del stand
+                      </span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">
+                        JPG, PNG o WebP · Foto del letrero, pasillo o fachada del puesto
+                      </span>
+                    </>
+                  )}
                   <input
                     type="file"
                     accept="image/*"

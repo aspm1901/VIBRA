@@ -31,6 +31,7 @@ export interface Store {
   purchaseType: PurchaseType;
   standPhotoUrl: string;
   instagram?: string;
+  tiktok?: string;
   updatedAt: string;
   garments: StoreGarment[];
   latitude?: number;

@@ -19,10 +19,14 @@ CREATE TABLE IF NOT EXISTS public.stores (
   purchase_type TEXT DEFAULT 'cualquiera',
   stand_photo_url TEXT,
   instagram TEXT,
+  tiktok TEXT,
   updated_at TEXT,
   garments JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Asegurar columnas si la tabla ya existía
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS tiktok TEXT;
 
 -- 2. Habilitar Row Level Security (RLS) con acceso de lectura para todos
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;

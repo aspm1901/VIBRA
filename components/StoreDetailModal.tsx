@@ -1,7 +1,6 @@
 "use client";
-
 import React from "react";
-import { SearchResultItem } from "@/types";
+import { SearchResultItem, StoreGarment } from "@/types";
 import { X, MessageCircle, MapPin, Store as StoreIcon, ShieldCheck, Navigation, ExternalLink, Plus, Check } from "lucide-react";
 import { useRoute } from "./RouteContext";
 
@@ -13,6 +12,13 @@ interface StoreDetailModalProps {
 export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClose }) => {
   const { isInRoute, addToRoute, removeFromRoute } = useRoute();
   const inRoute = item ? isInRoute(item.store.id) : false;
+  const [selectedGarment, setSelectedGarment] = React.useState<StoreGarment | null>(null);
+
+  React.useEffect(() => {
+    if (item) {
+      setSelectedGarment(item.bestGarment);
+    }
+  }, [item]);
 
   React.useEffect(() => {
     if (!item) return;
@@ -122,14 +128,66 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             <div className="w-full h-72 md:h-80 bg-[#f1ece7] rounded-2xl flex items-center justify-center p-4 overflow-hidden shadow-inner border border-[#dcd6ce]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={bestGarment.photoUrl}
-                alt={bestGarment.name}
-                className="max-h-full max-w-full object-contain drop-shadow-md"
+                src={selectedGarment?.photoUrl || bestGarment.photoUrl}
+                alt={selectedGarment?.name || bestGarment.name}
+                className="max-h-full max-w-full object-contain drop-shadow-md transition-all duration-200"
               />
             </div>
-            <p className="text-center text-xs text-gray-400 mt-2 font-medium">
-              Prenda coincidente: <span className="text-gray-200">{bestGarment.name}</span>
+            <p className="text-center text-xs text-slate-300 mt-2 font-medium">
+              {selectedGarment && selectedGarment.id !== bestGarment.id ? (
+                <>Prenda del catálogo: <strong className="text-white">{selectedGarment.name}</strong></>
+              ) : (
+                <>Prenda coincidente: <strong className="text-white">{bestGarment.name}</strong></>
+              )}
             </p>
+          </div>
+        )}
+
+        {/* Catálogo de prendas de este stand (si tiene más de 1) */}
+        {store.garments && store.garments.length > 1 && (
+          <div className="mt-4 p-3.5 bg-[#1e1e28] rounded-2xl border border-[#2e2e40]">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Catálogo de este stand</span>
+                <span className="text-vibra-400">({store.garments.length} prendas)</span>
+              </span>
+              <span className="text-[11px] text-slate-400 font-normal">Toca para ver en grande</span>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              {store.garments.map((g) => {
+                const isSelected = (selectedGarment?.id || bestGarment.id) === g.id;
+                const isBestMatch = g.id === bestGarment.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setSelectedGarment(g)}
+                    className={`p-1.5 rounded-xl border flex flex-col items-center text-center transition-all ${
+                      isSelected
+                        ? "bg-[#28283a] border-vibra-500 ring-2 ring-vibra-500/50 shadow-md scale-102"
+                        : "bg-[#181820] border-[#2c2c3e] hover:border-slate-500 hover:bg-[#20202c]"
+                    }`}
+                  >
+                    <div className="w-full h-14 bg-[#f1ece7] rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={g.photoUrl}
+                        alt={g.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                      {isBestMatch && (
+                        <span className="absolute top-0.5 right-0.5 px-1 bg-vibra-500 text-white text-[8px] font-black rounded uppercase">
+                          Match
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-300 mt-1 line-clamp-1 w-full px-0.5">
+                      {g.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -137,7 +195,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
         <div className="grid grid-cols-3 gap-2.5 mt-5 bg-[#20202a] p-3.5 rounded-2xl border border-[#2d2d3c]">
           <div className="text-left px-2">
             <span className="text-xs uppercase font-bold text-slate-400 block tracking-wider">Galería</span>
-            <span className="text-base font-bold text-white truncate block mt-0.5">{store.gallery}</span>
+            <span className="text-sm sm:text-base font-bold text-white block mt-0.5 leading-snug">{store.gallery}</span>
           </div>
           <div className="text-left px-2 border-l border-[#353545]">
             <span className="text-xs uppercase font-bold text-slate-400 block tracking-wider">Piso</span>
@@ -297,7 +355,30 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           {store.instagram && (
             <div>
               <span className="text-slate-400 text-xs block mb-1">Instagram</span>
-              <span className="font-bold text-vibra-300 text-base">{store.instagram}</span>
+              <a
+                href={`https://instagram.com/${store.instagram.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-pink-400 hover:text-pink-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors"
+              >
+                <span>{store.instagram.startsWith("@") ? store.instagram : `@${store.instagram}`}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-pink-400/70" />
+              </a>
+            </div>
+          )}
+
+          {store.tiktok && (
+            <div>
+              <span className="text-slate-400 text-xs block mb-1">TikTok</span>
+              <a
+                href={`https://tiktok.com/@${store.tiktok.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-cyan-400 hover:text-cyan-300 text-sm sm:text-base inline-flex items-center gap-1.5 transition-colors"
+              >
+                <span>{store.tiktok.startsWith("@") ? store.tiktok : `@${store.tiktok}`}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-cyan-400/70" />
+              </a>
             </div>
           )}
         </div>

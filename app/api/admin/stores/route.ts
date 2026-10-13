@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
       latitude,
       longitude,
       googleMapsUrl,
+      instagram,
+      tiktok,
       garmentsData = [], // Array de { name, category, styles, imageBase64 }
     } = body;
 
@@ -120,6 +122,8 @@ export async function POST(req: NextRequest) {
       sizes,
       purchaseType: purchaseType as PurchaseType,
       standPhotoUrl,
+      instagram: instagram ? String(instagram).trim() : undefined,
+      tiktok: tiktok ? String(tiktok).trim() : undefined,
       updatedAt: "Recién agregada",
       garments: processedGarments,
       latitude: latitude ? Number(latitude) : undefined,
@@ -169,6 +173,8 @@ export async function PUT(req: NextRequest) {
       latitude,
       longitude,
       googleMapsUrl,
+      instagram,
+      tiktok,
       existingGarments = [],
       newGarmentsData = [],
     } = body;
@@ -266,6 +272,18 @@ export async function PUT(req: NextRequest) {
       sizes,
       purchaseType: purchaseType as PurchaseType,
       standPhotoUrl,
+      instagram:
+        instagram !== undefined
+          ? instagram
+            ? String(instagram).trim()
+            : undefined
+          : existingStore.instagram,
+      tiktok:
+        tiktok !== undefined
+          ? tiktok
+            ? String(tiktok).trim()
+            : undefined
+          : existingStore.tiktok,
       updatedAt: "Actualizada recientemente",
       garments: finalGarments,
       latitude: latitude !== undefined ? (latitude ? Number(latitude) : undefined) : existingStore.latitude,
