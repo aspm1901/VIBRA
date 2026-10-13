@@ -1031,7 +1031,7 @@ function VibraApp() {
               {isSearching ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Calculando resonancia con IA...</span>
+                  <span>Buscando coincidencias con IA...</span>
                 </>
               ) : (
                 <>
@@ -1041,7 +1041,7 @@ function VibraApp() {
                       ? "Ver tiendas con este estilo"
                       : searchMode === "look"
                       ? "Ver tiendas para armar este look"
-                      : "Ver tiendas que resuenan"}
+                      : "Ver tiendas que coinciden"}
                   </span>
                 </>
               )}
@@ -1313,7 +1313,7 @@ function VibraApp() {
 
           {/* Footer Informativo */}
           <div className="p-4 sm:p-5 bg-[#16161e] rounded-2xl border border-[#282836] text-xs sm:text-sm text-slate-300 leading-relaxed mt-4 shadow-sm">
-            💡 <strong>Nota útil:</strong> La resonancia mide la afinidad visual y estética de cada tienda con tu referencia, no el stock ni colores en tiempo real. Te recomendamos confirmar disponibilidad por WhatsApp antes de ir físicamente.
+            💡 <strong>Nota útil:</strong> El nivel de coincidencia mide la afinidad visual y estética de cada tienda con tu referencia, no el stock ni colores en tiempo real. Te recomendamos confirmar disponibilidad por WhatsApp antes de ir presencialmente.
           </div>
         </section>
       </main>
