@@ -293,6 +293,39 @@ export default function AdminPage() {
     );
   };
 
+  // Helper en cliente para comprimir fotos pesadas de celulares en ~15ms antes de enviar
+  const compressImageClient = (base64: string, maxDim = 1200): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width <= maxDim && height <= maxDim) {
+          resolve(base64);
+          return;
+        }
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(base64);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => resolve(base64);
+      img.src = base64;
+    });
+  };
+
   const handleGarmentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -303,15 +336,16 @@ export default function AdminPage() {
 
     filesArray.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
+      reader.onload = async () => {
+        const rawBase64 = reader.result as string;
+        const compressedBase64 = await compressImageClient(rawBase64, 1200);
         setGarmentsDraft((prev) => [
           ...prev,
           {
             name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
             category: selectedCategories[0] || "Tops",
             styles: selectedStyles,
-            imageBase64: base64,
+            imageBase64: compressedBase64,
           },
         ]);
         loadedCount++;
@@ -337,8 +371,10 @@ export default function AdminPage() {
 
     setIsReadingStand(true);
     const reader = new FileReader();
-    reader.onload = () => {
-      setStandPhotoBase64(reader.result as string);
+    reader.onload = async () => {
+      const rawBase64 = reader.result as string;
+      const compressedBase64 = await compressImageClient(rawBase64, 1200);
+      setStandPhotoBase64(compressedBase64);
       setIsReadingStand(false);
     };
     reader.onerror = () => {
