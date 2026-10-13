@@ -467,14 +467,14 @@ function VibraApp() {
     <div className="min-h-screen bg-[#121214] text-gray-100 flex flex-col">
       {/* Barra de navegación superior minimalista */}
       <header className="border-b border-[#24242c] bg-[#151518]/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-2 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 group-hover:border-vibra-500/60 group-hover:shadow-[0_0_16px_rgba(244,63,94,0.25)] transition-all">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 group-hover:border-vibra-500/60 group-hover:shadow-[0_0_16px_rgba(244,63,94,0.25)] transition-all">
               <NextImage
                 src="/logo_vibra_white.png"
                 alt="Vibra Logo"
-                width={36}
-                height={36}
+                width={42}
+                height={42}
                 className="w-full h-full object-contain transition-transform group-hover:scale-105"
                 priority
               />
@@ -558,9 +558,9 @@ function VibraApp() {
       </header>
 
       {/* Contenedor Principal (2 Columnas Desktop, 1 Columna Móvil) */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+      <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
         {/* ================= COLUMNA IZQUIERDA: BUSCADOR & FILTROS (5 de 12 cols) ================= */}
-        <section className="lg:col-span-5 flex flex-col gap-6">
+        <section className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 self-start">
           {/* Título Principal y Bajada */}
           <div>
             <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.08]">

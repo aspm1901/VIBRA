@@ -523,12 +523,12 @@ export default function AdminPage() {
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 shrink-0">
                 <NextImage
                   src="/logo_vibra_white.png"
                   alt="Vibra Logo"
-                  width={28}
-                  height={28}
+                  width={32}
+                  height={32}
                   className="w-full h-full object-contain"
                 />
               </div>
