@@ -40,13 +40,16 @@ export async function uploadImageToStorage(
     throw new Error("Supabase no está configurado para almacenamiento.");
   }
 
-  const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+  // Detectar MIME type automáticamente (image/jpeg, image/png, image/webp)
+  const mimeMatch = base64Data.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+  const contentType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  const cleanBase64 = base64Data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
   const buffer = Buffer.from(cleanBase64, "base64");
 
   const { error } = await adminClient.storage
     .from(STORAGE_BUCKET_NAME)
     .upload(storagePath, buffer, {
-      contentType: "image/jpeg",
+      contentType,
       upsert: true,
     });
 
