@@ -124,9 +124,11 @@ export interface GarmentAnalysisResult {
 }
 
 const VISION_MODELS = [
-  "gemini-3.5-flash-lite", // El más rápido y responsivo (~600ms - 2s)
-  "gemini-3.8-flash",      // Backup moderno
-  "gemini-3.5-flash",      // Backup de capacidad
+  "gemini-3.1-flash-lite", // Muy rápido (~1.5s - 5s) y alta disponibilidad
+  "gemini-3-flash-preview", // Modelo multimodal de alta estabilidad
+  "gemini-3.5-flash-lite", // Respaldo rápido
+  "gemini-3.8-flash",      // Respaldo de capacidad
+  "gemini-3.7-flash",      // Respaldo analítico
 ];
 
 export const VALID_STYLES = [
@@ -309,18 +311,24 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 
   const firstSuccess = new Promise<GarmentAnalysisResult | null>((resolve) => {
     let pending = VISION_MODELS.length;
+    let resolved = false;
     for (const modelName of VISION_MODELS) {
       callModel(modelName)
-        .then((result) => resolve(result))
+        .then((result) => {
+          if (!resolved) {
+            resolved = true;
+            resolve(result);
+          }
+        })
         .catch((err: any) => {
           console.warn(`Modelo ${modelName} falló (${err?.status || err?.message}).`);
           pending--;
-          if (pending === 0) resolve(null);
+          if (pending === 0 && !resolved) resolve(null);
         });
     }
   });
 
-  const result = await withTimeout(firstSuccess, 9000, null);
+  const result = await withTimeout(firstSuccess, 11000, null);
   if (result) return result;
 
   console.warn("Ningún modelo de visión respondió a tiempo. Usando respaldo básico.");

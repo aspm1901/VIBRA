@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
           if (searchMode !== "look") {
             analysis.garmentFamily = inferredFamily;
             analysis.category = nearest.category || analysis.category;
-            analysis.garmentTitle = `Similar a: ${nearest.name}`;
+            analysis.garmentTitle = nearest.name || nearest.category || "Prenda identificada";
           }
           if (inferredStyles.length > 0) analysis.styles = inferredStyles;
         }
