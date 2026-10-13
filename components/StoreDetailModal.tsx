@@ -176,7 +176,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
               className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
                 inRoute
                   ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
-                  : "bg-[#28283a] hover:bg-[#34344e] text-white border-[#3e3e56]"
+                  : "bg-[#28283a] hover:bg-[#34344e] text-slate-200 hover:text-white border-vibra-500/40 hover:border-vibra-500/80 shadow-sm"
               }`}
             >
               {inRoute ? (
@@ -187,7 +187,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
               ) : (
                 <>
                   <Plus className="w-3.5 h-3.5 text-vibra-400" />
-                  <span>+ Mi Ruta</span>
+                  <span>Mi Ruta</span>
                 </>
               )}
             </button>
@@ -326,7 +326,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             className={`w-full sm:flex-1 py-3.5 px-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border text-sm active:scale-[0.99] ${
               inRoute
                 ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
-                : "bg-[#252535] hover:bg-[#2e2e42] text-white border-[#3c3c54]"
+                : "bg-[#252535] hover:bg-[#2e2e42] text-slate-100 hover:text-white border-vibra-500/40 hover:border-vibra-500/80 shadow-md"
             }`}
           >
             {inRoute ? (
@@ -337,7 +337,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             ) : (
               <>
                 <Plus className="w-4 h-4 text-vibra-400" />
-                <span>Agregar parada a Mi Ruta</span>
+                <span>Guardar en Mi Ruta</span>
               </>
             )}
           </button>

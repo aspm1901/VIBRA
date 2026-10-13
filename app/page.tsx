@@ -734,24 +734,35 @@ function VibraApp() {
                 </div>
               </div>
 
-              {/* Prenda / Look Identificado por IA */}
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-[#181820] border border-[#2c2c3a] shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-vibra-950 text-vibra-400 border border-vibra-900/60 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4" />
+              {/* Prenda / Look Identificado */}
+              <div className="bg-gradient-to-r from-[#1b1b26] to-[#161620] border border-[#2d2d40] rounded-2xl p-4 flex items-center justify-between shadow-md">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-vibra-500/15 text-vibra-400 border border-vibra-500/30 flex items-center justify-center shrink-0 shadow-sm">
+                    {searchMode === "look" ? (
+                      <Layers className="w-5 h-5" />
+                    ) : (
+                      <Shirt className="w-5 h-5" />
+                    )}
                   </div>
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider block">
-                      {searchMode === "look" ? "Outfit analizado" : "Prenda identificada"}
-                    </span>
-                    <span className="text-sm sm:text-base font-extrabold text-white">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                        {searchMode === "look" ? "Outfit analizado" : "Prenda identificada"}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-vibra-400 animate-pulse" />
+                    </div>
+                    <span className="text-base sm:text-lg font-extrabold text-white block truncate leading-snug">
                       {detectedInfo.category || garmentTitle}
                     </span>
                   </div>
                 </div>
-                <span className="text-xs text-emerald-400 font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-800/60">
-                  IA Activa
-                </span>
+
+                <div className="shrink-0 pl-2">
+                  <span className="text-xs text-slate-300 font-semibold px-3 py-1.5 rounded-xl bg-[#222230] border border-[#343448] flex items-center gap-1.5 shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5 text-vibra-400" />
+                    <span>{selectedStyles.length} estilos afines</span>
+                  </span>
+                </div>
               </div>
 
               {/* Estilos interactivos */}
@@ -1202,7 +1213,7 @@ function VibraApp() {
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
                             isInRoute(item.store.id)
                               ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
-                              : "bg-[#222230] hover:bg-[#2c2c3e] text-slate-300 hover:text-white border-[#343448] hover:border-vibra-500/50"
+                              : "bg-[#222230] hover:bg-[#2c2c3e] text-slate-200 hover:text-white border-vibra-500/40 hover:border-vibra-500/80 shadow-sm shadow-vibra-950/20"
                           }`}
                           title={isInRoute(item.store.id) ? "Quitar de mi ruta" : "Guardar en mi ruta"}
                         >
@@ -1214,7 +1225,7 @@ function VibraApp() {
                           ) : (
                             <>
                               <Plus className="w-3.5 h-3.5 text-vibra-400" />
-                              <span>+ Mi Ruta</span>
+                              <span>Mi Ruta</span>
                             </>
                           )}
                         </button>
