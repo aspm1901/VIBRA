@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { Store, PriceLevel, PurchaseType, StoreGarment } from "@/types";
 import {
-  ArrowLeft,
   Plus,
   Trash2,
   Upload,
   Sparkles,
   Store as StoreIcon,
-  RotateCcw,
   CheckCircle2,
   AlertCircle,
   Image as ImageIcon,
@@ -530,16 +527,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetStores = async () => {
-    if (!confirm("¿Restablecer el catálogo a las 3 tiendas piloto iniciales?")) return;
-    try {
-      await fetch("/api/admin/stores?action=reset", { method: "DELETE" });
-      fetchStores();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const toggleStyle = (style: string) => {
     setSelectedStyles((prev) =>
       prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
@@ -558,12 +545,6 @@ export default function AdminPage() {
       <header className="border-b border-[#24242c] bg-[#151518]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="w-9 h-9 rounded-full bg-[#202028] hover:bg-[#2c2c38] flex items-center justify-center text-gray-300 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 shrink-0">
                 <NextImage
@@ -582,20 +563,13 @@ export default function AdminPage() {
                   </span>
                 </h1>
                 <p className="text-[11px] text-gray-400 hidden sm:block">
-                  Carga tiendas de prueba y genera vectores automáticos con IA
+                  Gestión y registro de tiendas y prendas para el catálogo
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleResetStores}
-              className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1d1d24] border border-[#2b2b36] hover:border-[#3d3d4d] transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-vibra-400" />
-              <span className="hidden sm:inline">Restablecer 3 tiendas</span>
-            </button>
             <button
               onClick={handleLogout}
               title="Cerrar sesión de administrador"
