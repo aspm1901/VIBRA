@@ -119,6 +119,7 @@ export default function AdminPage() {
   const [placePredictions, setPlacePredictions] = useState<any[]>([]);
   const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
   const [showPlaceDropdown, setShowPlaceDropdown] = useState<boolean>(false);
+  const [mapsKeyMissing, setMapsKeyMissing] = useState<boolean>(false);
   const [sessionToken, setSessionToken] = useState<string>(() => Math.random().toString(36).substring(2, 15));
 
   // Prendas a subir para la tienda (nuevas)
@@ -144,6 +145,11 @@ export default function AdminPage() {
         if (res.ok) {
           const data = await res.json();
           setPlacePredictions(data.predictions || []);
+          if (data.apiKeyMissing) {
+            setMapsKeyMissing(true);
+          } else {
+            setMapsKeyMissing(false);
+          }
           setShowPlaceDropdown(true);
         }
       } catch (err) {
@@ -749,6 +755,13 @@ export default function AdminPage() {
                         No se encontraron sugerencias en Google Maps. Puedes completar los campos de Galería y Dirección abajo manualmente.
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Aviso informativo si falta la API Key en el servidor de Vercel */}
+                {mapsKeyMissing && (
+                  <div className="mt-2 p-2.5 bg-amber-950/40 border border-amber-800/60 rounded-xl text-[11px] text-amber-200 leading-snug">
+                    ⚠️ <strong>Aviso:</strong> Falta agregar la variable <code>GOOGLE_MAPS_API_KEY</code> en tu panel de Vercel (Environment Variables). Por ahora solo reconoce las 8 galerías emblemáticas de Gamarra. Puedes escribir cualquier dirección manualmente en los campos de abajo.
                   </div>
                 )}
               </div>

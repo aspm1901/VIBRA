@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (predictions.length > 0) {
-          return NextResponse.json({ predictions });
+          return NextResponse.json({ predictions, isLive: true });
         }
       } else {
         const errText = await res.text();
@@ -138,12 +138,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Fallback con galerías preconfiguradas de Gamarra
-  const query = input.toLowerCase();
+  // Fallback con galerías preconfiguradas de Gamarra con normalización de tildes
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const query = norm(input);
   const filteredPresets = GAMARRA_PRESETS.filter(
     (g) =>
-      g.mainText.toLowerCase().includes(query) ||
-      g.secondaryText.toLowerCase().includes(query)
+      norm(g.mainText).includes(query) ||
+      norm(g.secondaryText).includes(query)
   );
 
   return NextResponse.json({
@@ -155,5 +162,7 @@ export async function GET(req: NextRequest) {
       latitude: p.latitude,
       longitude: p.longitude,
     })),
+    isLive: false,
+    apiKeyMissing: !apiKey,
   });
 }
