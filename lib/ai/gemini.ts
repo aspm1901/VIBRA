@@ -123,15 +123,13 @@ export interface GarmentAnalysisResult {
   isFallback?: boolean;
 }
 
-// Cascada secuencial verificada en vivo contra Google AI Studio (más de 2,500 consultas/día combinadas):
-// 1. gemini-flash-lite-latest      (500 RPD, estable ~3.5s, 0% errores 503)
-// 2. gemini-3.1-flash-lite-preview (500 RPD, ~1.5s)
-// 3. gemini-3-flash-preview        (Respaldo rápido ~3.0s)
-// 4. gemma-4-26b-a4b-it            (1,500 RPD, respaldo masivo multimodal)
+// Cascada secuencial EXCLUSIVA de alta cuota (15,400 consultas/día combinadas, ningún modelo de 20 RPD):
+// 1. gemini-flash-lite-latest      -> Gemini 3.5 Flash Lite (500 RPD | 15 RPM)
+// 2. gemini-3.1-flash-lite-preview -> Gemini 3.1 Flash Lite (500 RPD | 15 RPM)
+// 3. gemma-4-26b-a4b-it            -> Gemma 4 26B           (14,400 RPD | 30 RPM multimodal)
 const VISION_MODEL_CASCADE = [
   "gemini-flash-lite-latest",
   "gemini-3.1-flash-lite-preview",
-  "gemini-3-flash-preview",
   "gemma-4-26b-a4b-it",
 ];
 
