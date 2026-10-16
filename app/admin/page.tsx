@@ -342,11 +342,17 @@ export default function AdminPage() {
       reader.onload = async () => {
         const rawBase64 = reader.result as string;
         const compressedBase64 = await compressImageClient(rawBase64, 1200);
+        const rawName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
+        const isGenericCameraName =
+          /^(img|dsc|whatsapp|screenshot|captura|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|$)/i.test(
+            rawName
+          ) || /^[a-f0-9\s]{8,}$/i.test(rawName);
+
         setGarmentsDraft((prev) => [
           ...prev,
           {
-            name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-            category: selectedCategories[0] || "Tops",
+            name: isGenericCameraName ? "" : rawName,
+            category: "",
             styles: selectedStyles,
             imageBase64: compressedBase64,
           },
@@ -1165,8 +1171,8 @@ export default function AdminPage() {
                             prev.map((item, i) => (i === idx ? { ...item, name: val } : item))
                           );
                         }}
-                        placeholder="Nombre prenda"
-                        className="w-full bg-[#181820] border border-[#2f2f3d] rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-vibra-500 mb-1"
+                        placeholder="✨ Nombre por IA (opcional)"
+                        className="w-full bg-[#181820] border border-[#2f2f3d] rounded-lg px-2 py-1 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500 mb-1"
                       />
 
                       <select
@@ -1179,6 +1185,7 @@ export default function AdminPage() {
                         }}
                         className="w-full bg-[#181820] border border-[#2f2f3d] rounded-lg px-1.5 py-1 text-[10px] text-gray-300 focus:outline-none cursor-pointer"
                       >
+                        <option value="">✨ Categoría por IA (auto)</option>
                         {CATEGORIES_LIST.map((c) => (
                           <option key={c} value={c}>
                             {c}

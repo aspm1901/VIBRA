@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllStores, saveStore, deleteStore, resetStores } from "@/lib/stores-db";
 import { generateImageEmbedding, detectGarmentStyles } from "@/lib/ai/gemini";
+import { extractGarmentFamily } from "@/lib/ranking";
 import { uploadImageToStorage } from "@/lib/supabase";
 import { PriceLevel, PurchaseType, Store, StoreGarment } from "@/types";
 
 export const maxDuration = 60;
+
+function isGenericFilename(name?: string): boolean {
+  if (!name || !name.trim()) return true;
+  const clean = name.trim();
+  return (
+    /^(img|dsc|whatsapp|screenshot|captura|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|_|-|$)/i.test(
+      clean
+    ) || /^[a-f0-9\s_-]{8,}$/i.test(clean)
+  );
+}
 
 export async function GET() {
   const stores = await getAllStores();
@@ -44,10 +55,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const storeId = name
+    const baseId = name
       .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+
+    const existingStores = await getAllStores();
+    let storeId = baseId || `tienda-${Date.now()}`;
+    if (existingStores.some((s) => s.id === storeId)) {
+      const standSlug = String(stand)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
+      storeId = `${storeId}-${standSlug || Date.now().toString().slice(-4)}`;
+      if (existingStores.some((s) => s.id === storeId)) {
+        storeId = `${storeId}-${Date.now().toString().slice(-4)}`;
+      }
+    }
 
     // 1. Guardar foto del stand si existe (en Supabase Storage)
     let standPhotoUrl = "/images/stands/stand_santa_rosa_214.svg";
@@ -90,35 +115,63 @@ export async function POST(req: NextRequest) {
       }
 
       const manualStyles = g.styles && g.styles.length > 0 ? g.styles : styles;
-      const aiStyles = visionAnalysis?.styles || [];
-      const combinedStyles = Array.from(new Set([...manualStyles, ...aiStyles]));
+      const aiStyles = visionAnalysis && !visionAnalysis.isFallback ? visionAnalysis.styles || [] : [];
+      const combinedStyles = Array.from(new Set([...aiStyles, ...manualStyles]));
+
+      const customName = !isGenericFilename(g.name) ? g.name.trim() : "";
+      const aiTitle =
+        visionAnalysis && !visionAnalysis.isFallback && visionAnalysis.garmentTitle
+          ? visionAnalysis.garmentTitle
+          : "";
+      const finalCategory =
+        (g.category && g.category.trim()) ||
+        (visionAnalysis && !visionAnalysis.isFallback ? visionAnalysis.category : "") ||
+        categories[0] ||
+        "Prenda";
+      const finalName = customName || aiTitle || `${finalCategory} #${i + 1}`;
+      const finalFamily = extractGarmentFamily(
+        finalName,
+        finalCategory,
+        visionAnalysis?.garmentFamily
+      );
 
       processedGarments.push({
         id: `g-${storeId}-${i + 1}`,
         storeId,
-        name: g.name || visionAnalysis?.garmentTitle || `Prenda ${i + 1}`,
+        name: finalName,
         photoUrl,
-        category: g.category || visionAnalysis?.category || categories[0] || "Prenda",
+        category: finalCategory,
         styles: combinedStyles.length > 0 ? combinedStyles : ["Casual"],
         embedding,
-        garmentFamily: visionAnalysis?.garmentFamily,
+        garmentFamily: finalFamily !== "otro" ? finalFamily : visionAnalysis?.garmentFamily,
         primaryColor: visionAnalysis?.primaryColor,
         description: visionAnalysis?.description,
       });
     }
+
+    const mergedCategories = Array.from(
+      new Set([
+        ...categories,
+        ...processedGarments.map((pg) => pg.category).filter(Boolean),
+      ])
+    );
+    const mergedStyles =
+      styles.length > 0
+        ? styles
+        : Array.from(new Set(processedGarments.flatMap((pg) => pg.styles))).slice(0, 3);
 
     const newStore: Store = {
       id: storeId,
       name,
       gallery,
       galleryAddress: galleryAddress || "Gamarra, La Victoria",
-      floor: floor || 1,
+      floor: Number(floor) || 1,
       stand,
       referenceLocation: referenceLocation || "Pasillo central",
       whatsapp: whatsapp || "51999999999",
       priceLevel: priceLevel as PriceLevel,
-      styles,
-      categories,
+      styles: mergedStyles.length > 0 ? mergedStyles : ["Casual"],
+      categories: mergedCategories,
       sizes,
       purchaseType: purchaseType as PurchaseType,
       standPhotoUrl,
@@ -231,24 +284,53 @@ export async function PUT(req: NextRequest) {
       }
 
       const manualStyles = g.styles && g.styles.length > 0 ? g.styles : styles;
-      const aiStyles = visionAnalysis?.styles || [];
-      const combinedStyles = Array.from(new Set([...manualStyles, ...aiStyles]));
+      const aiStyles = visionAnalysis && !visionAnalysis.isFallback ? visionAnalysis.styles || [] : [];
+      const combinedStyles = Array.from(new Set([...aiStyles, ...manualStyles]));
+
+      const customName = !isGenericFilename(g.name) ? g.name.trim() : "";
+      const aiTitle =
+        visionAnalysis && !visionAnalysis.isFallback && visionAnalysis.garmentTitle
+          ? visionAnalysis.garmentTitle
+          : "";
+      const finalCategory =
+        (g.category && g.category.trim()) ||
+        (visionAnalysis && !visionAnalysis.isFallback ? visionAnalysis.category : "") ||
+        categories[0] ||
+        "Prenda";
+      const finalName =
+        customName || aiTitle || `${finalCategory} #${existingGarments.length + i + 1}`;
+      const finalFamily = extractGarmentFamily(
+        finalName,
+        finalCategory,
+        visionAnalysis?.garmentFamily
+      );
 
       processedNewGarments.push({
         id: `g-${id}-${Date.now()}-${i + 1}`,
         storeId: id,
-        name: g.name || visionAnalysis?.garmentTitle || `Prenda ${existingGarments.length + i + 1}`,
+        name: finalName,
         photoUrl,
-        category: g.category || visionAnalysis?.category || categories[0] || "Tops",
+        category: finalCategory,
         styles: combinedStyles.length > 0 ? combinedStyles : ["Casual"],
         embedding,
-        garmentFamily: visionAnalysis?.garmentFamily,
+        garmentFamily: finalFamily !== "otro" ? finalFamily : visionAnalysis?.garmentFamily,
         primaryColor: visionAnalysis?.primaryColor,
         description: visionAnalysis?.description,
       });
     }
 
-    const finalGarments: StoreGarment[] = [...existingGarments, ...processedNewGarments];
+    // Recalcular garmentFamily si la usuaria renombró o recategorizó prendas existentes
+    const normalizedExistingGarments: StoreGarment[] = (existingGarments as StoreGarment[]).map(
+      (eg) => {
+        const updatedFam = extractGarmentFamily(eg.name, eg.category, eg.garmentFamily);
+        return {
+          ...eg,
+          garmentFamily: updatedFam !== "otro" ? updatedFam : eg.garmentFamily,
+        };
+      }
+    );
+
+    const finalGarments: StoreGarment[] = [...normalizedExistingGarments, ...processedNewGarments];
 
     if (finalGarments.length === 0) {
       return NextResponse.json(
@@ -257,18 +339,25 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    const mergedCategories = Array.from(
+      new Set([
+        ...categories,
+        ...finalGarments.map((fg) => fg.category).filter(Boolean),
+      ])
+    );
+
     const updatedStore: Store = {
       ...existingStore,
       name,
       gallery,
       galleryAddress: galleryAddress || existingStore.galleryAddress,
-      floor: floor || existingStore.floor,
+      floor: Number(floor) || existingStore.floor || 1,
       stand,
       referenceLocation: referenceLocation || existingStore.referenceLocation,
       whatsapp: whatsapp || existingStore.whatsapp,
       priceLevel: priceLevel as PriceLevel,
       styles,
-      categories,
+      categories: mergedCategories,
       sizes,
       purchaseType: purchaseType as PurchaseType,
       standPhotoUrl,

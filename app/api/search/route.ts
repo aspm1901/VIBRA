@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         if (neighbors.length > 0) {
           const votes: Record<string, number> = {};
           for (const n of neighbors) {
-            const fam = extractGarmentFamily(n.g.name, n.g.category);
+            const fam = extractGarmentFamily(n.g.name, n.g.category, n.g.garmentFamily);
             votes[fam] = (votes[fam] || 0) + n.sim;
           }
           const inferredFamily = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
@@ -424,6 +424,31 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const COLOR_GROUPS: string[][] = [
+        ["negro", "black", "oscuro", "azabache", "carbon"],
+        ["blanco", "white", "marfil", "hueso", "perla", "crema", "crudo"],
+        ["beige", "arena", "camel", "caqui", "nude", "tierra", "champagne", "almendra"],
+        ["marron", "marrón", "chocolate", "cafe", "café", "canela", "terracota", "cobre", "tabaco"],
+        ["azul", "celeste", "denim", "marino", "indigo", "índigo", "turquesa", "cobalto", "petroleo"],
+        ["rojo", "burdeos", "vino", "tinto", "guinda", "granate", "coral", "carmesi", "escarlata"],
+        ["rosa", "rosado", "fucsia", "palo rosa", "magenta", "melon", "melón", "salmon"],
+        ["morado", "lila", "violeta", "lavanda", "ciruela", "purpura", "púrpura"],
+        ["verde", "oliva", "militar", "esmeralda", "menta", "sage", "pistacho", "botella"],
+        ["amarillo", "mostaza", "ocre", "dorado", "oro", "ambar", "ámbar"],
+        ["gris", "plomo", "plata", "plateado", "ceniza", "melange", "jaspeado"],
+      ];
+
+      const hasColorAffinity = (queryColorRaw: string, garment: StoreGarment): boolean => {
+        if (!queryColorRaw) return false;
+        const qColor = queryColorRaw.toLowerCase();
+        const gColorText = `${garment.primaryColor || ""} ${garment.name || ""} ${garment.description || ""}`.toLowerCase();
+        return COLOR_GROUPS.some(
+          (group) =>
+            group.some((term) => qColor.includes(term)) &&
+            group.some((term) => gColorText.includes(term))
+        );
+      };
+
       let bestGarment = store.garments[0];
       let maxPhotoSim = 0;
       let bestFamilyRelation: "same" | "different" | "neutral" = "neutral";
@@ -434,8 +459,12 @@ export async function POST(req: NextRequest) {
         if (!garment.embedding || garment.embedding.length === 0) continue;
         const sim = queryVector && queryVector.length > 0 ? cosineSimilarity(queryVector, garment.embedding) : 0;
 
-        const garmentFamily = garment.garmentFamily || extractGarmentFamily(garment.name, garment.category);
-        
+        const garmentFamily = extractGarmentFamily(
+          garment.name,
+          garment.category,
+          garment.garmentFamily
+        );
+
         let familyRelation: "same" | "different" | "neutral" = "neutral";
         if (queryFamily !== "otro" && garmentFamily !== "otro") {
           familyRelation = queryFamily === garmentFamily ? "same" : "different";
@@ -446,10 +475,13 @@ export async function POST(req: NextRequest) {
           additionalMatchesCount++;
         }
 
-        // PRIORIDAD SEMÁNTICA:
+        // PRIORIDAD SEMÁNTICA + AFINIDAD DE COLOR EN SELECCIÓN DE PRENDA:
         let comparisonScore = sim;
         if (familyRelation === "same") {
           comparisonScore = sim * 1.35;
+          if (hasColorAffinity(detectedInfo.primaryColor, garment)) {
+            comparisonScore *= 1.06;
+          }
         } else if (familyRelation === "different") {
           comparisonScore = sim * 0.65;
         }
@@ -464,10 +496,13 @@ export async function POST(req: NextRequest) {
 
       if (!bestGarment) continue;
 
-      // Coincidencia de estilos declarados
+      // Coincidencia de estilos: evaluamos tanto los estilos de la tienda como los estilos específicos de la prenda ganadora
+      const combinedStoreAndGarmentStyles = Array.from(
+        new Set([...(store.styles || []), ...(bestGarment.styles || [])])
+      );
       const { score: styleMatchScore, matchingCount } = calculateStyleMatch(
         activeStyles,
-        store.styles
+        combinedStoreAndGarmentStyles
       );
 
       // Resonancia final inteligente calibrada 4.0
@@ -478,15 +513,9 @@ export async function POST(req: NextRequest) {
         "prenda"
       );
 
-      // Bono de color (+0.04) si coinciden tonos en prendas del mismo tipo
-      if (bestFamilyRelation === "same" && detectedInfo.primaryColor && bestGarment.primaryColor) {
-        const queryColor = detectedInfo.primaryColor.toLowerCase();
-        const garmentColor = bestGarment.primaryColor.toLowerCase();
-        const baseColors = ["blanco", "negro", "azul", "denim", "burdeos", "rojo", "beige", "verde", "amarillo", "mostaza", "rosa", "marfil", "dorado"];
-        const sharedColor = baseColors.some((c) => queryColor.includes(c) && garmentColor.includes(c));
-        if (sharedColor) {
-          resonance += 0.04;
-        }
+      // Bono de color (+0.04) si coinciden tonos cromáticos en prendas del mismo tipo
+      if (bestFamilyRelation === "same" && hasColorAffinity(detectedInfo.primaryColor, bestGarment)) {
+        resonance += 0.04;
       }
 
       // Bono de variedad (+0.02 por prenda adicional con sim >= 0.65, máx +0.06)

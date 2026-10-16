@@ -161,11 +161,15 @@ let memoryCache: { stores: Store[]; timestamp: number } | null = null;
 const CACHE_TTL_MS = 15000; // 15 segundos
 
 function mapRowToStore(row: any): Store {
-  const lat = row.latitude ?? null;
-  const lng = row.longitude ?? null;
+  const rawGarments = Array.isArray(row.garments) ? row.garments : [];
+  const firstMeta = rawGarments[0]?._storeMeta || {};
+
+  const lat = row.latitude ?? firstMeta.latitude ?? null;
+  const lng = row.longitude ?? firstMeta.longitude ?? null;
+  const tiktok = row.tiktok || firstMeta.tiktok || undefined;
   const gallery = row.gallery || "";
   const galleryAddress = row.gallery_address || row.galleryAddress || "";
-  let mapsUrl = row.google_maps_url || row.googleMapsUrl || "";
+  let mapsUrl = row.google_maps_url || row.googleMapsUrl || firstMeta.googleMapsUrl || "";
   if (!mapsUrl) {
     if (lat && lng) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
@@ -173,6 +177,11 @@ function mapRowToStore(row: any): Store {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${gallery}, ${galleryAddress}, Gamarra, Lima`)}`;
     }
   }
+
+  const cleanGarments: StoreGarment[] = rawGarments.map((g: any) => {
+    const { _storeMeta, ...rest } = g;
+    return rest as StoreGarment;
+  });
 
   return {
     id: row.id,
@@ -189,22 +198,35 @@ function mapRowToStore(row: any): Store {
     sizes: Array.isArray(row.sizes) ? row.sizes : [],
     purchaseType: row.purchase_type || row.purchaseType || "cualquiera",
     standPhotoUrl: row.stand_photo_url || row.standPhotoUrl || "",
-    instagram: row.instagram || "",
+    instagram: row.instagram || undefined,
+    tiktok,
     updatedAt: row.updated_at || row.updatedAt || "",
-    garments: Array.isArray(row.garments) ? row.garments : [],
-    latitude: lat ? Number(lat) : undefined,
-    longitude: lng ? Number(lng) : undefined,
+    garments: cleanGarments,
+    latitude: lat !== null && lat !== undefined ? Number(lat) : undefined,
+    longitude: lng !== null && lng !== undefined ? Number(lng) : undefined,
     googleMapsUrl: mapsUrl,
   };
 }
 
 function mapStoreToRow(store: Store): any {
+  const storeMeta = {
+    tiktok: store.tiktok,
+    latitude: store.latitude,
+    longitude: store.longitude,
+    googleMapsUrl: store.googleMapsUrl,
+  };
+
+  const garmentsWithMeta = (store.garments || []).map((g, idx) =>
+    idx === 0 ? { ...g, _storeMeta: storeMeta } : g
+  );
+
+  // Solo enviamos las columnas exactas que existen en la tabla PostgreSQL `stores` de Supabase
   return {
     id: store.id,
     name: store.name,
     gallery: store.gallery,
     gallery_address: store.galleryAddress,
-    floor: store.floor,
+    floor: Number(store.floor) || 1,
     stand: store.stand,
     reference_location: store.referenceLocation,
     whatsapp: store.whatsapp,
@@ -214,12 +236,9 @@ function mapStoreToRow(store: Store): any {
     sizes: store.sizes,
     purchase_type: store.purchaseType,
     stand_photo_url: store.standPhotoUrl,
-    instagram: store.instagram,
+    instagram: store.instagram || null,
     updated_at: store.updatedAt,
-    garments: store.garments,
-    latitude: store.latitude,
-    longitude: store.longitude,
-    google_maps_url: store.googleMapsUrl,
+    garments: garmentsWithMeta,
   };
 }
 
@@ -286,6 +305,9 @@ export async function getStoreById(id: string): Promise<Store | null> {
 export async function saveStore(store: Store): Promise<void> {
   memoryCache = null; // Invalidar caché
 
+  let savedInSupabase = false;
+  let supabaseErrorMsg = "";
+
   // 1. Guardar en Supabase si está disponible
   if (isSupabaseConfigured) {
     try {
@@ -295,14 +317,19 @@ export async function saveStore(store: Store): Promise<void> {
         const { error } = await adminClient.from("stores").upsert(row);
         if (error) {
           console.error("Error al guardar tienda en Supabase:", error);
+          supabaseErrorMsg = error.message || JSON.stringify(error);
+        } else {
+          savedInSupabase = true;
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Excepción al guardar en Supabase:", err);
+      supabaseErrorMsg = err?.message || String(err);
     }
   }
 
   // 2. Guardar en archivo local (para desarrollo offline)
+  let savedLocally = false;
   try {
     ensureDataFile();
     const stores = getLocalStores();
@@ -315,8 +342,13 @@ export async function saveStore(store: Store): Promise<void> {
     }
 
     fs.writeFileSync(STORES_FILE, JSON.stringify(stores, null, 2), "utf8");
+    savedLocally = true;
   } catch (err) {
-    // Si corre en Vercel (read-only), ya quedó guardado en Supabase
+    // Si corre en Vercel (read-only), dependemos de Supabase
+  }
+
+  if (!savedInSupabase && !savedLocally) {
+    throw new Error(`No se pudo guardar la tienda en la base de datos: ${supabaseErrorMsg}`);
   }
 }
 
