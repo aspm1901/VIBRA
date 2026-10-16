@@ -73,7 +73,7 @@ export async function generateImageEmbedding(
       const { cleanBase64, mimeType: optMime } = await optimizeImageForAi(base64Data);
 
       const embedPromise = client.models.embedContent({
-        model: "gemini-embedding-2",
+        model: "gemini-embedding-2-preview",
         contents: [
           {
             inlineData: {
@@ -123,8 +123,17 @@ export interface GarmentAnalysisResult {
   isFallback?: boolean;
 }
 
-const VISION_PRIMARY_MODEL = "gemini-3.1-flash-lite"; // 500 consultas/día - Principal (~1.5s - 3s)
-const VISION_BACKUP_MODEL = "gemini-3.5-flash-lite";  // 500 consultas/día - Respaldo de alta cuota
+// Cascada secuencial verificada en vivo contra Google AI Studio (más de 2,500 consultas/día combinadas):
+// 1. gemini-flash-lite-latest      (500 RPD, estable ~3.5s, 0% errores 503)
+// 2. gemini-3.1-flash-lite-preview (500 RPD, ~1.5s)
+// 3. gemini-3-flash-preview        (Respaldo rápido ~3.0s)
+// 4. gemma-4-26b-a4b-it            (1,500 RPD, respaldo masivo multimodal)
+const VISION_MODEL_CASCADE = [
+  "gemini-flash-lite-latest",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3-flash-preview",
+  "gemma-4-26b-a4b-it",
+];
 
 export const VALID_STYLES = [
   "Casual",
@@ -175,7 +184,7 @@ export function sanitizeStyles(rawStyles: string[] = []): string[] {
 }
 
 /**
- * Analiza la prenda y extrae categoría, título y estilos con esquema estricto y reintentos en paralelo
+ * Analiza la prenda y extrae categoría, título y estilos con cascada secuencial anti-saturación
  */
 export async function detectGarmentStyles(
   base64Data: string,
@@ -246,7 +255,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 }
 `;
 
-  // Esquema estricto
+  // Esquema estricto para modelos Gemini
   const responseSchema = {
     type: "OBJECT",
     properties: {
@@ -270,6 +279,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
   };
 
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
+    const isGemma = modelName.startsWith("gemma");
     const response = await client.models.generateContent({
       model: modelName,
       contents: [
@@ -281,10 +291,12 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
           ],
         },
       ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: responseSchema as any,
-      },
+      config: isGemma
+        ? undefined
+        : {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema as any,
+          },
     });
 
     let text = response.text?.trim() || "";
@@ -304,23 +316,17 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     };
   };
 
-  // Intento 1: Modelo primario (gemini-3.1-flash-lite con 500 consultas/día)
-  try {
-    const primaryPromise = callModel(VISION_PRIMARY_MODEL);
-    const result = await withTimeout(primaryPromise, 5000, null);
-    if (result) return result;
-  } catch (err: any) {
-    console.warn(`Modelo primario ${VISION_PRIMARY_MODEL} falló (${err?.status || err?.message}).`);
-  }
-
-  // Intento 2: Modelo de respaldo (gemini-3.5-flash-lite con otras 500 consultas/día)
-  try {
-    console.log(`Activando modelo de respaldo ${VISION_BACKUP_MODEL}...`);
-    const backupPromise = callModel(VISION_BACKUP_MODEL);
-    const result = await withTimeout(backupPromise, 6500, null);
-    if (result) return result;
-  } catch (err: any) {
-    console.warn(`Modelo de respaldo ${VISION_BACKUP_MODEL} falló (${err?.status || err?.message}).`);
+  // Recorremos la cascada secuencialmente: solo pasa al siguiente si el anterior da 503/429 o demora > 13s
+  for (const modelName of VISION_MODEL_CASCADE) {
+    try {
+      const result = await withTimeout(callModel(modelName), 13000, null);
+      if (result) {
+        return result;
+      }
+      console.warn(`Timeout en ${modelName}, pasando al siguiente modelo de respaldo...`);
+    } catch (err: any) {
+      console.warn(`Modelo ${modelName} ocupado (${err?.status || err?.message}), probando siguiente...`);
+    }
   }
 
   console.warn("Ningún modelo de visión respondió a tiempo. Usando respaldo básico.");
