@@ -351,6 +351,37 @@ export async function saveStore(store: Store): Promise<void> {
   if (!savedInSupabase && !savedLocally) {
     throw new Error(`No se pudo guardar la tienda en la base de datos: ${supabaseErrorMsg}`);
   }
+
+  // 3. Limpiar archivos huérfanos en Supabase Storage que ya no pertenezcan a la tienda
+  if (isSupabaseConfigured) {
+    try {
+      const adminClient = getSupabaseAdmin();
+      if (adminClient) {
+        const activeFiles = new Set<string>();
+        if (store.standPhotoUrl) {
+          activeFiles.add(store.standPhotoUrl.split("/").pop() || "");
+        }
+        for (const g of store.garments || []) {
+          if (g.photoUrl) {
+            activeFiles.add(g.photoUrl.split("/").pop() || "");
+          }
+        }
+        const { data: files } = await adminClient.storage
+          .from("vibra-media")
+          .list(`stores/${store.id}`);
+        if (files && files.length > 0) {
+          const orphans = files
+            .filter((f) => f.name && !activeFiles.has(f.name))
+            .map((f) => `stores/${store.id}/${f.name}`);
+          if (orphans.length > 0) {
+            await adminClient.storage.from("vibra-media").remove(orphans);
+          }
+        }
+      }
+    } catch (cleanupErr) {
+      console.warn("Aviso al limpiar archivos huérfanos en storage:", cleanupErr);
+    }
+  }
 }
 
 export async function deleteStore(id: string): Promise<boolean> {
@@ -361,6 +392,16 @@ export async function deleteStore(id: string): Promise<boolean> {
     try {
       const adminClient = getSupabaseAdmin();
       if (adminClient) {
+        // 1. Eliminar todas las fotos de la carpeta de la tienda en Supabase Storage
+        const { data: files } = await adminClient.storage
+          .from("vibra-media")
+          .list(`stores/${id}`);
+        if (files && files.length > 0) {
+          const pathsToDelete = files.map((f) => `stores/${id}/${f.name}`);
+          await adminClient.storage.from("vibra-media").remove(pathsToDelete);
+        }
+
+        // 2. Eliminar registro de la tabla stores
         const { error } = await adminClient.from("stores").delete().eq("id", id);
         if (!error) deletedInSupabase = true;
       }

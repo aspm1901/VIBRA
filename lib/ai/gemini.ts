@@ -129,14 +129,16 @@ export interface GarmentAnalysisResult {
   isFallback?: boolean;
 }
 
-// Cascada secuencial EXCLUSIVA de alta cuota (15,400 consultas/día combinadas, ningún modelo de 20 RPD):
-// 1. gemini-flash-lite-latest      -> Gemini 3.5 Flash Lite (500 RPD | 15 RPM)
-// 2. gemini-3.1-flash-lite-preview -> Gemini 3.1 Flash Lite (500 RPD | 15 RPM)
-// 3. gemma-4-26b-a4b-it            -> Gemma 4 26B           (14,400 RPD | 30 RPM multimodal)
+// Cascada secuencial EXCLUSIVA de alta cuota y alto RPM (más de 29,000 consultas/día combinadas):
+// 1. gemini-3.1-flash-lite-preview -> Gemini 3.1 Flash Lite (500 RPD | 15 RPM, ~1.5s)
+// 2. gemma-4-26b-a4b-it            -> Gemma 4 26B           (14,400 RPD | 30 RPM multimodal)
+// 3. gemma-4-31b-it                -> Gemma 4 31B           (14,400 RPD | 30 RPM multimodal)
+// 4. gemini-flash-lite-latest      -> Respaldo final Flash Lite
 const VISION_MODEL_CASCADE = [
-  "gemini-flash-lite-latest",
   "gemini-3.1-flash-lite-preview",
   "gemma-4-26b-a4b-it",
+  "gemma-4-31b-it",
+  "gemini-flash-lite-latest",
 ];
 
 export const VALID_STYLES = [
@@ -310,20 +312,23 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     if (jsonMatch) text = jsonMatch[0];
     const parsed = JSON.parse(text);
 
+    const rawColor = String(parsed.primaryColor || "").trim();
+    const cleanColor = rawColor.length > 40 ? rawColor.split(/[.,;]/)[0].slice(0, 40).trim() : rawColor;
+
     return {
       category: parsed.category || "Prenda",
       garmentFamily: (parsed.garmentFamily || "otro").toLowerCase().trim(),
       styles: sanitizeStyles(parsed.styles),
       garmentTitle: parsed.garmentTitle || "Prenda analizada",
-      primaryColor: parsed.primaryColor || "",
+      primaryColor: cleanColor,
       description: parsed.description || "",
     };
   };
 
-  // Recorremos la cascada secuencialmente con timeout ágil de 6.5s por modelo para evitar cuellos de botella
+  // Recorremos la cascada secuencialmente (cada prenda viaja en su propia petición con margen amplio)
   for (const modelName of VISION_MODEL_CASCADE) {
     try {
-      const timeoutMs = modelName.startsWith("gemma") ? 8500 : 6500;
+      const timeoutMs = modelName.startsWith("gemma") ? 15000 : 7500;
       const result = await withTimeout(callModel(modelName), timeoutMs, null);
       if (result) {
         return result;

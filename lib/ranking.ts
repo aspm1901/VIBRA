@@ -21,9 +21,9 @@ export function extractGarmentFamily(
 ): GarmentFamily {
   const text = `${name} ${category} ${familyHint}`.toLowerCase();
 
-  // 1. Casacas / Chaquetas / Blazers / Abrigos
+  // 1. Casacas / Chaquetas / Blazers / Abrigos / Chalecos sastre
   if (
-    /\b(casaca|chaqueta|blazer|jacket|abrigo|bomber|sobrecamisa|biker|cazadora|trench|denim jacket|parka|cortaviento|chamarra)\b/.test(
+    /\b(casaca|chaqueta|blazer|jacket|abrigo|bomber|sobrecamisa|biker|cazadora|trench|denim jacket|parka|cortaviento|chamarra|chaleco sastre)\b/.test(
       text
     ) ||
     text.includes("casaca") ||
