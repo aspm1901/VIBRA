@@ -188,7 +188,7 @@ function mapRowToStore(row: any): Store {
     name: row.name,
     gallery,
     galleryAddress,
-    floor: row.floor || 1,
+    floor: firstMeta.floorText || row.floor || 1,
     stand: row.stand || "",
     referenceLocation: row.reference_location || row.referenceLocation || "",
     whatsapp: row.whatsapp || "",
@@ -214,6 +214,7 @@ function mapStoreToRow(store: Store): any {
     latitude: store.latitude,
     longitude: store.longitude,
     googleMapsUrl: store.googleMapsUrl,
+    floorText: store.floor !== undefined ? String(store.floor) : undefined,
   };
 
   const garmentsWithMeta = (store.garments || []).map((g, idx) =>
@@ -226,7 +227,7 @@ function mapStoreToRow(store: Store): any {
     name: store.name,
     gallery: store.gallery,
     gallery_address: store.galleryAddress,
-    floor: Number(store.floor) || 1,
+    floor: parseInt(String(store.floor), 10) || 1,
     stand: store.stand,
     reference_location: store.referenceLocation,
     whatsapp: store.whatsapp,
