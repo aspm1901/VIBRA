@@ -21,13 +21,19 @@ function getClient(): GoogleGenAI | null {
 export async function optimizeImageForAi(
   base64Data: string
 ): Promise<{ cleanBase64: string; mimeType: string }> {
+  const mimeMatch = base64Data.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+  const originalMime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  const rawClean = base64Data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
+
   try {
-    const rawClean = base64Data.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(rawClean, "base64");
 
-    // Si ya pesa menos de 60KB no hace falta re-comprimir
-    if (buffer.length < 60 * 1024) {
-      return { cleanBase64: rawClean, mimeType: "image/jpeg" };
+    // Si ya pesa menos de 65KB y es JPEG/PNG/WebP no hace falta re-comprimir
+    if (
+      buffer.length < 65 * 1024 &&
+      ["image/jpeg", "image/png", "image/webp"].includes(originalMime)
+    ) {
+      return { cleanBase64: rawClean, mimeType: originalMime };
     }
 
     const resizedBuffer = await sharp(buffer)
@@ -42,8 +48,8 @@ export async function optimizeImageForAi(
   } catch (err) {
     console.warn("No se pudo optimizar con sharp, usando imagen original:", err);
     return {
-      cleanBase64: base64Data.replace(/^data:image\/\w+;base64,/, ""),
-      mimeType: "image/jpeg",
+      cleanBase64: rawClean,
+      mimeType: originalMime,
     };
   }
 }
@@ -314,10 +320,11 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     };
   };
 
-  // Recorremos la cascada secuencialmente: solo pasa al siguiente si el anterior da 503/429 o demora > 13s
+  // Recorremos la cascada secuencialmente con timeout ágil de 6.5s por modelo para evitar cuellos de botella
   for (const modelName of VISION_MODEL_CASCADE) {
     try {
-      const result = await withTimeout(callModel(modelName), 13000, null);
+      const timeoutMs = modelName.startsWith("gemma") ? 8500 : 6500;
+      const result = await withTimeout(callModel(modelName), timeoutMs, null);
       if (result) {
         return result;
       }

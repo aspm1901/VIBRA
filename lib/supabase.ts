@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import sharp from "sharp";
 import { Store } from "@/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -29,7 +30,7 @@ export function getSupabaseAdmin() {
 export const STORAGE_BUCKET_NAME = "vibra-media";
 
 /**
- * Sube una imagen base64 a Supabase Storage y retorna su URL pública
+ * Sube una imagen base64 a Supabase Storage (comprimiendo en servidor si supera 120KB) y retorna su URL pública
  */
 export async function uploadImageToStorage(
   base64Data: string,
@@ -40,11 +41,25 @@ export async function uploadImageToStorage(
     throw new Error("Supabase no está configurado para almacenamiento.");
   }
 
-  // Detectar MIME type automáticamente (image/jpeg, image/png, image/webp)
+  // Detectar MIME type automáticamente (image/jpeg, image/png, image/webp, image/heif)
   const mimeMatch = base64Data.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
-  const contentType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  let contentType = mimeMatch ? mimeMatch[1] : "image/jpeg";
   const cleanBase64 = base64Data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
-  const buffer = Buffer.from(cleanBase64, "base64");
+  let buffer: Buffer = Buffer.from(cleanBase64, "base64");
+
+  // Si pesa más de 120KB o no es JPEG estándar, intentamos comprimir y estandarizar a JPEG con sharp
+  if (buffer.length > 120 * 1024 || contentType !== "image/jpeg") {
+    try {
+      buffer = await sharp(buffer)
+        .rotate()
+        .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+      contentType = "image/jpeg";
+    } catch (sharpErr) {
+      console.warn("No se pudo convertir imagen con sharp en storage, subiendo original:", sharpErr);
+    }
+  }
 
   const { error } = await adminClient.storage
     .from(STORAGE_BUCKET_NAME)

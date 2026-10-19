@@ -73,6 +73,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [savingProgress, setSavingProgress] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const handleLogout = async () => {
@@ -425,98 +426,166 @@ export default function AdminPage() {
     try {
       setIsSaving(true);
       setStatusMessage(null);
+      const totalNew = garmentsDraft.length;
 
-      if (isEditing) {
-        const payload = {
-          id: editingStoreId,
-          name,
-          gallery,
-          galleryAddress,
-          floor,
-          stand,
-          referenceLocation: referenceLocation || "Pasillo central",
-          whatsapp,
-          priceLevel,
-          styles: selectedStyles,
-          categories: selectedCategories,
-          sizes: selectedSizes,
-          purchaseType,
-          standPhotoBase64,
-          latitude,
-          longitude,
-          googleMapsUrl,
-          instagram: instagram.trim() || undefined,
-          tiktok: tiktok.trim() || undefined,
-          existingGarments,
-          newGarmentsData: garmentsDraft,
-        };
+      const baseFields = {
+        name,
+        gallery,
+        galleryAddress,
+        floor,
+        stand,
+        referenceLocation: referenceLocation || "Pasillo central",
+        whatsapp,
+        priceLevel,
+        styles: selectedStyles,
+        categories: selectedCategories,
+        sizes: selectedSizes,
+        purchaseType,
+        latitude,
+        longitude,
+        googleMapsUrl,
+        instagram: instagram.trim() || undefined,
+        tiktok: tiktok.trim() || undefined,
+      };
 
-        const res = await fetch("/api/admin/stores", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          setStatusMessage({
-            type: "success",
-            text: `¡Tienda "${name}" actualizada con éxito!` +
-              (garmentsDraft.length > 0 ? ` (${garmentsDraft.length} prendas nuevas vectorizadas)` : ""),
+      if (isEditing && editingStoreId) {
+        if (totalNew === 0) {
+          setSavingProgress("Guardando cambios de la tienda...");
+          const res = await fetch("/api/admin/stores", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: editingStoreId,
+              ...baseFields,
+              standPhotoBase64,
+              existingGarments,
+              newGarmentsData: [],
+            }),
           });
-          handleCancelEdit();
-          fetchStores();
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            setStatusMessage({ type: "error", text: data.error || "Error al actualizar tienda." });
+            return;
+          }
         } else {
-          setStatusMessage({ type: "error", text: data.error || "Error al actualizar tienda." });
+          let currentExisting = [...existingGarments];
+          for (let i = 0; i < totalNew; i++) {
+            setSavingProgress(`Analizando y subiendo prenda ${i + 1} de ${totalNew} con IA...`);
+            const res = await fetch("/api/admin/stores", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: editingStoreId,
+                ...baseFields,
+                standPhotoBase64: i === 0 ? standPhotoBase64 : null,
+                existingGarments: currentExisting,
+                newGarmentsData: [garmentsDraft[i]],
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+              setExistingGarments(currentExisting);
+              setGarmentsDraft(garmentsDraft.slice(i));
+              fetchStores();
+              setStatusMessage({
+                type: "error",
+                text:
+                  data.error ||
+                  `Se guardaron ${i} prendas, pero hubo un error en la prenda ${i + 1}. Haz clic en guardar para continuar con las restantes.`,
+              });
+              return;
+            }
+            currentExisting = data.store.garments;
+          }
         }
-      } else {
-        const payload = {
-          name,
-          gallery,
-          galleryAddress,
-          floor,
-          stand,
-          referenceLocation: referenceLocation || "Pasillo central",
-          whatsapp,
-          priceLevel,
-          styles: selectedStyles,
-          categories: selectedCategories,
-          sizes: selectedSizes,
-          purchaseType,
-          standPhotoBase64,
-          latitude,
-          longitude,
-          googleMapsUrl,
-          instagram: instagram.trim() || undefined,
-          tiktok: tiktok.trim() || undefined,
-          garmentsData: garmentsDraft,
-        };
 
-        const res = await fetch("/api/admin/stores", {
+        setStatusMessage({
+          type: "success",
+          text:
+            `¡Tienda "${name}" actualizada con éxito!` +
+            (totalNew > 0 ? ` (${totalNew} prendas nuevas vectorizadas)` : ""),
+        });
+        handleCancelEdit();
+        fetchStores();
+      } else {
+        // MODO CREACIÓN: Paso 1 -> Crear tienda con la primera prenda
+        setSavingProgress(
+          totalNew > 1
+            ? `Creando tienda y analizando prenda 1 de ${totalNew} con IA...`
+            : "Creando tienda y analizando prenda con IA..."
+        );
+
+        const firstRes = await fetch("/api/admin/stores", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            ...baseFields,
+            standPhotoBase64,
+            garmentsData: [garmentsDraft[0]],
+          }),
         });
 
-        const data = await res.json();
-        if (data.success) {
+        const firstData = await firstRes.json();
+        if (!firstRes.ok || !firstData.success) {
           setStatusMessage({
-            type: "success",
-            text: `¡Tienda "${name}" registrada y ${garmentsDraft.length} prendas vectorizadas exitosamente!`,
+            type: "error",
+            text: firstData.error || "Error al registrar la tienda.",
+          });
+          return;
+        }
+
+        let createdStore: Store = firstData.store;
+
+        // Paso 2 -> Subir y vectorizar prendas adicionales una por una (nunca excede 60s de Vercel)
+        for (let i = 1; i < totalNew; i++) {
+          setSavingProgress(`Analizando y subiendo prenda ${i + 1} de ${totalNew} con IA...`);
+          const nextRes = await fetch("/api/admin/stores", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: createdStore.id,
+              ...baseFields,
+              standPhotoBase64: null,
+              existingGarments: createdStore.garments,
+              newGarmentsData: [garmentsDraft[i]],
+            }),
           });
 
-          // Limpiar formulario
-          handleCancelEdit();
-          fetchStores();
-        } else {
-          setStatusMessage({ type: "error", text: data.error || "Error al registrar tienda." });
+          const nextData = await nextRes.json();
+          if (!nextRes.ok || !nextData.success) {
+            // La tienda y las primeras `i` prendas ya quedaron guardadas; pasamos a modo edición con las restantes
+            setEditingStoreId(createdStore.id);
+            setExistingGarments(createdStore.garments);
+            setStandPhotoBase64(null);
+            setCurrentStandPhotoUrl(createdStore.standPhotoUrl);
+            setGarmentsDraft(garmentsDraft.slice(i));
+            fetchStores();
+            setStatusMessage({
+              type: "error",
+              text: `La tienda y las primeras ${i} prendas ya se guardaron, pero falló la prenda ${i + 1}. Presiona el botón para terminar de subir las restantes.`,
+            });
+            return;
+          }
+          createdStore = nextData.store;
         }
+
+        setStatusMessage({
+          type: "success",
+          text: `¡Tienda "${name}" registrada y ${totalNew} prendas vectorizadas exitosamente!`,
+        });
+
+        handleCancelEdit();
+        fetchStores();
       }
     } catch (err) {
       console.error(err);
-      setStatusMessage({ type: "error", text: "Error de red al procesar la tienda con IA." });
+      setStatusMessage({
+        type: "error",
+        text: "Error de conexión al procesar la prenda. Verifica tu internet e intenta nuevamente.",
+      });
     } finally {
       setIsSaving(false);
+      setSavingProgress(null);
     }
   };
 
@@ -1328,9 +1397,10 @@ export default function AdminPage() {
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span>
-                      {garmentsDraft.length > 0
-                        ? "Vectorizando nuevas prendas con Gemini..."
-                        : "Guardando cambios en la tienda..."}
+                      {savingProgress ||
+                        (garmentsDraft.length > 0
+                          ? "Vectorizando nuevas prendas con Gemini..."
+                          : "Guardando cambios en la tienda...")}
                     </span>
                   </>
                 ) : editingStoreId ? (
