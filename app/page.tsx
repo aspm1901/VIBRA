@@ -132,12 +132,6 @@ function VibraApp() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar las tiendas reales de Gamarra al abrir la página
-  useEffect(() => {
-    executeSearch({ overrideSearchMode: "estilo" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const executeSearch = async (overrideParams?: {
     image?: string;
     overrideCategory?: string;
@@ -956,296 +950,335 @@ function VibraApp() {
 
         {/* ================= COLUMNA DERECHA: RANKING DE AFINIDAD (7 de 12 cols) ================= */}
         <section className="lg:col-span-7 flex flex-col gap-5">
-          {/* H2 Sección (Escala modular pág. 10 y 12) */}
-          <div>
-            <h2
-              className="font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              {inputType === "estilo"
-                ? `${displayedResults.length} ${
-                    displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
-                  } con tu estilo`
-                : hasUploadedPhoto
-                ? `${displayedResults.length} ${
-                    displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
-                  } con tu foto`
-                : `${displayedResults.length} tiendas verificadas en Gamarra`}
-            </h2>
-            <p className="text-[13px] leading-[19px] font-medium text-grafito-55 mt-1">
-              {hasUploadedPhoto || inputType === "estilo"
-                ? "Agrupadas por galería, de mayor a menor afinidad"
-                : "Sube una foto a la izquierda para ordenarlas según su parecido con la prenda que buscas"}
-            </p>
-          </div>
-
-          {/* Chips de filtro de Galería */}
-          {!isSearching && availableGalleries.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedGalleryFilter("todas")}
-                className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
-                  selectedGalleryFilter === "todas"
-                    ? "neu-chip-active font-semibold"
-                    : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
-                }`}
+          {/* Estado inicial limpio cuando está en modo Foto y aún no ha subido ninguna imagen */}
+          {inputType === "foto" && !hasUploadedPhoto && !isSearching ? (
+            <div className="p-10 sm:p-14 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center min-h-[420px]">
+              <ResonanceEmptyNode size={56} />
+              <h2
+                className="font-display font-semibold text-[24px] leading-[29px] sm:text-[28px] sm:leading-[33px] text-basalto-90 mt-4 max-w-md"
+                style={{ letterSpacing: "-0.02em" }}
               >
-                Todas las galerías ({results.length})
-              </button>
-              {availableGalleries.map((gal) => {
-                const count = results.filter((r) => r.store.gallery === gal).length;
-                const isSel = selectedGalleryFilter === gal;
-                return (
+                Sube una foto para ver el ranking de tiendas
+              </h2>
+              <p className="text-[14px] sm:text-[15px] leading-[23px] text-grafito-55 mt-2 max-w-md font-normal">
+                Elige o toma una fotografía de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-2.5 min-h-[44px] rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] sm:text-[14px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95 shadow-xs"
+                >
+                  <Camera className="w-4 h-4 text-white" />
+                  <span>Elegir una foto</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputType("estilo");
+                    executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
+                  }}
+                  className="px-5 py-2.5 min-h-[44px] rounded-full neu-chip text-basalto-90 hover:text-higo-70 text-[13px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-higo-70" />
+                  <span>Explorar por estilo sin foto</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* H2 Sección (Escala modular pág. 10 y 12) */}
+              <div>
+                <h2
+                  className="font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
+                  style={{ letterSpacing: "-0.025em" }}
+                >
+                  {isSearching
+                    ? "Analizando afinidad en Gamarra..."
+                    : inputType === "estilo"
+                    ? `${displayedResults.length} ${
+                        displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
+                      } con tu estilo`
+                    : `${displayedResults.length} ${
+                        displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
+                      } con tu foto`}
+                </h2>
+                <p className="text-[13px] leading-[19px] font-medium text-grafito-55 mt-1">
+                  Agrupadas por galería, de mayor a menor afinidad
+                </p>
+              </div>
+
+              {/* Chips de filtro de Galería */}
+              {!isSearching && availableGalleries.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
-                    key={gal}
                     type="button"
-                    onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
+                    onClick={() => setSelectedGalleryFilter("todas")}
                     className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
-                      isSel
+                      selectedGalleryFilter === "todas"
                         ? "neu-chip-active font-semibold"
                         : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
                     }`}
                   >
-                    {gal} ({count})
+                    Todas las galerías ({results.length})
                   </button>
-                );
-              })}
-            </div>
-          )}
+                  {availableGalleries.map((gal) => {
+                    const count = results.filter((r) => r.store.gallery === gal).length;
+                    const isSel = selectedGalleryFilter === gal;
+                    return (
+                      <button
+                        key={gal}
+                        type="button"
+                        onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
+                        className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
+                          isSel
+                            ? "neu-chip-active font-semibold"
+                            : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
+                        }`}
+                      >
+                        {gal} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-          {/* 3 · Estado de Carga: Esqueletos en Caliza 10 + 3 arcos barriendo en ciclo de 1.4 s */}
-          {isSearching && (
-            <div className="space-y-3">
-              <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
-                <ResonanceSweepLoader size={52} />
-                <p className="text-[15px] leading-[22px] font-medium text-basalto-90 mt-3">
-                  Calculando afinidad visual con los catálogos de Gamarra
-                </p>
-                <p className="text-[13px] leading-[19px] text-grafito-55 mt-1">
-                  Ordenando tiendas según color, silueta y textura de la prenda
-                </p>
-              </div>
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="h-28 rounded-3xl bg-caliza-10 border border-caliza-20 animate-pulse"
-                />
-              ))}
-            </div>
-          )}
+              {/* 3 · Estado de Carga: Esqueletos en Caliza 10 + 3 arcos barriendo en ciclo de 1.4 s */}
+              {isSearching && (
+                <div className="space-y-3">
+                  <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
+                    <ResonanceSweepLoader size={52} />
+                    <p className="text-[15px] leading-[22px] font-medium text-basalto-90 mt-3">
+                      Calculando afinidad visual con los catálogos de Gamarra
+                    </p>
+                    <p className="text-[13px] leading-[19px] text-grafito-55 mt-1">
+                      Ordenando tiendas según color, silueta y textura de la prenda
+                    </p>
+                  </div>
+                  {[1, 2, 3].map((n) => (
+                    <div
+                      key={n}
+                      className="h-28 rounded-3xl bg-caliza-10 border border-caliza-20 animate-pulse"
+                    />
+                  ))}
+                </div>
+              )}
 
-          {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa */}
-          {!isSearching && displayedResults.length === 0 && (
-            <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
-              <ResonanceEmptyNode size={48} />
-              <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
-                Ninguna tienda superó el 55% de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
-              </p>
-            </div>
-          )}
+              {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa */}
+              {!isSearching && displayedResults.length === 0 && (
+                <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
+                  <ResonanceEmptyNode size={48} />
+                  <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
+                    Ninguna tienda superó el 55% de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
+                  </p>
+                </div>
+              )}
 
-          {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
-          {!isSearching && displayedResults.length > 0 && (
-            <div className="space-y-3.5">
-              {displayedResults.map((item, idx) => {
-                const isRank1 = idx === 0 && (hasUploadedPhoto || inputType === "estilo");
-                const inRoute = isInRoute(item.store.id);
-                const percentageScore = `${Math.round(item.resonanceScore * 100)}%`;
+              {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
+              {!isSearching && displayedResults.length > 0 && (
+                <div className="space-y-3.5">
+                  {displayedResults.map((item, idx) => {
+                    const isRank1 = idx === 0;
+                    const inRoute = isInRoute(item.store.id);
+                    const percentageScore = `${Math.round(item.resonanceScore * 100)}%`;
 
-                return (
-                  <article
-                    key={item.store.id}
-                    onClick={() => setSelectedStoreItem(item)}
-                    className={`rounded-3xl p-4 sm:p-5 transition-all duration-240 ease-vibra cursor-pointer flex items-center justify-between gap-4 ${
-                      isRank1 ? "neu-rank1" : "neu-elevated"
-                    }`}
-                  >
-                    {/* ZONA 1 + 2: Compuesto fotográfico con índice de rango + Identidad y Tríada */}
-                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                      {/* Zona 1: Compuesto fotográfico con fondo blanco uniforme y filete 1px */}
-                      <div className="relative shrink-0">
-                        {searchMode === "look" &&
-                        item.matchingGarments &&
-                        item.matchingGarments.length > 1 ? (
-                          <div className="flex items-center -space-x-4">
-                            {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
-                              <div
-                                key={mg.id}
-                                className={`relative w-[68px] h-[86px] sm:w-[76px] sm:h-[96px] flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
-                                  gIdx === 1 ? "z-10 ring-2 ring-[#F4F5F0]" : "z-0"
-                                }`}
-                                title={mg.name}
-                              >
+                    return (
+                      <article
+                        key={item.store.id}
+                        onClick={() => setSelectedStoreItem(item)}
+                        className={`rounded-3xl p-4 sm:p-5 transition-all duration-240 ease-vibra cursor-pointer flex items-center justify-between gap-4 ${
+                          isRank1 ? "neu-rank1" : "neu-elevated"
+                        }`}
+                      >
+                        {/* ZONA 1 + 2: Compuesto fotográfico con índice de rango + Identidad y Tríada */}
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          {/* Zona 1: Compuesto fotográfico con fondo blanco uniforme y filete 1px */}
+                          <div className="relative shrink-0">
+                            {searchMode === "look" &&
+                            item.matchingGarments &&
+                            item.matchingGarments.length > 1 ? (
+                              <div className="flex items-center -space-x-4">
+                                {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
+                                  <div
+                                    key={mg.id}
+                                    className={`relative w-[68px] h-[86px] sm:w-[76px] sm:h-[96px] flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
+                                      gIdx === 1 ? "z-10 ring-2 ring-[#F4F5F0]" : "z-0"
+                                    }`}
+                                    title={mg.name}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={mg.photoUrl}
+                                      alt={mg.name}
+                                      className="max-h-full max-w-full object-contain"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="relative w-[78px] h-[98px] sm:w-[86px] sm:h-[108px] flex items-center justify-center p-1.5 shrink-0 overflow-hidden photo-frame">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={mg.photoUrl}
-                                  alt={mg.name}
+                                  src={item.bestGarment.photoUrl}
+                                  alt={item.bestGarment.name}
                                   className="max-h-full max-w-full object-contain"
                                 />
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="relative w-[78px] h-[98px] sm:w-[86px] sm:h-[108px] flex items-center justify-center p-1.5 shrink-0 overflow-hidden photo-frame">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={item.bestGarment.photoUrl}
-                              alt={item.bestGarment.name}
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          </div>
-                        )}
-
-                        {/* Índice de rango */}
-                        <span className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-basalto-90 text-caliza-5 text-[12px] font-semibold tabular-nums flex items-center justify-center shadow-xs z-20">
-                          {idx + 1}
-                        </span>
-                      </div>
-
-                      {/* Zona 2: H4 Título de tarjeta + Tríada Galería | Piso | Stand con filetes verticales */}
-                      <div className="min-w-0 flex-1">
-                        <h4
-                          className="font-display font-medium text-[18px] leading-[23px] sm:text-[20px] sm:leading-[25px] text-basalto-90 truncate"
-                          style={{ letterSpacing: "-0.008em" }}
-                        >
-                          {item.store.name}
-                        </h4>
-
-                        {/* Tríada operativa en 3 celdas separadas por filete vertical (Pág. 12) */}
-                        <div className="inline-grid grid-cols-[minmax(95px,auto)_auto_auto] gap-x-3 sm:gap-x-4 mt-1.5 py-1.5 border-y border-caliza-20">
-                          <div className="min-w-0">
-                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
-                              Galería
-                            </span>
-                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
-                              {item.store.gallery.replace(/^Galería\s+/i, "")}
-                            </span>
-                          </div>
-                          <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
-                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
-                              Piso
-                            </span>
-                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
-                              {item.store.floor}
-                            </span>
-                          </div>
-                          <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
-                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
-                              Stand
-                            </span>
-                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
-                              {item.store.stand}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Prenda que resuena */}
-                        <p className="text-[12px] sm:text-[13px] leading-[18px] text-grafito-55 mt-1.5 line-clamp-1">
-                          {searchMode === "look" &&
-                          item.matchingGarments &&
-                          item.matchingGarments.length > 1
-                            ? `${item.matchingGarments[0].name} + ${item.matchingGarments[1].name}`
-                            : item.bestGarment.name}
-                        </p>
-
-                        {/* Controles operativos en una sola fila compacta */}
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (inRoute) {
-                                removeFromRoute(item.store.id);
-                              } else {
-                                addToRoute(item.store);
-                              }
-                            }}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all duration-180 ease-vibra border ${
-                              inRoute
-                                ? "bg-neblina-30 text-basalto-90 border-neblina-70"
-                                : "bg-white/80 text-neblina-70 border-neblina-30 hover:border-neblina-70"
-                            }`}
-                          >
-                            {inRoute ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-neblina-70" />
-                                <span>En tu ruta</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-3.5 h-3.5 text-neblina-70" />
-                                <span>Ruta</span>
-                              </>
                             )}
-                          </button>
 
-                          <a
-                            href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                              `Hola ${item.store.name}, vi su tienda en vibra (${percentageScore} de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[12px] font-medium transition-all duration-180 ease-vibra"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5" />
-                            <span>WhatsApp</span>
-                          </a>
+                            {/* Índice de rango */}
+                            <span className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-basalto-90 text-caliza-5 text-[12px] font-semibold tabular-nums flex items-center justify-center shadow-xs z-20">
+                              {idx + 1}
+                            </span>
+                          </div>
 
-                          <a
-                            href={
-                              item.store.googleMapsUrl ||
-                              (item.store.latitude && item.store.longitude
-                                ? `https://www.google.com/maps/search/?api=1&query=${item.store.latitude},${item.store.longitude}`
-                                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                    `${item.store.gallery}, ${item.store.galleryAddress || "Gamarra, La Victoria, Lima"}`
-                                  )}`)
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/80 text-neblina-70 hover:bg-neblina-30/40 text-[12px] font-medium border border-caliza-20 transition-all"
-                            title="Abrir ubicación en Google Maps"
-                          >
-                            <Navigation className="w-3 h-3 text-neblina-70" />
-                            <span>Mapa</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-grafito-55" />
-                          </a>
+                          {/* Zona 2: H4 Título de tarjeta + Tríada Galería | Piso | Stand con filetes verticales */}
+                          <div className="min-w-0 flex-1">
+                            <h4
+                              className="font-display font-medium text-[18px] leading-[23px] sm:text-[20px] sm:leading-[25px] text-basalto-90 truncate"
+                              style={{ letterSpacing: "-0.008em" }}
+                            >
+                              {item.store.name}
+                            </h4>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedStoreItem(item);
-                            }}
-                            className="inline-flex items-center gap-0.5 px-2 py-1 rounded-full text-basalto-90 hover:text-higo-70 text-[12px] font-medium transition-colors"
-                          >
-                            <span>Ver ficha</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Tríada operativa en 3 celdas separadas por filete vertical (Pág. 12) */}
+                            <div className="inline-grid grid-cols-[minmax(95px,auto)_auto_auto] gap-x-3 sm:gap-x-4 mt-1.5 py-1.5 border-y border-caliza-20">
+                              <div className="min-w-0">
+                                <span className="text-[11px] leading-[14px] text-grafito-55 block">
+                                  Galería
+                                </span>
+                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
+                                  {item.store.gallery.replace(/^Galería\s+/i, "")}
+                                </span>
+                              </div>
+                              <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                                <span className="text-[11px] leading-[14px] text-grafito-55 block">
+                                  Piso
+                                </span>
+                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
+                                  {item.store.floor}
+                                </span>
+                              </div>
+                              <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                                <span className="text-[11px] leading-[14px] text-grafito-55 block">
+                                  Stand
+                                </span>
+                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
+                                  {item.store.stand}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Prenda que resuena */}
+                            <p className="text-[12px] sm:text-[13px] leading-[18px] text-grafito-55 mt-1.5 line-clamp-1">
+                              {searchMode === "look" &&
+                              item.matchingGarments &&
+                              item.matchingGarments.length > 1
+                                ? `${item.matchingGarments[0].name} + ${item.matchingGarments[1].name}`
+                                : item.bestGarment.name}
+                            </p>
+
+                            {/* Controles operativos en una sola fila compacta */}
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (inRoute) {
+                                    removeFromRoute(item.store.id);
+                                  } else {
+                                    addToRoute(item.store);
+                                  }
+                                }}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all duration-180 ease-vibra border ${
+                                  inRoute
+                                    ? "bg-neblina-30 text-basalto-90 border-neblina-70"
+                                    : "bg-white/80 text-neblina-70 border-neblina-30 hover:border-neblina-70"
+                                }`}
+                              >
+                                {inRoute ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-neblina-70" />
+                                    <span>En tu ruta</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3.5 h-3.5 text-neblina-70" />
+                                    <span>Ruta</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <a
+                                href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                                  `Hola ${item.store.name}, vi su tienda en vibra (${percentageScore} de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[12px] font-medium transition-all duration-180 ease-vibra"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+
+                              <a
+                                href={
+                                  item.store.googleMapsUrl ||
+                                  (item.store.latitude && item.store.longitude
+                                    ? `https://www.google.com/maps/search/?api=1&query=${item.store.latitude},${item.store.longitude}`
+                                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                        `${item.store.gallery}, ${item.store.galleryAddress || "Gamarra, La Victoria, Lima"}`
+                                      )}`)
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/80 text-neblina-70 hover:bg-neblina-30/40 text-[12px] font-medium border border-caliza-20 transition-all"
+                                title="Abrir ubicación en Google Maps"
+                              >
+                                <Navigation className="w-3 h-3 text-neblina-70" />
+                                <span>Mapa</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-grafito-55" />
+                              </a>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedStoreItem(item);
+                                }}
+                                className="inline-flex items-center gap-0.5 px-2 py-1 rounded-full text-basalto-90 hover:text-higo-70 text-[12px] font-medium transition-colors"
+                              >
+                                <span>Ver ficha</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* ZONA 3: Columna rígida derecha a 64px con el medidor de afinidad (Pág. 12) */}
-                    <div className="shrink-0 pl-2 sm:pl-4 border-l border-caliza-20 flex flex-col items-center justify-center">
-                      <RadarArcIcon
-                        score={item.resonanceScore}
-                        band={item.band}
-                        isStyleMode={inputType === "estilo"}
-                      />
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                        {/* ZONA 3: Columna rígida derecha a 64px con el medidor de afinidad (Pág. 12) */}
+                        <div className="shrink-0 pl-2 sm:pl-4 border-l border-caliza-20 flex flex-col items-center justify-center">
+                          <RadarArcIcon
+                            score={item.resonanceScore}
+                            band={item.band}
+                            isStyleMode={inputType === "estilo"}
+                          />
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Nota Micro de honestidad probabilística (Escala Micro 11/17 Grafito 55, pág. 10) */}
+              <p className="text-[11px] leading-[17px] text-grafito-55 pt-2" style={{ letterSpacing: "0.01em" }}>
+                El ranking se genera a partir de la fotografía publicada por el comerciante y no confirma existencias ni tallas disponibles en tienda.
+              </p>
+            </>
           )}
-
-          {/* Nota Micro de honestidad probabilística (Escala Micro 11/17 Grafito 55, pág. 10) */}
-          <p className="text-[11px] leading-[17px] text-grafito-55 pt-2" style={{ letterSpacing: "0.01em" }}>
-            El ranking se genera a partir de la fotografía publicada por el comerciante y no confirma existencias ni tallas disponibles en tienda.
-          </p>
         </section>
       </main>
 
