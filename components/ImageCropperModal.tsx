@@ -10,7 +10,6 @@ interface ImageCropperModalProps {
   onCancel: () => void;
 }
 
-// Función auxiliar para recortar y optimizar la imagen en el canvas del navegador
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string> {
   const image = new Image();
   image.src = imageSrc;
@@ -26,7 +25,6 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string>
     throw new Error("No se pudo obtener el contexto 2d del canvas");
   }
 
-  // Escalar proporcionalmente a un máximo de 640px para carga y procesamiento ultrarrápido
   const MAX_DIM = 640;
   let targetWidth = pixelCrop.width;
   let targetHeight = pixelCrop.height;
@@ -59,7 +57,6 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string>
   return canvas.toDataURL("image/jpeg", 0.82);
 }
 
-// Redimensiona una imagen completa a un tamaño óptimo ligero
 async function getDownscaledFullImg(imageSrc: string): Promise<string> {
   const image = new Image();
   image.src = imageSrc;
@@ -106,7 +103,6 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const [naturalAspect, setNaturalAspect] = useState<number>(3 / 4);
   const [aspectMode, setAspectMode] = useState<"full" | "3:4" | "1:1">("full");
 
-  // Detectar dimensiones naturales de la imagen inmediatamente
   useEffect(() => {
     if (!imageSrc) return;
     const img = new Image();
@@ -141,7 +137,6 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const handleApplyCrop = async () => {
     try {
       setIsProcessing(true);
-      // Si está en modo foto completa y sin zoom relevante, optimizamos la imagen completa
       if (aspectMode === "full" && zoom <= 1.02 && crop.x === 0 && crop.y === 0) {
         const optimized = await getDownscaledFullImg(imageSrc);
         onCropComplete(optimized);
@@ -211,62 +206,64 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-basalto-90/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-180"
       onClick={onCancel}
     >
       <div
-        className="relative w-full max-w-lg bg-[#18181b] border border-[#2e2e38] rounded-3xl p-4 sm:p-5 md:p-6 text-white shadow-2xl flex flex-col my-auto max-h-[96vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg bg-caliza-5 border border-caliza-20 rounded-3xl p-5 sm:p-6 text-basalto-90 shadow-2xl flex flex-col my-auto max-h-[96vh] overflow-y-auto animate-in zoom-in-95 duration-240 ease-vibra"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#2e2e38]">
+        <div className="flex items-center justify-between pb-3 border-b border-caliza-20">
           <div className="flex items-center gap-2">
-            <Crop className="w-5 h-5 text-vibra-400" />
-            <h3 className="text-lg font-bold text-white">Encuadra la imagen</h3>
+            <Crop className="w-5 h-5 text-higo-70" />
+            <h3 className="font-display text-[20px] font-semibold text-basalto-90">
+              Encuadra la prenda
+            </h3>
           </div>
           <button
             onClick={onCancel}
-            className="w-8 h-8 rounded-full bg-[#272730] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-full neu-chip flex items-center justify-center text-grafito-55 hover:text-basalto-90 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Selector de modo de encuadre */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#121215] rounded-2xl border border-[#2b2b36] my-3">
+        {/* Selector de proporción */}
+        <div className="flex items-center gap-1.5 p-1.5 neu-sunken rounded-2xl my-3">
           <button
             type="button"
             onClick={() => selectAspect("full")}
-            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2.5 rounded-xl text-[12px] font-medium transition-all flex items-center justify-center gap-1.5 ${
               aspectMode === "full"
-                ? "bg-vibra-500 text-white shadow-md shadow-vibra-950/40"
-                : "text-gray-400 hover:text-white hover:bg-[#1a1a20]"
+                ? "neu-chip text-higo-70 font-semibold border border-higo-30"
+                : "text-grafito-55 hover:text-basalto-90"
             }`}
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span>Toda la foto (100%)</span>
+            <span>Foto completa</span>
           </button>
 
           <button
             type="button"
             onClick={() => selectAspect("3:4")}
-            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2.5 rounded-xl text-[12px] font-medium transition-all flex items-center justify-center gap-1.5 ${
               aspectMode === "3:4"
-                ? "bg-vibra-500 text-white shadow-md shadow-vibra-950/40"
-                : "text-gray-400 hover:text-white hover:bg-[#1a1a20]"
+                ? "neu-chip text-higo-70 font-semibold border border-higo-30"
+                : "text-grafito-55 hover:text-basalto-90"
             }`}
           >
             <Crop className="w-3.5 h-3.5" />
-            <span>Prenda (3:4)</span>
+            <span>Vertical (3:4)</span>
           </button>
 
           <button
             type="button"
             onClick={() => selectAspect("1:1")}
-            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2.5 rounded-xl text-[12px] font-medium transition-all flex items-center justify-center gap-1.5 ${
               aspectMode === "1:1"
-                ? "bg-vibra-500 text-white shadow-md shadow-vibra-950/40"
-                : "text-gray-400 hover:text-white hover:bg-[#1a1a20]"
+                ? "neu-chip text-higo-70 font-semibold border border-higo-30"
+                : "text-grafito-55 hover:text-basalto-90"
             }`}
           >
             <Square className="w-3.5 h-3.5" />
@@ -275,7 +272,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
         </div>
 
         {/* Área del Cropper */}
-        <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] bg-black rounded-2xl overflow-hidden mb-3 border border-[#2e2e38]">
+        <div className="relative w-full h-[300px] sm:h-[340px] bg-basalto-90 rounded-2xl overflow-hidden mb-3 border border-caliza-20">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -290,7 +287,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
         {/* Control de Zoom */}
         <div className="flex items-center gap-3 px-2 py-1">
-          <ZoomOut className="w-4 h-4 text-gray-400" />
+          <ZoomOut className="w-4 h-4 text-grafito-55" />
           <input
             type="range"
             value={zoom}
@@ -299,26 +296,26 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
             step={0.05}
             aria-labelledby="Zoom"
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full accent-vibra-500 h-1.5 bg-gray-700 rounded-lg cursor-pointer"
+            className="w-full accent-higo-70 h-1.5 bg-caliza-20 rounded-lg cursor-pointer"
           />
-          <ZoomIn className="w-4 h-4 text-gray-400" />
+          <ZoomIn className="w-4 h-4 text-grafito-55" />
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#2e2e38]">
+        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-caliza-20">
           <button
             type="button"
             onClick={handleUseOriginal}
-            className="flex-1 py-3 px-4 bg-[#23232b] hover:bg-[#2d2d38] text-gray-300 rounded-xl text-xs font-semibold transition-colors"
+            className="flex-1 py-3 px-4 neu-chip text-basalto-90 rounded-full text-[13px] font-medium transition-colors"
           >
-            Foto completa directa
+            Usar sin recortar
           </button>
 
           <button
             type="button"
             disabled={isProcessing}
             onClick={handleApplyCrop}
-            className="flex-1 py-3 px-4 bg-vibra-500 hover:bg-vibra-600 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-vibra-950/40"
+            className="flex-1 py-3 px-4 bg-higo-70 hover:bg-vibra-600 text-white rounded-full text-[13px] font-medium transition-all flex items-center justify-center gap-1.5"
           >
             <Check className="w-4 h-4" />
             <span>{isProcessing ? "Procesando..." : "Confirmar encuadre"}</span>

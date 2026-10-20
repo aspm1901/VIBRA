@@ -3,33 +3,141 @@
 @tailwind utilities;
 
 :root {
-  --background: #121214;
-  --foreground: #f3f4f6;
+  --background: #EDEEE8;
+  --foreground: #26282A;
+  --caliza-05: #EDEEE8;
+  --caliza-10: #E2E3DB;
+  --caliza-20: #CFD1C7;
+  --caliza-30: #B6B9AD;
+  --grafito-55: #676B63;
+  --basalto-90: #26282A;
+  --higo-70: #71545B;
+  --higo-30: #C9B2B7;
+  --neblina-70: #566E7B;
+  --neblina-30: #C2D0D6;
+  --oxido-65: #8F5346;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar sutil y minimalista */
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-bricolage), system-ui, -apple-system, sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Neomorfismo acotado — Manual de Marca v2.0 (Fuente de luz única a 315°) */
+.neu-elevated {
+  background-color: #EDEEE8;
+  box-shadow: -7px -7px 15px #FFFFFF, 7px 7px 16px rgba(150, 154, 140, 0.42);
+}
+
+.neu-rank1 {
+  background-color: #EDEEE8;
+  border: 1px solid #C9B2B7;
+  box-shadow: -11px -11px 20px #FFFFFF, 11px 11px 22px rgba(150, 154, 140, 0.48);
+}
+
+.neu-sunken {
+  background-color: #E2E3DB;
+  box-shadow: inset -6px -6px 12px #FFFFFF, inset 6px 6px 13px rgba(150, 154, 140, 0.52);
+}
+
+.neu-chip {
+  background-color: #EDEEE8;
+  box-shadow: -4px -4px 9px #FFFFFF, 4px 4px 10px rgba(150, 154, 140, 0.36);
+}
+
+/* Filete interior sutil para fotografías sobre Caliza (pág. 13) */
+.photo-frame {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(38, 40, 42, 0.09);
+}
+
+/* Máscara orgánica superelipse para el pozo de captura (pág. 11 y 12) */
+.organic-mask {
+  border-radius: 46% 54% 51% 49% / 44% 48% 52% 56%;
+  transition: border-radius 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes organic-morph {
+  0%, 100% {
+    border-radius: 46% 54% 51% 49% / 44% 48% 52% 56%;
+  }
+  33% {
+    border-radius: 53% 47% 45% 55% / 51% 43% 57% 49%;
+  }
+  66% {
+    border-radius: 44% 56% 54% 46% / 48% 55% 45% 52%;
+  }
+}
+
+.organic-mask-active {
+  animation: organic-morph 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Barrido de resonancia desde el núcleo hacia fuera en ciclo de 1.4s (pág. 4 y 12) */
+@keyframes arc-pulse-1 {
+  0%, 100% { opacity: 0.25; }
+  20%, 60% { opacity: 1; }
+}
+@keyframes arc-pulse-2 {
+  0%, 20%, 100% { opacity: 0.2; }
+  40%, 75% { opacity: 1; }
+}
+@keyframes arc-pulse-3 {
+  0%, 40%, 100% { opacity: 0.15; }
+  60%, 90% { opacity: 1; }
+}
+
+.arc-sweep-1 {
+  animation: arc-pulse-1 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.arc-sweep-2 {
+  animation: arc-pulse-2 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.arc-sweep-3 {
+  animation: arc-pulse-3 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .organic-mask-active,
+  .arc-sweep-1,
+  .arc-sweep-2,
+  .arc-sweep-3 {
+    animation: none !important;
+  }
+}
+
+/* Focus ring Higo 70 de 2px con 3px de separación (pág. 11) */
+:focus-visible {
+  outline: 2px solid #71545B;
+  outline-offset: 3px;
+}
+
+/* Scrollbar sutil sobre Caliza */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #121214;
+  background: #E2E3DB;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #272730;
+  background: #B6B9AD;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3e3e4a;
+  background: #676B63;
 }

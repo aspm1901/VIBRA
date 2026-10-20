@@ -2,27 +2,26 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import NextImage from "next/image";
-import { RadarArcIcon } from "@/components/RadarArcIcon";
+import {
+  RadarArcIcon,
+  VibraBrandLogo,
+  ResonanceSweepLoader,
+  ResonanceEmptyNode,
+} from "@/components/RadarArcIcon";
 import { StoreDetailModal } from "@/components/StoreDetailModal";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { SearchResultItem, PriceLevel, PurchaseType } from "@/types";
 import {
-  Upload,
   Sparkles,
   Camera,
   ChevronDown,
   ChevronUp,
-  Settings,
-  Search,
-  RotateCcw,
   Briefcase,
   Heart,
   Zap,
   Layers,
   SlidersHorizontal,
   MessageCircle,
-  MapPin,
   Shirt,
   ExternalLink,
   ChevronRight,
@@ -64,35 +63,35 @@ const STYLES = [
 const STYLE_PRESETS = [
   {
     id: "noche-fiesta",
-    title: "Noche & Fiesta",
+    title: "Noche y fiesta",
     iconName: "Sparkles",
     styles: ["Fiesta", "Elegante"],
     desc: "Vestidos de fiesta, satén, brillo y eventos",
   },
   {
     id: "streetwear-urbano",
-    title: "Streetwear Urbano",
+    title: "Streetwear urbano",
     iconName: "Layers",
     styles: ["Urbano", "Casual"],
     desc: "Denim, casacas, wide leg y estilo relajado",
   },
   {
     id: "oficina-minimal",
-    title: "Oficina Minimal",
+    title: "Oficina minimal",
     iconName: "Briefcase",
     styles: ["Oficina", "Minimalista", "Elegante"],
     desc: "Sastrería, blusas limpias, palazzos y blazers",
   },
   {
     id: "romantico-chic",
-    title: "Romántico Chic",
+    title: "Romántico chic",
     iconName: "Heart",
     styles: ["Romántico", "Casual"],
     desc: "Prendas fluidas, detalles delicados y tonos suaves",
   },
   {
     id: "y2k-atrevido",
-    title: "Y2K & En Tendencia",
+    title: "Y2K y en tendencia",
     iconName: "Zap",
     styles: ["Y2K", "Fiesta"],
     desc: "Corsets, tops entallados y cortes en tendencia",
@@ -225,7 +224,6 @@ function VibraApp() {
 
       const isNewUpload = !!overrideParams?.image;
 
-      // Si es una foto recién subida o ejemplo, no enviamos filtros viejos heredados
       const categoryToSend = isNewUpload
         ? undefined
         : overrideParams?.overrideCategory !== undefined
@@ -279,7 +277,6 @@ function VibraApp() {
             setGarmentTitle(data.detectedInfo.garmentTitle);
           }
 
-          // Sincronizar automáticamente la UI con lo que la IA detectó en la imagen o ejemplo
           if (!overrideParams?.isManualFilterRefinement && activeSearchMode !== "estilo") {
             if (data.detectedInfo.category) {
               setSelectedCategory(data.detectedInfo.category);
@@ -319,7 +316,6 @@ function VibraApp() {
     });
   };
 
-  // Helper en cliente para comprimir fotos pesadas de celulares en ~10ms antes de enviar
   const compressImageClient = (base64: string, maxDim = 640): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -362,22 +358,19 @@ function VibraApp() {
       const optimizedBase64 = await compressImageClient(rawBase64);
 
       if (searchMode === "look") {
-        // En Look Completo se analiza la persona/outfit entero sin forzar recorte
         setCurrentImageBase64(optimizedBase64);
         setCurrentImagePreview(optimizedBase64);
         setSelectedExampleId("");
-        setGarmentTitle("Analizando look completo con IA...");
+        setGarmentTitle("Analizando look completo...");
         executeSearch({
           image: optimizedBase64,
           overrideSearchMode: "look",
         });
       } else {
-        // En Una Prenda se abre el encuadre para aislar la prenda
         setRawImageForCrop(optimizedBase64);
       }
     };
     reader.readAsDataURL(file);
-    // Limpiar input para permitir seleccionar el mismo archivo de nuevo
     e.target.value = "";
   };
 
@@ -395,7 +388,7 @@ function VibraApp() {
         setCurrentImageBase64(optimizedBase64);
         setCurrentImagePreview(optimizedBase64);
         setSelectedExampleId("");
-        setGarmentTitle("Analizando look completo con IA...");
+        setGarmentTitle("Analizando look completo...");
         executeSearch({
           image: optimizedBase64,
           overrideSearchMode: "look",
@@ -413,9 +406,7 @@ function VibraApp() {
     setCurrentImagePreview(croppedBase64);
     setSelectedExampleId("");
     setGarmentTitle(
-      searchMode === "look"
-        ? "Analizando look completo con IA..."
-        : "Analizando prenda con IA..."
+      searchMode === "look" ? "Analizando look completo..." : "Analizando prenda..."
     );
     executeSearch({
       image: croppedBase64,
@@ -438,8 +429,8 @@ function VibraApp() {
   };
 
   const renderPresetIcon = (iconName: string, isActive: boolean) => {
-    const iconClass = `w-3.5 h-3.5 ${
-      isActive ? "text-vibra-300" : "text-gray-400 group-hover:text-gray-200"
+    const iconClass = `w-4 h-4 ${
+      isActive ? "text-higo-70" : "text-grafito-55"
     } transition-colors`;
     switch (iconName) {
       case "Sparkles":
@@ -464,38 +455,26 @@ function VibraApp() {
       : results.filter((r) => r.store.gallery === selectedGalleryFilter);
 
   return (
-    <div className="min-h-screen bg-[#121214] text-gray-100 flex flex-col">
-      {/* Barra de navegación superior minimalista */}
-      <header className="border-b border-[#24242c] bg-[#151518]/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#242434] via-[#1a1a24] to-[#0f0f15] p-1.5 border border-[#343448] flex items-center justify-center shadow-md shadow-black/40 group-hover:border-vibra-500/60 group-hover:shadow-[0_0_16px_rgba(244,63,94,0.25)] transition-all">
-              <NextImage
-                src="/logo_vibra_white.png"
-                alt="Vibra Logo"
-                width={42}
-                height={42}
-                className="w-full h-full object-contain transition-transform group-hover:scale-105"
-                priority
-              />
-            </div>
-            <span className="text-3xl sm:text-4xl font-black tracking-tight text-white lowercase select-none group-hover:text-vibra-100 transition-colors">
-              vibra
-            </span>
+    <div className="min-h-screen bg-caliza-5 text-basalto-90 flex flex-col">
+      {/* Barra de navegación superior sobre espina Caliza */}
+      <header className="border-b border-caliza-20 bg-caliza-5/95 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="focus:outline-none py-1">
+            <VibraBrandLogo showIsotipo={true} />
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Botón interactivo 'Mi Ruta' */}
+          <div className="flex items-center gap-3">
+            {/* Botón 'Tu ruta' en familia espacial Neblina (Manual pág. 7 y 13) */}
             <button
               type="button"
               onClick={() => setIsRouteDrawerOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1f1f2b] hover:bg-[#282838] text-white text-xs sm:text-sm font-semibold border border-[#343448] hover:border-vibra-500/60 transition-all shadow-sm active:scale-95"
-              aria-label="Abrir mi ruta de compras"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-chip text-neblina-70 text-xs sm:text-sm font-medium border border-neblina-30 hover:border-neblina-70 transition-all duration-180 ease-vibra active:scale-95"
+              aria-label="Abrir mi ruta por galería"
             >
-              <Compass className="w-4 h-4 text-vibra-400" />
-              <span>Mi Ruta</span>
+              <Compass className="w-4 h-4 text-neblina-70" />
+              <span>Tu ruta</span>
               {routeItems.length > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-vibra-500 text-white text-[11px] font-bold flex items-center justify-center animate-pulse">
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-neblina-70 text-white text-[11px] font-semibold tabular-nums flex items-center justify-center">
                   {routeItems.length}
                 </span>
               )}
@@ -506,7 +485,7 @@ function VibraApp() {
               <button
                 type="button"
                 onClick={() => setIsRouteDrawerOpen(true)}
-                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-[#1b1b24] hover:bg-[#242432] border border-[#2f2f42] text-xs transition-colors"
+                className="flex items-center gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full neu-chip border border-caliza-20 text-xs transition-all"
                 title={user.email || "Tu cuenta"}
               >
                 {user.user_metadata?.avatar_url ? (
@@ -514,22 +493,22 @@ function VibraApp() {
                   <img
                     src={user.user_metadata.avatar_url}
                     alt={user.email || "Usuario"}
-                    className="w-6 h-6 rounded-full object-cover border border-vibra-500/60"
+                    className="w-6 h-6 rounded-full object-cover border border-higo-30"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-vibra-600 text-white font-bold flex items-center justify-center text-[10px]">
-                    {(user.email?.[0] || "U").toUpperCase()}
+                  <div className="w-6 h-6 rounded-full bg-higo-70 text-white font-semibold flex items-center justify-center text-[11px]">
+                    {(user.email?.[0] || "u").toLowerCase()}
                   </div>
                 )}
-                <span className="hidden sm:inline font-medium text-slate-200 max-w-[90px] truncate">
-                  {user.user_metadata?.full_name?.split(" ")[0] || "Mi Perfil"}
+                <span className="hidden sm:inline font-medium text-basalto-90 max-w-[90px] truncate">
+                  {user.user_metadata?.full_name?.split(" ")[0] || "Perfil"}
                 </span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={signInWithGoogle}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1b1b24] hover:bg-[#252533] text-slate-300 hover:text-white text-xs font-medium border border-[#2e2e40] transition-colors active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full neu-chip text-grafito-55 hover:text-basalto-90 text-xs font-medium border border-caliza-20 transition-all active:scale-95"
                 title="Iniciar sesión con Google para sincronizar tu ruta"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
@@ -550,32 +529,35 @@ function VibraApp() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span className="hidden sm:inline">Entrar</span>
+                <span className="hidden sm:inline">Guardar ruta</span>
               </button>
             )}
           </div>
         </div>
       </header>
 
-      {/* Contenedor Principal (2 Columnas Desktop, 1 Columna Móvil) */}
-      <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-        {/* ================= COLUMNA IZQUIERDA: BUSCADOR & FILTROS (5 de 12 cols) ================= */}
+      {/* Contenedor Principal (Retícula 12 columnas max 1200px, pág. 11) */}
+      <main className="max-w-[1200px] mx-auto px-5 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        {/* ================= COLUMNA IZQUIERDA: CAPTURA Y FILTROS (5 de 12 cols) ================= */}
         <section className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 self-start">
-          {/* Título Principal y Bajada */}
+          {/* Display y Cuerpo (Escala modular pág. 10) */}
           <div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.08]">
+            <h1
+              className="font-display font-bold text-[40px] leading-[42px] sm:text-[48px] sm:leading-[50px] text-basalto-90"
+              style={{ letterSpacing: "-0.035em" }}
+            >
               Muéstralo. <br />
-              Encuéntralo <br />
-              <span className="text-vibra-300">cerca.</span>
+              Encuéntralo cerca.
             </h1>
-            <p className="text-sm md:text-base text-slate-300 mt-3 leading-relaxed max-w-md font-normal">
-              Sube una foto de una prenda o de un look. Vibra la compara con las imágenes que
-              publican las tiendas de Gamarra y ordena las que resuenan con más intensidad.
+            <p className="text-[15px] leading-[24px] sm:text-[16px] sm:leading-[26px] text-grafito-55 mt-3 max-w-md font-normal">
+              Sube una foto de una prenda o de un look completo. Vibra la compara con las
+              imágenes que publican los comerciantes y ordena las tiendas que resuenan con
+              más intensidad.
             </p>
           </div>
 
-          {/* Selector Unificado: 3 Opciones Directas de Frente (T9) */}
-          <div className="grid grid-cols-3 gap-2 p-1.5 bg-[#181820] rounded-2xl border border-[#2b2b3a] shadow-md">
+          {/* Selector de modo: Pozo hundido en Caliza 10 con pestaña activa elevada en Caliza 05 */}
+          <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl neu-sunken">
             <button
               type="button"
               onClick={() => {
@@ -583,15 +565,20 @@ function VibraApp() {
                 setSearchMode("prenda");
                 executeSearch({ overrideSearchMode: "prenda" });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "prenda"
-                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
-                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
+                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
-              <Shirt className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "foto" && searchMode === "prenda" ? "text-vibra-400" : "text-slate-400"}`} />
-              <span className="text-xs sm:text-sm font-bold block">Una prenda</span>
-              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Máxima fidelidad</span>
+              <Shirt
+                className={`w-4 h-4 ${
+                  inputType === "foto" && searchMode === "prenda"
+                    ? "text-higo-70"
+                    : "text-grafito-55"
+                }`}
+              />
+              <span className="text-xs sm:text-[13px] font-medium block">Una prenda</span>
             </button>
 
             <button
@@ -601,15 +588,20 @@ function VibraApp() {
                 setSearchMode("look");
                 executeSearch({ overrideSearchMode: "look" });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "look"
-                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
-                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
+                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
-              <Layers className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "foto" && searchMode === "look" ? "text-vibra-400" : "text-slate-400"}`} />
-              <span className="text-xs sm:text-sm font-bold block">Look completo</span>
-              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Outfit o collage</span>
+              <Layers
+                className={`w-4 h-4 ${
+                  inputType === "foto" && searchMode === "look"
+                    ? "text-higo-70"
+                    : "text-grafito-55"
+                }`}
+              />
+              <span className="text-xs sm:text-[13px] font-medium block">Look completo</span>
             </button>
 
             <button
@@ -618,43 +610,47 @@ function VibraApp() {
                 setInputType("estilo");
                 executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "estilo"
-                  ? "bg-[#252533] text-white border border-vibra-500/80 shadow-md ring-1 ring-vibra-500/40"
-                  : "text-slate-400 hover:text-white hover:bg-[#1e1e28] border border-transparent"
+                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
-              <Sparkles className={`w-4 h-4 sm:w-5 sm:h-5 ${inputType === "estilo" ? "text-vibra-400" : "text-slate-400"}`} />
-              <span className="text-xs sm:text-sm font-bold block">Por estilo</span>
-              <span className="text-[10px] text-slate-300 hidden sm:block font-normal">Sin subir foto</span>
+              <Sparkles
+                className={`w-4 h-4 ${
+                  inputType === "estilo" ? "text-higo-70" : "text-grafito-55"
+                }`}
+              />
+              <span className="text-xs sm:text-[13px] font-medium block">Por estilo</span>
             </button>
           </div>
 
           {/* ======================================================== */}
-          {/* MODO FOTO: UNA PRENDA O LOOK COMPLETO                    */}
+          {/* MODO FOTO: POZO DE CAPTURA (PÁG. 11 y 12 DEL MANUAL)     */}
           {/* ======================================================== */}
           {inputType === "foto" ? (
             <div className="space-y-5">
-
-              {/* Tarjeta de Foto Activa (Visor Ovalado / Carga) */}
+              {/* Pozo de captura hundido (Caliza 10) con máscara orgánica superelipse */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
-                className="bg-[#18181f] border border-[#2b2b36] rounded-3xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl"
+                className="neu-sunken rounded-3xl p-6 flex flex-col items-center justify-center text-center relative"
               >
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-44 h-56 bg-[#f1ece7] rounded-[2.5rem] flex items-center justify-center p-3 cursor-pointer group hover:scale-[1.02] transition-transform overflow-hidden shadow-inner border border-[#ded8cf] relative"
+                  className={`w-44 h-52 bg-caliza-5 flex items-center justify-center p-3 cursor-pointer group transition-transform overflow-hidden relative photo-frame organic-mask ${
+                    isSearching ? "organic-mask-active" : ""
+                  }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={currentImagePreview}
                     alt="Referencia de búsqueda"
-                    className="max-h-full max-w-full object-contain drop-shadow"
+                    className="max-h-full max-w-full object-contain"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity rounded-[2.5rem]">
-                    <Camera className="w-6 h-6 mb-1 text-vibra-300" />
-                    <span className="text-[11px] font-semibold">Cambiar foto</span>
+                  <div className="absolute inset-0 bg-basalto-90/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity">
+                    <Camera className="w-6 h-6 mb-1 text-caliza-5" />
+                    <span className="text-xs font-medium">Cambiar foto</span>
                   </div>
                 </div>
 
@@ -667,28 +663,35 @@ function VibraApp() {
                   className="hidden"
                 />
 
-                <h3 className="text-lg font-extrabold text-white mt-4 tracking-tight">{garmentTitle}</h3>
+                <h3
+                  className="font-display font-medium text-[19px] leading-[25px] text-basalto-90 mt-4"
+                  style={{ letterSpacing: "-0.008em" }}
+                >
+                  {garmentTitle || "Suelta una foto del look"}
+                </h3>
+                <p className="text-[13px] leading-[19px] text-grafito-55 mt-1 max-w-xs">
+                  Una prenda, un conjunto o una captura de pantalla. Un fondo limpio ayuda.
+                </p>
 
+                {/* Botón principal en Higo 70 con texto blanco (Pág. 8 y 12) */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-3 px-5 py-2.5 rounded-2xl bg-[#282836] hover:bg-[#343446] border border-[#3e3e52] text-white text-xs sm:text-sm font-bold flex items-center gap-2 transition-all active:scale-95 shadow-md"
+                  className="mt-4 px-6 py-3 min-h-[44px] rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] sm:text-[14px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95 shadow-sm"
                 >
-                  <Camera className="w-4 h-4 text-vibra-400" />
+                  <Camera className="w-4 h-4 text-white" />
                   <span>
-                    {searchMode === "look"
-                      ? "Tomar foto o subir outfit"
-                      : "Tomar o subir foto"}
+                    {searchMode === "look" ? "Elegir foto de look" : "Elegir una foto"}
                   </span>
                 </button>
 
-                {/* Tags de estilos detectados */}
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
-                    Detectado por IA:
+                {/* Chips detectados por IA: Relleno Higo 30 / Caliza 05 (Pág. 7, Regla de series) */}
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-5 pt-4 border-t border-caliza-20 w-full">
+                  <span className="text-[12px] font-medium text-grafito-55">
+                    Lectura visual:
                   </span>
                   {detectedInfo.category && (
-                    <span className="text-xs px-3 py-1 rounded-full bg-vibra-950 text-vibra-300 border border-vibra-800 font-bold shadow-sm">
+                    <span className="text-[12px] px-3 py-1 rounded-full bg-higo-30 text-basalto-90 font-medium">
                       {detectedInfo.category}
                     </span>
                   )}
@@ -698,20 +701,24 @@ function VibraApp() {
                   ).map((style) => (
                     <span
                       key={style}
-                      className="text-xs px-3 py-1 rounded-full bg-[#242430] text-slate-200 border border-[#353545] font-semibold"
+                      className="text-[12px] px-3 py-1 rounded-full bg-caliza-5 text-basalto-90 border border-caliza-20 font-normal"
                     >
                       {style}
                     </span>
                   ))}
                 </div>
+
+                <p className="text-[11px] leading-[17px] text-grafito-55 mt-3">
+                  Comparamos tu foto con las imágenes publicadas por cada tienda. No consultamos su inventario.
+                </p>
               </div>
 
-              {/* Referencias de ejemplo adaptadas al modo */}
+              {/* Referencias de ejemplo sobre Caliza */}
               <div>
-                <span className="text-sm font-bold text-slate-200 block mb-2.5">
+                <span className="text-[13px] font-medium text-basalto-90 block mb-2.5">
                   {searchMode === "look"
-                    ? "Prueba con looks y outfits de referencia:"
-                    : "O prueba con una prenda de ejemplo:"}
+                    ? "Probar con un look de referencia"
+                    : "Probar con una prenda de ejemplo"}
                 </span>
                 <div className="grid grid-cols-4 gap-2.5">
                   {(searchMode === "look" ? EXAMPLES : EXAMPLES.filter((e) => !e.isLook))
@@ -721,14 +728,15 @@ function VibraApp() {
                       return (
                         <button
                           key={ex.id}
+                          type="button"
                           onClick={() => handleSelectExample(ex)}
-                          className={`p-2.5 rounded-2xl border flex flex-col items-center text-center transition-all ${
+                          className={`p-2 rounded-2xl flex flex-col items-center text-center transition-all duration-180 ease-vibra ${
                             isSelected
-                              ? "bg-[#252532] border-vibra-400 ring-2 ring-vibra-500/40 shadow-md"
-                              : "bg-[#181820] border-[#292938] hover:bg-[#20202a]"
+                              ? "neu-sunken border border-higo-70"
+                              : "neu-chip border border-transparent hover:border-caliza-20"
                           }`}
                         >
-                          <div className="w-full h-16 bg-[#f5f1ec] rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 border border-[#dfd9d0]">
+                          <div className="w-full h-16 bg-caliza-5 rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 photo-frame">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={ex.image}
@@ -736,7 +744,7 @@ function VibraApp() {
                               className="max-h-full max-w-full object-contain"
                             />
                           </div>
-                          <span className="text-xs font-semibold text-slate-200 truncate w-full block">
+                          <span className="text-[11px] font-medium text-basalto-90 truncate w-full block">
                             {ex.title}
                           </span>
                         </button>
@@ -745,52 +753,17 @@ function VibraApp() {
                 </div>
               </div>
 
-              {/* Prenda / Look Identificado */}
-              <div className="bg-gradient-to-r from-[#1b1b26] to-[#161620] border border-[#2d2d40] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-md">
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-vibra-500/15 text-vibra-400 border border-vibra-500/30 flex items-center justify-center shrink-0 shadow-sm">
-                    {searchMode === "look" ? (
-                      <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-                    ) : (
-                      <Shirt className="w-4 h-4 sm:w-5 sm:h-5" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] sm:text-[11px] text-slate-400 uppercase font-bold tracking-wider">
-                        {searchMode === "look" ? "Outfit analizado" : "Prenda identificada"}
-                      </span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-vibra-400 animate-pulse" />
-                    </div>
-                    <span className="text-sm sm:text-base md:text-lg font-extrabold text-white block leading-tight sm:leading-snug break-words">
-                      {detectedInfo.category || garmentTitle}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0">
-                  <span className="text-[11px] sm:text-xs text-slate-300 font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#222230] border border-[#343448] flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                    <Sparkles className="w-3.5 h-3.5 text-vibra-400 shrink-0" />
-                    <span>
-                      <strong className="text-white font-bold">{selectedStyles.length}</strong>
-                      <span className="hidden sm:inline"> estilos afines</span>
-                      <span className="sm:hidden"> estilos</span>
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Estilos interactivos */}
+              {/* Estilos interactivos (Neomorfismo acotado: elevado inactivo, hundido/Higo activo) */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-sm font-bold text-slate-200">
-                    Estilos{" "}
-                    <span className="text-slate-400 text-xs font-normal">
-                      (detectados por IA, puedes ajustar)
+                  <span className="text-[13px] font-medium text-basalto-90">
+                    Afinar estilos{" "}
+                    <span className="text-grafito-55 text-[12px] font-normal">
+                      (detectados en la imagen)
                     </span>
                   </span>
-                  <span className="text-xs text-vibra-300 font-bold">
-                    {selectedStyles.length} seleccionados
+                  <span className="text-[12px] text-higo-70 font-medium tabular-nums">
+                    {selectedStyles.length} activos
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -799,11 +772,12 @@ function VibraApp() {
                     return (
                       <button
                         key={st}
+                        type="button"
                         onClick={() => toggleStyle(st)}
-                        className={`text-xs sm:text-sm px-4 py-2 rounded-full transition-all font-semibold ${
+                        className={`text-[13px] px-3.5 py-2 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
                           isSelected
-                            ? "bg-vibra-500 text-white font-bold shadow-md shadow-vibra-950/60 ring-1 ring-white/20"
-                            : "bg-[#1d1d26] text-slate-200 hover:bg-[#282836] hover:text-white border border-[#2d2d3c]"
+                            ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
+                            : "neu-chip text-basalto-90 font-normal hover:border-caliza-20 border border-transparent"
                         }`}
                       >
                         {st}
@@ -815,32 +789,32 @@ function VibraApp() {
             </div>
           ) : (
             /* ======================================================== */
-            /* MODO ESTILO: DESCUBRIMIENTO 100% POR VIBRA Y ESTÉTICA     */
+            /* MODO ESTILO: EXPLORACIÓN SIN FOTO                        */
             /* ======================================================== */
             <div className="space-y-5">
-              {/* Banner de Bienvenida a Búsqueda por Estilo */}
-              <div className="bg-[#181820] border border-[#2b2b38] rounded-3xl p-5 relative overflow-hidden shadow-xl">
+              <div className="neu-sunken rounded-3xl p-5">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-vibra-950 text-vibra-300 border border-vibra-800/80 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-higo-30 text-higo-70 flex items-center justify-center">
                     <SlidersHorizontal className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-vibra-300 uppercase font-bold tracking-wider block">
-                      Búsqueda por Vibra & Estética
+                    <span className="text-[12px] text-grafito-55 font-medium block">
+                      Exploración por estética
                     </span>
-                    <h3 className="text-base font-bold text-white">Explora tiendas por su estilo</h3>
+                    <h3 className="font-display text-[19px] leading-[25px] font-medium text-basalto-90">
+                      Elige el estilo que buscas
+                    </h3>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Elige las estéticas que buscas. Vibra encontrará las tiendas y stands de Gamarra con mayor especialidad y prendas en ese estilo.
+                <p className="text-[13px] leading-[19px] text-grafito-55">
+                  Selecciona una combinación rápida o marca los estilos debajo para ordenar las tiendas de Gamarra que trabajan esa línea.
                 </p>
 
-                {/* Mood Presets rápidos */}
-                <div className="mt-4 pt-4 border-t border-[#262632]">
-                  <span className="text-[11px] font-semibold text-gray-300 block mb-2">
-                    Inspiraciones y combinaciones populares:
+                <div className="mt-4 pt-4 border-t border-caliza-20">
+                  <span className="text-[12px] font-medium text-basalto-90 block mb-2.5">
+                    Combinaciones frecuentes
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {STYLE_PRESETS.map((preset) => {
                       const isActive = preset.styles.every((s) => selectedStyles.includes(s));
                       return (
@@ -855,17 +829,19 @@ function VibraApp() {
                               isManualFilterRefinement: true,
                             });
                           }}
-                          className={`p-3 rounded-2xl border text-left transition-all group ${
+                          className={`p-3 rounded-2xl text-left transition-all duration-180 ease-vibra ${
                             isActive
-                              ? "bg-[#252532] border-vibra-400/80 shadow-md ring-1 ring-vibra-500/20"
-                              : "bg-[#1f1f28] border-[#2d2d3c] hover:bg-[#252532] hover:border-gray-600"
+                              ? "neu-sunken border border-higo-70"
+                              : "neu-chip border border-transparent hover:border-caliza-20"
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
                             {renderPresetIcon(preset.iconName, isActive)}
-                            <span className="text-xs font-bold text-white block">{preset.title}</span>
+                            <span className="text-[13px] font-semibold text-basalto-90 block">
+                              {preset.title}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-gray-400 block leading-snug">
+                          <span className="text-[11px] leading-[16px] text-grafito-55 block">
                             {preset.desc}
                           </span>
                         </button>
@@ -875,17 +851,18 @@ function VibraApp() {
                 </div>
               </div>
 
-              {/* Selector de los 12 Estilos Interactivos */}
-              <div className="bg-[#18181f] border border-[#2b2b36] rounded-3xl p-5">
+              <div className="neu-elevated rounded-3xl p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <span className="text-xs font-bold text-white block">Todos los estilos</span>
-                    <span className="text-[10px] text-gray-400">
-                      Toca para añadir o quitar estilos de tu búsqueda
+                    <span className="text-[13px] font-medium text-basalto-90 block">
+                      Todos los estilos
+                    </span>
+                    <span className="text-[11px] text-grafito-55">
+                      Toca para activar o quitar estilos
                     </span>
                   </div>
-                  <span className="text-[10px] text-vibra-400 font-semibold px-2 py-0.5 rounded-full bg-vibra-950 border border-vibra-900/60">
-                    {selectedStyles.length} seleccionados
+                  <span className="text-[12px] text-higo-70 font-medium px-2.5 py-0.5 rounded-full bg-higo-30 tabular-nums">
+                    {selectedStyles.length} activos
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -894,11 +871,12 @@ function VibraApp() {
                     return (
                       <button
                         key={st}
+                        type="button"
                         onClick={() => toggleStyle(st)}
-                        className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                        className={`text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-180 ease-vibra ${
                           isSelected
-                            ? "bg-vibra-500 text-white font-bold shadow-md shadow-vibra-950/40"
-                            : "bg-[#21212c] text-gray-300 hover:bg-[#2c2c3a] border border-[#30303e]"
+                            ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
+                            : "neu-chip text-basalto-90 font-normal border border-transparent"
                         }`}
                       >
                         {st}
@@ -912,10 +890,11 @@ function VibraApp() {
 
           {/* Bloque Común de Filtros: Precio, Tallas y Tipo de Compra */}
           <div className="space-y-4 pt-1">
-            {/* Nivel de Precio */}
             <div>
-              <span className="text-xs font-semibold text-gray-400 block mb-2">Nivel de precio</span>
-              <div className="flex gap-2">
+              <span className="text-[13px] font-medium text-basalto-90 block mb-2">
+                Nivel de precio
+              </span>
+              <div className="flex flex-wrap gap-2">
                 {[
                   { id: "economico", name: "Económico", symbol: "S/" },
                   { id: "medio", name: "Medio", symbol: "S/S/" },
@@ -925,62 +904,62 @@ function VibraApp() {
                   return (
                     <button
                       key={p.id}
+                      type="button"
                       onClick={() => {
                         const newPrice = isSelected ? undefined : (p.id as PriceLevel);
                         setSelectedPrice(newPrice);
                       }}
-                      className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium inline-flex items-center gap-1.5 ${
+                      className={`text-[13px] px-4 py-2 min-h-[38px] rounded-full transition-all duration-180 ease-vibra inline-flex items-center gap-1.5 ${
                         isSelected
-                          ? "bg-white text-gray-950 font-bold shadow"
-                          : "bg-[#1f1f26] text-gray-300 hover:bg-[#292934] border border-[#2b2b36]"
+                          ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
+                          : "neu-chip text-basalto-90 font-normal border border-transparent"
                       }`}
                     >
-                      <span className="text-[10px] opacity-70 font-mono">{p.symbol}</span>
+                      <span className="text-[12px] text-grafito-55 tabular-nums">{p.symbol}</span>
                       <span>{p.name}</span>
                     </button>
                   );
                 })}
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">
-                Comparado con los rangos reales de confección en Gamarra.
-              </p>
             </div>
 
-            {/* Botón para desplegar Tallas y Tipo de compra */}
+            {/* Desplegable de Tallas y Modalidad */}
             <div>
               <button
                 type="button"
                 onClick={() => setShowMoreFilters(!showMoreFilters)}
-                className="text-xs text-gray-400 hover:text-white flex items-center gap-1 font-medium transition-colors"
+                className="text-[13px] text-grafito-55 hover:text-basalto-90 flex items-center gap-1 font-medium transition-colors"
               >
                 <span>
                   {showMoreFilters
-                    ? "Ocultar filtros avanzados"
-                    : "Más filtros (Talla, modalidad de compra)"}
+                    ? "Ocultar filtros de talla y modalidad"
+                    : "Filtrar por talla o modalidad de compra"}
                 </span>
                 {showMoreFilters ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
+                  <ChevronUp className="w-4 h-4" />
                 ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <ChevronDown className="w-4 h-4" />
                 )}
               </button>
 
               {showMoreFilters && (
-                <div className="space-y-3 mt-3 p-4 bg-[#18181f] rounded-2xl border border-[#2b2b36]">
-                  {/* Tallas */}
+                <div className="space-y-3 mt-3 p-4 neu-sunken rounded-2xl">
                   <div>
-                    <span className="text-xs font-semibold text-gray-400 block mb-1.5">Talla</span>
-                    <div className="flex gap-1.5">
+                    <span className="text-[12px] font-medium text-grafito-55 block mb-1.5">
+                      Talla
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
                       {["XS", "S", "M", "L", "XL", "Estándar"].map((tz) => {
                         const isSelected = selectedSize === tz;
                         return (
                           <button
                             key={tz}
+                            type="button"
                             onClick={() => setSelectedSize(isSelected ? undefined : tz)}
-                            className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${
+                            className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
-                                ? "bg-white text-black font-bold"
-                                : "bg-[#252530] text-gray-300 hover:bg-[#2f2f3d]"
+                                ? "bg-higo-70 text-white font-semibold"
+                                : "bg-caliza-5 text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >
                             {tz}
@@ -990,26 +969,26 @@ function VibraApp() {
                     </div>
                   </div>
 
-                  {/* Tipo de compra */}
                   <div>
-                    <span className="text-xs font-semibold text-gray-400 block mb-1.5">
-                      Tipo de compra
+                    <span className="text-[12px] font-medium text-grafito-55 block mb-1.5">
+                      Modalidad de compra
                     </span>
-                    <div className="flex gap-1.5">
+                    <div className="flex flex-wrap gap-1.5">
                       {[
                         { id: "cualquiera", label: "Cualquiera" },
-                        { id: "envio", label: "Con envío por web" },
-                        { id: "presencial", label: "Solo presencial" },
+                        { id: "envio", label: "Con envío" },
+                        { id: "presencial", label: "Solo en tienda" },
                       ].map((tc) => {
                         const isSelected = selectedPurchaseType === tc.id;
                         return (
                           <button
                             key={tc.id}
+                            type="button"
                             onClick={() => setSelectedPurchaseType(tc.id as PurchaseType)}
-                            className={`text-xs px-3 py-1 rounded-lg font-medium transition-all ${
+                            className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
-                                ? "bg-white text-black font-bold"
-                                : "bg-[#252530] text-gray-300 hover:bg-[#2f2f3d]"
+                                ? "bg-higo-70 text-white font-semibold"
+                                : "bg-caliza-5 text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >
                             {tc.label}
@@ -1022,90 +1001,59 @@ function VibraApp() {
               )}
             </div>
 
-            {/* Botón Principal de Búsqueda */}
+            {/* Botón Principal de Acción en Higo 70 con texto blanco (Contraste 6.73 AA, pág. 8) */}
             <button
+              type="button"
               onClick={() => executeSearch({ isManualFilterRefinement: true })}
               disabled={isSearching}
-              className="w-full py-4 px-6 rounded-2xl bg-vibra-500 hover:bg-vibra-600 active:scale-[0.99] text-white font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-lg shadow-vibra-950/50 mt-2"
+              className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-sm mt-2"
             >
               {isSearching ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Buscando coincidencias con IA...</span>
-                </>
+                <span>Calculando resonancia con los catálogos...</span>
               ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-vibra-200" />
-                  <span>
-                    {inputType === "estilo"
-                      ? "Ver tiendas con este estilo"
-                      : searchMode === "look"
-                      ? "Ver tiendas para armar este look"
-                      : "Ver tiendas que coinciden"}
-                  </span>
-                </>
+                <span>
+                  {inputType === "estilo"
+                    ? "Actualizar ranking por estilo"
+                    : searchMode === "look"
+                    ? "Actualizar tiendas para este look"
+                    : "Actualizar ranking de tiendas"}
+                </span>
               )}
             </button>
           </div>
         </section>
 
-        {/* ================= COLUMNA DERECHA: RESULTADOS AGRUPADOS (7 de 12 cols) ================= */}
-        <section className="lg:col-span-7 flex flex-col gap-6">
-          {/* Header de Resultados */}
+        {/* ================= COLUMNA DERECHA: RANKING DE AFINIDAD (7 de 12 cols) ================= */}
+        <section className="lg:col-span-7 flex flex-col gap-5">
+          {/* H2 Sección (Escala modular pág. 10 y 12) */}
           <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            <h2
+              className="font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
+              style={{ letterSpacing: "-0.025em" }}
+            >
               {inputType === "estilo"
-                ? `${results.length} ${results.length === 1 ? "tienda resuena" : "tiendas resuenan"} con tu estilo`
-                : searchMode === "look"
-                ? `${results.length} ${results.length === 1 ? "tienda resuena" : "tiendas resuenan"} con tu look completo`
-                : `${results.length} ${results.length === 1 ? "tienda resuena" : "tiendas resuenan"} con tu prenda`}
+                ? `${displayedResults.length} ${
+                    displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
+                  } con tu estilo`
+                : `${displayedResults.length} ${
+                    displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
+                  } con tu foto`}
             </h2>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-gray-400">
-              <span>
-                {inputType === "estilo"
-                  ? `Especialistas en ${selectedStyles.join(", ")} en Gamarra`
-                  : searchMode === "look"
-                  ? "Ponderado 70% por estilo de outfit y 30% por armonía visual"
-                  : "Ordenadas de mayor a menor afinidad con tu búsqueda"}
-              </span>
-              <span className="text-gray-600">•</span>
-              <span className="bg-[#202028] text-gray-300 px-2.5 py-0.5 rounded-full border border-[#2f2f3d]">
-                {displayedResults.length} tiendas encontradas
-              </span>
-            </div>
+            <p className="text-[13px] leading-[19px] font-medium text-grafito-55 mt-1">
+              Agrupadas por galería, de mayor a menor resonancia
+            </p>
           </div>
 
-          {/* Si está buscando */}
-          {isSearching && (
-            <div className="flex flex-col items-center justify-center p-12 bg-[#18181f] rounded-3xl border border-[#282834] text-center">
-              <div className="w-10 h-10 border-3 border-vibra-500/20 border-t-vibra-500 rounded-full animate-spin mb-4" />
-              <p className="text-sm font-semibold text-white">Extrayendo vectores y calculando afinidad...</p>
-              <p className="text-xs text-gray-400 mt-1">Comparando foto contra catálogos de Gamarra</p>
-            </div>
-          )}
-
-          {/* Si no hay resultados */}
-          {!isSearching && displayedResults.length === 0 && (
-            <div className="p-8 bg-[#18181f] rounded-3xl border border-[#282834] text-center">
-              <p className="text-sm text-gray-300 font-semibold">
-                No se encontraron tiendas que coincidan con los filtros seleccionados.
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Prueba relajando los filtros de precio o seleccionando otra categoría.
-              </p>
-            </div>
-          )}
-
-          {/* Filtro rápido por Galería si hay más de 1 galería en los resultados */}
+          {/* Chips de filtro de Galería (Elevado inactivo, Hundido activo, pág. 11 y 12) */}
           {!isSearching && availableGalleries.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 -mt-1">
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setSelectedGalleryFilter("todas")}
-                className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                className={`text-[13px] px-4 py-2 min-h-[40px] rounded-full transition-all duration-180 ease-vibra ${
                   selectedGalleryFilter === "todas"
-                    ? "bg-white text-gray-950 font-bold shadow-sm"
-                    : "bg-[#1d1d24] text-gray-400 hover:text-gray-200 border border-[#2d2d3a]"
+                    ? "neu-sunken text-basalto-90 font-semibold border border-higo-30"
+                    : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium border border-transparent"
                 }`}
               >
                 Todas las galerías ({results.length})
@@ -1118,207 +1066,255 @@ function VibraApp() {
                     key={gal}
                     type="button"
                     onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
-                    className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                    className={`text-[13px] px-4 py-2 min-h-[40px] rounded-full transition-all duration-180 ease-vibra ${
                       isSel
-                        ? "bg-white text-gray-950 font-bold shadow-sm"
-                        : "bg-[#1d1d24] text-gray-400 hover:text-gray-200 border border-[#2d2d3a]"
+                        ? "neu-sunken text-basalto-90 font-semibold border border-higo-30"
+                        : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium border border-transparent"
                     }`}
                   >
-                    {gal.replace("Galería ", "")} ({count})
+                    {gal} ({count})
                   </button>
                 );
               })}
             </div>
           )}
 
-          {/* Listado Directo de Tiendas (Ordenado por Resonancia) */}
-          {!isSearching && displayedResults.length > 0 && (
-            <div className="space-y-3.5">
-              {displayedResults.map((item, idx) => (
+          {/* 3 · Estado de Carga: Esqueletos en Caliza 10 + 3 arcos barriendo en ciclo de 1.4 s (Pág. 4 y 12) */}
+          {isSearching && (
+            <div className="space-y-3">
+              <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
+                <ResonanceSweepLoader size={52} />
+                <p className="text-[15px] leading-[22px] font-medium text-basalto-90 mt-3">
+                  Calculando resonancia visual con los catálogos de Gamarra
+                </p>
+                <p className="text-[13px] leading-[19px] text-grafito-55 mt-1">
+                  Ordenando tiendas según color, silueta y textura de la prenda
+                </p>
+              </div>
+              {[1, 2, 3].map((n) => (
                 <div
-                  key={item.store.id}
-                  onClick={() => setSelectedStoreItem(item)}
-                  className="group bg-[#181820] hover:bg-[#20202b] border border-[#2a2a38] hover:border-vibra-500/50 rounded-3xl p-4 sm:p-6 transition-all cursor-pointer shadow-md hover:shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden"
-                >
-                  {/* Borde sutil interactivo en hover */}
-                  <div className="absolute top-0 left-0 bottom-0 w-1 bg-vibra-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                  {/* Lado Izquierdo: Imagen (+ Resonancia en móvil) + Información */}
-                  <div className="flex items-start sm:items-center gap-3.5 sm:gap-6 min-w-0 flex-1 w-full">
-                    {/* Contenedor de la prenda + Radar debajo en móvil */}
-                    <div className="flex flex-col items-center shrink-0">
-                      {/* Miniatura de la Prenda o Prendas (con margen y sombra limpia) */}
-                      {searchMode === "look" &&
-                      item.matchingGarments &&
-                      item.matchingGarments.length > 1 ? (
-                        <div className="flex items-center -space-x-5 shrink-0 pt-1 sm:pt-0">
-                          {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
-                            <div
-                              key={mg.id}
-                              className={`relative w-20 h-26 sm:w-22 sm:h-28 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-md border border-[#dfd9d0] transition-transform group-hover:scale-105 ${
-                                gIdx === 1 ? "z-10 ring-4 ring-[#181820]" : "z-0"
-                              }`}
-                              title={mg.name}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={mg.photoUrl}
-                                alt={mg.name}
-                                className="max-h-full max-w-full object-contain"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="relative w-20 h-26 sm:w-24 sm:h-30 bg-[#f5f1ec] rounded-2xl flex items-center justify-center p-2.5 shrink-0 overflow-hidden shadow-inner border border-[#dfd9d0] transition-transform group-hover:scale-105">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.bestGarment.photoUrl}
-                            alt={item.bestGarment.name}
-                            className="max-h-full max-w-full object-contain drop-shadow-sm"
-                          />
-                        </div>
-                      )}
-
-                      {/* Solo en celulares (<sm): Indicador de Resonancia DEBAJO de la prenda */}
-                      <div className="flex sm:hidden mt-2.5 flex-col items-center justify-center">
-                        <RadarArcIcon
-                          score={item.resonanceScore}
-                          band={item.band}
-                          isStyleMode={inputType === "estilo"}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Información textual de la tienda */}
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-lg sm:text-xl font-extrabold text-white group-hover:text-vibra-300 transition-colors truncate tracking-tight">
-                          {item.store.name}
-                        </h4>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-300 font-medium">
-                        <span className="font-bold text-white">
-                          {item.store.gallery}
-                        </span>
-                        <span className="text-slate-600">•</span>
-                        <span className="bg-[#23232e] text-slate-200 px-2.5 py-0.5 rounded-lg border border-[#333342] text-xs font-semibold">
-                          Piso {item.store.floor}
-                        </span>
-                        <span className="bg-[#23232e] text-slate-200 px-2.5 py-0.5 rounded-lg border border-[#333342] text-xs font-semibold">
-                          Stand {item.store.stand}
-                        </span>
-                      </div>
-
-                      <p className="text-xs sm:text-sm text-slate-300 pt-0.5 font-normal leading-relaxed line-clamp-2">
-                        {inputType === "estilo"
-                          ? `Especialidad en el estilo · Prenda destacada: ${item.bestGarment.name}`
-                          : searchMode === "look"
-                          ? item.matchingGarments && item.matchingGarments.length > 1
-                            ? `Prendas para armar este look: ${item.matchingGarments[0].name} + ${item.matchingGarments[1].name}`
-                            : `Prenda clave para armar este look · ${item.bestGarment.name}`
-                          : item.band === "Alta"
-                          ? `Coincidencia alta · ${item.bestGarment.name}`
-                          : item.band === "Media"
-                          ? `Prenda similar en silueta · ${item.bestGarment.name}`
-                          : `Mismo estilo afín · ${item.bestGarment.name}`}
-                      </p>
-
-                      {/* Botones de acción directa con botón explícito 'Ver catálogo' y '+ Mi Ruta' */}
-                      <div className="flex flex-wrap items-center gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInRoute(item.store.id)) {
-                              removeFromRoute(item.store.id);
-                            } else {
-                              addToRoute(item.store);
-                            }
-                          }}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${
-                            isInRoute(item.store.id)
-                              ? "bg-vibra-500/20 text-vibra-300 border-vibra-500/60 hover:bg-vibra-500/30"
-                              : "bg-[#222230] hover:bg-[#2c2c3e] text-slate-200 hover:text-white border-vibra-500/40 hover:border-vibra-500/80 shadow-sm shadow-vibra-950/20"
-                          }`}
-                          title={isInRoute(item.store.id) ? "Quitar de mi ruta" : "Guardar en mi ruta"}
-                        >
-                          {isInRoute(item.store.id) ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>En tu ruta</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5 text-vibra-400" />
-                              <span>Mi Ruta</span>
-                            </>
-                          )}
-                        </button>
-
-                        <a
-                          href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                            `Hola ${item.store.name}, vi su tienda en VIBRA (${Math.round(item.resonanceScore * 100)}% de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm shadow-emerald-950/40 active:scale-95"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </a>
-                        <a
-                          href={
-                            item.store.googleMapsUrl ||
-                            (item.store.latitude && item.store.longitude
-                              ? `https://www.google.com/maps/search/?api=1&query=${item.store.latitude},${item.store.longitude}`
-                              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.store.gallery}, ${item.store.galleryAddress || "Gamarra, La Victoria, Lima"}`)}`)
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#222230] hover:bg-[#2c2c3e] text-slate-300 hover:text-white text-xs font-semibold border border-[#343448] transition-all shadow-sm active:scale-95"
-                          title="Abrir ubicación en Google Maps"
-                        >
-                          <Navigation className="w-3.5 h-3.5 text-vibra-400" />
-                          <span>Google Maps</span>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStoreItem(item)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#262634] hover:bg-vibra-500/20 text-slate-200 hover:text-vibra-300 text-xs font-bold border border-[#38384a] hover:border-vibra-500/50 transition-all shadow-sm"
-                        >
-                          <span>Ver catálogo</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-vibra-400 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lado Derecho: Indicador de Resonancia (Solo en computadoras sm:flex, oculto en celulares) */}
-                  <div className="hidden sm:flex shrink-0 self-center pl-4 border-l border-[#2b2b3a] flex-col items-center justify-center w-auto">
-                    <RadarArcIcon
-                      score={item.resonanceScore}
-                      band={item.band}
-                      isStyleMode={inputType === "estilo"}
-                    />
-                  </div>
-                </div>
+                  key={n}
+                  className="h-28 rounded-3xl bg-caliza-10 border border-caliza-20 animate-pulse"
+                />
               ))}
             </div>
           )}
 
-          {/* Footer Informativo */}
-          <div className="p-4 sm:p-5 bg-[#16161e] rounded-2xl border border-[#282836] text-xs sm:text-sm text-slate-300 leading-relaxed mt-4 shadow-sm">
-            💡 <strong>Nota útil:</strong> El nivel de coincidencia mide la afinidad visual y estética de cada tienda con tu referencia, no el stock ni colores en tiempo real. Te recomendamos confirmar disponibilidad por WhatsApp antes de ir presencialmente.
-          </div>
+          {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa, nunca disculpa (Pág. 4 y 12) */}
+          {!isSearching && displayedResults.length === 0 && (
+            <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
+              <ResonanceEmptyNode size={48} />
+              <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
+                Ninguna tienda superó 0,55 con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
+              </p>
+            </div>
+          )}
+
+          {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
+          {!isSearching && displayedResults.length > 0 && (
+            <div className="space-y-3">
+              {displayedResults.map((item, idx) => {
+                const isRank1 = idx === 0;
+                const inRoute = isInRoute(item.store.id);
+                const formattedScore = item.resonanceScore.toFixed(2).replace(".", ",");
+
+                return (
+                  <article
+                    key={item.store.id}
+                    onClick={() => setSelectedStoreItem(item)}
+                    className={`rounded-3xl p-4 sm:p-5 transition-all duration-240 ease-vibra cursor-pointer flex items-center justify-between gap-4 ${
+                      isRank1 ? "neu-rank1" : "neu-elevated"
+                    }`}
+                  >
+                    {/* ZONA 1 + 2: Compuesto fotográfico con índice de rango + Identidad y Tríada */}
+                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                      {/* Zona 1: Compuesto fotográfico con ordinal de ranking (pág. 12 y 13) */}
+                      <div className="relative shrink-0">
+                        {searchMode === "look" &&
+                        item.matchingGarments &&
+                        item.matchingGarments.length > 1 ? (
+                          <div className="flex items-center -space-x-4">
+                            {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
+                              <div
+                                key={mg.id}
+                                className={`relative w-[68px] h-[84px] sm:w-[76px] sm:h-[92px] bg-caliza-10 flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
+                                  gIdx === 1 ? "z-10 ring-2 ring-caliza-5" : "z-0"
+                                }`}
+                                title={mg.name}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={mg.photoUrl}
+                                  alt={mg.name}
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="relative w-[76px] h-[94px] sm:w-[84px] sm:h-[104px] bg-caliza-10 flex items-center justify-center p-2 shrink-0 overflow-hidden photo-frame">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.bestGarment.photoUrl}
+                              alt={item.bestGarment.name}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          </div>
+                        )}
+
+                        {/* Índice de rango (único lugar junto con la ruta donde se usa numeración, pág. 12 y 13) */}
+                        <span className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-basalto-90 text-caliza-5 text-[12px] font-semibold tabular-nums flex items-center justify-center shadow-sm z-20">
+                          {idx + 1}
+                        </span>
+                      </div>
+
+                      {/* Zona 2: H4 Título de tarjeta + Tríada Galería | Piso | Stand con filetes verticales */}
+                      <div className="min-w-0 flex-1">
+                        <h4
+                          className="font-display font-medium text-[18px] leading-[23px] sm:text-[19px] sm:leading-[25px] text-basalto-90 truncate"
+                          style={{ letterSpacing: "-0.008em" }}
+                        >
+                          {item.store.name}
+                        </h4>
+
+                        {/* Tríada operativa en 3 celdas separadas por filete vertical (Pág. 12) */}
+                        <div className="grid grid-cols-3 mt-2 pt-1.5 pb-1 border-y border-caliza-20 max-w-md">
+                          <div className="pr-2.5 min-w-0">
+                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                              Galería
+                            </span>
+                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
+                              {item.store.gallery.replace(/^Galería\s+/i, "")}
+                            </span>
+                          </div>
+                          <div className="px-2.5 border-l border-caliza-20 min-w-0">
+                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                              Piso
+                            </span>
+                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums truncate block">
+                              {item.store.floor}
+                            </span>
+                          </div>
+                          <div className="pl-2.5 border-l border-caliza-20 min-w-0">
+                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                              Stand
+                            </span>
+                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums truncate block">
+                              {item.store.stand}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Prenda que resuena */}
+                        <p className="text-[12px] sm:text-[13px] leading-[19px] text-grafito-55 mt-2 line-clamp-1">
+                          {searchMode === "look" &&
+                          item.matchingGarments &&
+                          item.matchingGarments.length > 1
+                            ? `${item.matchingGarments[0].name} + ${item.matchingGarments[1].name}`
+                            : item.bestGarment.name}
+                        </p>
+
+                        {/* Controles operativos: Ruta (Neblina), WhatsApp (Higo), Mapa (Neblina) */}
+                        <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (inRoute) {
+                                removeFromRoute(item.store.id);
+                              } else {
+                                addToRoute(item.store);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium transition-all duration-180 ease-vibra border ${
+                              inRoute
+                                ? "bg-neblina-30 text-basalto-90 border-neblina-70"
+                                : "bg-caliza-5 text-neblina-70 border-neblina-30 hover:border-neblina-70"
+                            }`}
+                          >
+                            {inRoute ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-neblina-70" />
+                                <span>En tu ruta</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-3.5 h-3.5 text-neblina-70" />
+                                <span>Sumar a ruta</span>
+                              </>
+                            )}
+                          </button>
+
+                          <a
+                            href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                              `Hola ${item.store.name}, vi su tienda en vibra (resonancia ${formattedScore}). ¿Tienen disponible: ${item.bestGarment.name}?`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-higo-70 hover:bg-vibra-600 text-white text-[12px] font-medium transition-all duration-180 ease-vibra"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+
+                          <a
+                            href={
+                              item.store.googleMapsUrl ||
+                              (item.store.latitude && item.store.longitude
+                                ? `https://www.google.com/maps/search/?api=1&query=${item.store.latitude},${item.store.longitude}`
+                                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                    `${item.store.gallery}, ${item.store.galleryAddress || "Gamarra, La Victoria, Lima"}`
+                                  )}`)
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-caliza-5 text-neblina-70 hover:bg-neblina-30/40 text-[12px] font-medium border border-caliza-20 transition-all"
+                            title="Abrir ubicación en Google Maps"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-neblina-70" />
+                            <span>Mapa</span>
+                            <ExternalLink className="w-3 h-3 text-grafito-55" />
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStoreItem(item);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-basalto-90 hover:text-higo-70 text-[12px] font-medium transition-colors"
+                          >
+                            <span>Ver ficha</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ZONA 3: Columna rígida derecha a 64px con el medidor de afinidad (Pág. 12) */}
+                    <div className="shrink-0 pl-2 sm:pl-4 border-l border-caliza-20 flex flex-col items-center justify-center">
+                      <RadarArcIcon
+                        score={item.resonanceScore}
+                        band={item.band}
+                        isStyleMode={inputType === "estilo"}
+                      />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Nota Micro de honestidad probabilística (Escala Micro 11/17 Grafito 55, pág. 10) */}
+          <p className="text-[11px] leading-[17px] text-grafito-55 pt-2" style={{ letterSpacing: "0.01em" }}>
+            El ranking se genera a partir de la fotografía publicada por el comerciante y no confirma existencias ni tallas disponibles en tienda.
+          </p>
         </section>
       </main>
 
-      {/* Modal de Detalle de Tienda */}
+      {/* Modal de Ficha de Tienda (Pantalla 3 del Manual) */}
       {selectedStoreItem && (
         <StoreDetailModal
           item={selectedStoreItem}
@@ -1334,7 +1330,8 @@ function VibraApp() {
           onCancel={() => setRawImageForCrop(null)}
         />
       )}
-      {/* Drawer de Mi Ruta */}
+
+      {/* Drawer de Ruta por Galería (Pantalla 4 del Manual) */}
       <RouteDrawer />
     </div>
   );

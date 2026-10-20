@@ -8,74 +8,190 @@ interface RadarArcIconProps {
   className?: string;
 }
 
+/**
+ * 2 · Medidor de afinidad (Manual v2.0, pág. 4 y 7)
+ * Retícula base 8u: Núcleo r=8, arcos en r=20, 32 y 44, barrido 140°, grosores 7, 5 y 3.
+ * Escala de resonancia con un solo matiz:
+ * - Alta (>= 0,85): Higo 70 (#71545B) en los tres arcos y en la cifra
+ * - Media (0,70 a 0,84): Grafito 55 (#676B63) en dos arcos, Caliza 20 (#CFD1C7) en el exterior
+ * - Exploratoria (0,55 a 0,69): Grafito 55 (#676B63) en un arco, Caliza 20 (#CFD1C7) en los otros dos
+ */
 export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
   score,
   band,
-  isStyleMode = false,
   className = "",
 }) => {
-  const percentage = Math.round(score * 100);
-  const activeArcs = band === "Alta" ? 3 : band === "Media" ? 2 : 1;
+  const formattedScore = score.toFixed(2).replace(".", ",");
 
-  // Etiqueta amigable de fácil comprensión humana
-  const label = isStyleMode
-    ? band === "Alta"
-      ? "Afinidad alta"
-      : band === "Media"
-      ? "Afinidad media"
-      : "Explorar estilo"
-    : band === "Alta"
-    ? "Muy parecida"
-    : band === "Media"
-    ? "Parecida"
-    : "Por explorar";
+  const isAlta = band === "Alta";
+  const isMedia = band === "Media";
+
+  const coreColor = isAlta ? "#71545B" : "#676B63";
+  const arc1Color = isAlta ? "#71545B" : "#676B63";
+  const arc2Color = isAlta ? "#71545B" : isMedia ? "#676B63" : "#CFD1C7";
+  const arc3Color = isAlta ? "#71545B" : "#CFD1C7";
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      {/* Icono de 3 arcos de resonancia como adorno sutil */}
+    <div className={`flex flex-col items-center justify-center w-16 select-none ${className}`}>
       <svg
-        width="28"
-        height="28"
-        viewBox="0 0 34 34"
+        width="34"
+        height="36"
+        viewBox="12 2 62 92"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="text-vibra-400 mb-0.5"
+        className="mb-1"
+        aria-hidden="true"
       >
+        {/* Núcleo r = 8 */}
+        <circle cx="24" cy="48" r="8" fill={coreColor} />
+        {/* Arco 1: r = 20, grosor = 7 */}
         <path
-          d="M 12 11 A 8 8 0 0 1 12 23"
-          stroke="currentColor"
-          strokeWidth="2.5"
+          d="M 30.84 29.21 A 20 20 0 0 1 30.84 66.79"
+          stroke={arc1Color}
+          strokeWidth="7"
           strokeLinecap="round"
-          opacity={activeArcs >= 1 ? 1 : 0.25}
-          className="transition-opacity duration-300"
         />
+        {/* Arco 2: r = 32, grosor = 5 */}
         <path
-          d="M 16 7 A 13 13 0 0 1 16 27"
-          stroke="currentColor"
-          strokeWidth="2.5"
+          d="M 34.94 17.93 A 32 32 0 0 1 34.94 78.07"
+          stroke={arc2Color}
+          strokeWidth="5"
           strokeLinecap="round"
-          opacity={activeArcs >= 2 ? 1 : 0.25}
-          className="transition-opacity duration-300"
         />
+        {/* Arco 3: r = 44, grosor = 3 */}
         <path
-          d="M 20 3 A 18 18 0 0 1 20 31"
-          stroke="currentColor"
-          strokeWidth="2.5"
+          d="M 39.05 6.65 A 44 44 0 0 1 39.05 89.35"
+          stroke={arc3Color}
+          strokeWidth="3"
           strokeLinecap="round"
-          opacity={activeArcs >= 3 ? 1 : 0.25}
-          className="transition-opacity duration-300"
         />
       </svg>
 
-      {/* Porcentaje numérico y etiqueta amigable */}
       <div className="text-center">
-        <span className="text-lg font-black text-white block tracking-tight leading-none">
-          {percentage}%
+        <span
+          className={`text-[15px] leading-[20px] font-semibold tabular-nums block ${
+            isAlta ? "text-higo-70" : "text-basalto-90"
+          }`}
+        >
+          {formattedScore}
         </span>
-        <span className="text-[10px] sm:text-[11px] font-bold text-vibra-300 tracking-wide mt-0.5 block whitespace-nowrap">
-          {label}
+        <span className="text-[11px] leading-[15px] font-normal text-grafito-55 block">
+          {band}
         </span>
       </div>
     </div>
   );
 };
+
+/**
+ * 1 · Isotipo + Logotipo oficial "vıbra" (Manual v2.0, pág. 4 y 5)
+ * El punto de la "i" se sustituye por el núcleo del isotipo en Higo 70 (#71545B).
+ */
+export const VibraBrandLogo: React.FC<{ showIsotipo?: boolean; className?: string }> = ({
+  showIsotipo = true,
+  className = "",
+}) => {
+  return (
+    <span className={`inline-flex items-center gap-2.5 select-none ${className}`}>
+      {showIsotipo && (
+        <svg
+          width="32"
+          height="34"
+          viewBox="12 2 62 92"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+          className="shrink-0"
+        >
+          <circle cx="24" cy="48" r="8" fill="#26282A" />
+          <path
+            d="M 30.84 29.21 A 20 20 0 0 1 30.84 66.79"
+            stroke="#26282A"
+            strokeWidth="7"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 34.94 17.93 A 32 32 0 0 1 34.94 78.07"
+            stroke="#71545B"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 39.05 6.65 A 44 44 0 0 1 39.05 89.35"
+            stroke="#676B63"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+      <span
+        className="font-display font-semibold text-[28px] sm:text-[32px] leading-none text-basalto-90 inline-flex items-baseline"
+        style={{ letterSpacing: "-0.048em" }}
+      >
+        <span>v</span>
+        <span className="relative inline-flex flex-col items-center">
+          <span
+            className="w-[6.5px] h-[6.5px] rounded-full bg-higo-70 mb-[2px]"
+            aria-hidden="true"
+          />
+          <span>ı</span>
+        </span>
+        <span>bra</span>
+      </span>
+    </span>
+  );
+};
+
+/**
+ * 3 · Indicador de carga: barrido del núcleo hacia fuera en ciclo de 1.4 s (Manual v2.0, pág. 4)
+ */
+export const ResonanceSweepLoader: React.FC<{ size?: number }> = ({ size = 48 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="12 2 62 92"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <circle cx="24" cy="48" r="8" fill="#71545B" />
+    <path
+      d="M 30.84 29.21 A 20 20 0 0 1 30.84 66.79"
+      stroke="#71545B"
+      strokeWidth="7"
+      strokeLinecap="round"
+      className="arc-sweep-1"
+    />
+    <path
+      d="M 34.94 17.93 A 32 32 0 0 1 34.94 78.07"
+      stroke="#71545B"
+      strokeWidth="5"
+      strokeLinecap="round"
+      className="arc-sweep-2"
+    />
+    <path
+      d="M 39.05 6.65 A 44 44 0 0 1 39.05 89.35"
+      stroke="#676B63"
+      strokeWidth="3"
+      strokeLinecap="round"
+      className="arc-sweep-3"
+    />
+  </svg>
+);
+
+/**
+ * 4 · Estado vacío: núcleo sin propagación (Manual v2.0, pág. 4 y 12)
+ */
+export const ResonanceEmptyNode: React.FC<{ size?: number }> = ({ size = 44 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 64 64"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <circle cx="32" cy="32" r="22" fill="#E2E3DB" />
+    <circle cx="32" cy="32" r="8" fill="#B6B9AD" />
+  </svg>
+);
