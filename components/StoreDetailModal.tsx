@@ -303,15 +303,17 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             <span className="text-[13px] font-medium text-basalto-90 block mb-2">
               Así se ve el stand físico
             </span>
-            <div className="w-full h-48 sm:h-56 bg-white rounded-2xl flex items-center justify-center overflow-hidden p-2 photo-frame">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={store.standPhotoUrl}
-                alt={`Stand de ${store.name}`}
-                className="w-full h-full object-contain rounded-xl"
-              />
+            <div className="flex justify-center">
+              <div className="inline-flex w-fit max-w-full bg-white rounded-2xl overflow-hidden p-1.5 photo-frame">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={store.standPhotoUrl}
+                  alt={`Stand de ${store.name}`}
+                  className="max-h-72 sm:max-h-80 w-auto max-w-full h-auto object-contain rounded-xl block"
+                />
+              </div>
             </div>
-            <p className="text-[11px] leading-[17px] text-grafito-55 mt-1.5">
+            <p className="text-[11px] leading-[17px] text-grafito-55 mt-2 text-center">
               Referencia visual del puesto para ubicarlo al caminar por los pasillos de {store.gallery}.
             </p>
           </div>
