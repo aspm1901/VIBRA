@@ -11,7 +11,7 @@ function isGenericFilename(name?: string): boolean {
   if (!name || !name.trim()) return true;
   const clean = name.trim();
   return (
-    /^(img|dsc|whatsapp|screenshot|captura|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|_|-|$)/i.test(
+    /^(copia\s+de\s+)?(img|dsc|whatsapp|screenshot|captura|imagen\s+de|chatgpt|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|_|-|$)/i.test(
       clean
     ) || /^[a-f0-9\s_-]{8,}$/i.test(clean)
   );

@@ -19,70 +19,89 @@ export function extractGarmentFamily(
   category = "",
   familyHint = ""
 ): GarmentFamily {
-  const text = `${name} ${category} ${familyHint}`.toLowerCase();
+  const validFamilies: GarmentFamily[] = [
+    "casaca",
+    "polo_top",
+    "blusa",
+    "chompa",
+    "pantalon_jean",
+    "vestido",
+    "falda_short",
+    "conjunto",
+  ];
+  const cleanHint = familyHint.toLowerCase().trim() as GarmentFamily;
+  const text = `${name} ${category}`.toLowerCase();
 
-  // 1. Casacas / Chaquetas / Blazers / Abrigos / Chalecos sastre
+  // 0. Si es explícitamente un Conjunto / Look de 2+ piezas
+  if (/\b(conjunto|look\s*\d|dos piezas|2 piezas|twin set|co-ord)\b/.test(text)) {
+    return "conjunto";
+  }
+
+  // 1. Casacas / Chaquetas / Blazers / Abrigos / Chalecos / Boleros
   if (
-    /\b(casaca|chaqueta|blazer|jacket|abrigo|bomber|sobrecamisa|biker|cazadora|trench|denim jacket|parka|cortaviento|chamarra|chaleco sastre)\b/.test(
+    /\b(casaca|chaqueta|blazer|jacket|abrigo|bomber|sobrecamisa|biker|cazadora|trench|denim jacket|parka|cortaviento|chamarra|chaleco|bolero|torera|saco|gabardina|kimono|puffer)\b/.test(
       text
-    ) ||
-    text.includes("casaca") ||
-    text.includes("chaqueta") ||
-    text.includes("blazer")
+    ) &&
+    !text.includes("tejido") &&
+    !text.includes("punto")
   ) {
     return "casaca";
   }
 
   // 2. Chompas / Tejidos / Sweaters / Poleras / Hoodies
   if (
-    /\b(chompa|sueter|suéter|sweater|cardigan|cárdigan|tejido|punto grueso|jersey|polera|hoodie|sudadera|buzo)\b/.test(
+    /\b(chompa|sueter|suéter|sweater|cardigan|cárdigan|tejido|punto|jersey|polera|hoodie|sudadera|buzo|canguro|pullover|sweatshirt)\b/.test(
       text
-    )
+    ) &&
+    !text.includes("top tejido")
   ) {
     return "chompa";
   }
 
-  // 3. Vestidos / Enterizos
-  if (/\b(vestido|dress|enterizo|jumpsuit|gala|sirena|cocktail|cóctel|romper)\b/.test(text)) {
+  // 3. Vestidos / Enterizos / Overoles
+  if (
+    /\b(vestido|dress|enterizo|jumpsuit|gala|sirena|cocktail|cóctel|romper|overol|jardinera|solera|maxivestido|minivestido)\b/.test(
+      text
+    )
+  ) {
     return "vestido";
   }
 
-  // 4. Jeans / Pantalones
+  // 4. Faldas / Shorts / Skorts (antes de pantalón por "falda-pantalón" / "falda short")
+  if (/\b(falda|minifalda|short|shorts|bermuda|skort|pareo)\b/.test(text) && !text.includes("pantalón tipo falda")) {
+    return "falda_short";
+  }
+
+  // 5. Jeans / Pantalones / Leggings
   if (
-    /\b(jean|jeans|pantalón|pantalon|palazzo|wide leg|cargo|jogger|flare|mom|skinny|baggy|culotte)\b/.test(text) &&
-    !text.includes("blazer") &&
-    !text.includes("casaca") &&
-    !text.includes("chaqueta")
+    /\b(jean|jeans|pantalón|pantalon|palazzo|wide leg|cargo|jogger|flare|mom|skinny|baggy|culotte|legging|leggins|licra|capri|oxford|slouchy)\b/.test(
+      text
+    )
   ) {
     return "pantalon_jean";
   }
 
-  // 5. Faldas / Shorts
-  if (/\b(falda|minifalda|short|shorts|bermuda)\b/.test(text)) {
-    return "falda_short";
-  }
-
   // 6. Blusas / Camisas
   if (
-    /\b(blusa|camisa|blusón|bluson|camisero)\b/.test(text) &&
+    /\b(blusa|camisa|blusón|bluson|camisero|camisera)\b/.test(text) &&
     !text.includes("corset") &&
     !text.includes("top")
   ) {
     return "blusa";
   }
 
-  // 7. Polos / Tops / Camisetas
+  // 7. Polos / Tops / Camisetas / Bividis / Bodys / Cafarenas
   if (
-    /\b(polo|top|camiseta|t-shirt|tshirt|crop top|bralette|corset|bustier|remera|musculosa|tank top)\b/.test(
+    /\b(polo|top|camiseta|t-shirt|tshirt|crop|bralette|corset|bustier|remera|musculosa|tank|bividi|bvd|body|bodysuit|cafarena|strapless|halter|peplum)\b/.test(
       text
     )
   ) {
     return "polo_top";
   }
 
-  // 8. Conjuntos
-  if (/\b(conjunto|set|dos piezas|traje)\b/.test(text)) {
-    return "conjunto";
+  // 8. Respetar la clasificación directa de la IA si ya nos dio una familia válida
+  if (validFamilies.includes(cleanHint)) {
+    return cleanHint;
   }
 
   return "otro";

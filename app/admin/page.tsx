@@ -345,7 +345,7 @@ export default function AdminPage() {
         const compressedBase64 = await compressImageClient(rawBase64, 1200);
         const rawName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
         const isGenericCameraName =
-          /^(img|dsc|whatsapp|screenshot|captura|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|$)/i.test(
+          /^(copia\s+de\s+)?(img|dsc|whatsapp|screenshot|captura|imagen\s+de|chatgpt|image|photo|foto|pxl|sam|dcim|frame|pic|untitled|sin\s*titulo|descarga|download|\d+)(\s|\d|$)/i.test(
             rawName
           ) || /^[a-f0-9\s]{8,}$/i.test(rawName);
 

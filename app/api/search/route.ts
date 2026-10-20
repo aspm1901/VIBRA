@@ -467,7 +467,22 @@ export async function POST(req: NextRequest) {
 
         let familyRelation: "same" | "different" | "neutral" = "neutral";
         if (queryFamily !== "otro" && garmentFamily !== "otro") {
-          familyRelation = queryFamily === garmentFamily ? "same" : "different";
+          if (queryFamily === garmentFamily) {
+            familyRelation = "same";
+          } else if (garmentFamily === "conjunto" || queryFamily === "conjunto") {
+            const gText = `${garment.name} ${garment.category}`
+              .replace(/\b(conjunto|look\s*\d*|dos piezas|2 piezas)\b/gi, "")
+              .trim();
+            const innerFamily = extractGarmentFamily(gText, "");
+            familyRelation = innerFamily === queryFamily ? "same" : "neutral";
+          } else if (
+            (queryFamily === "blusa" && garmentFamily === "polo_top") ||
+            (queryFamily === "polo_top" && garmentFamily === "blusa")
+          ) {
+            familyRelation = "neutral";
+          } else {
+            familyRelation = "different";
+          }
         }
 
         // Conteo de prendas de catálogo adicionales del mismo tipo con similitud aceptable (para bono de variedad)
