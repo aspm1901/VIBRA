@@ -142,7 +142,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           </div>
         ) : (
           <div className="mt-5">
-            <div className="w-full h-72 sm:h-80 bg-caliza-10 flex items-center justify-center p-4 overflow-hidden photo-frame">
+            <div className="w-full h-72 sm:h-80 bg-white flex items-center justify-center p-4 overflow-hidden photo-frame">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selectedGarment?.photoUrl || bestGarment.photoUrl}

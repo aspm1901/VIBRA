@@ -12,9 +12,9 @@ interface RadarArcIconProps {
  * 2 · Medidor de afinidad (Manual v2.0, pág. 4 y 7)
  * Retícula base 8u: Núcleo r=8, arcos en r=20, 32 y 44, barrido 140°, grosores 7, 5 y 3.
  * Escala de resonancia con un solo matiz:
- * - Alta (>= 0,85): Higo 70 (#71545B) en los tres arcos y en la cifra
- * - Media (0,70 a 0,84): Grafito 55 (#676B63) en dos arcos, Caliza 20 (#CFD1C7) en el exterior
- * - Exploratoria (0,55 a 0,69): Grafito 55 (#676B63) en un arco, Caliza 20 (#CFD1C7) en los otros dos
+ * - Alta: Higo 70 (#71545B) en los tres arcos y en la cifra
+ * - Media: Grafito 55 (#676B63) en dos arcos, Caliza 20 (#CFD1C7) en el exterior
+ * - Exploratoria / Baja: Grafito 55 (#676B63) en un arco, Caliza 20 (#CFD1C7) en los otros dos
  */
 export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
   score,
@@ -69,13 +69,17 @@ export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
 
       <div className="text-center">
         <span
-          className={`text-[15px] leading-[20px] font-semibold tabular-nums block ${
+          className={`text-[15px] leading-[19px] font-semibold tabular-nums block ${
             isAlta ? "text-higo-70" : "text-basalto-90"
           }`}
         >
           {formattedScore}
         </span>
-        <span className="text-[11px] leading-[15px] font-normal text-grafito-55 block">
+        <span
+          className={`text-[11px] leading-[14px] font-medium block mt-0.5 ${
+            isAlta ? "text-higo-70" : "text-grafito-55"
+          }`}
+        >
           {band}
         </span>
       </div>
@@ -85,7 +89,8 @@ export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
 
 /**
  * 1 · Isotipo + Logotipo oficial "vıbra" (Manual v2.0, pág. 4 y 5)
- * El punto de la "i" se sustituye por el núcleo del isotipo en Higo 70 (#71545B).
+ * El punto de la "i" se sustituye por el núcleo del isotipo en Higo 70 (#71545B)
+ * sin romper jamás la línea base tipográfica.
  */
 export const VibraBrandLogo: React.FC<{ showIsotipo?: boolean; className?: string }> = ({
   showIsotipo = true,
@@ -95,8 +100,8 @@ export const VibraBrandLogo: React.FC<{ showIsotipo?: boolean; className?: strin
     <span className={`inline-flex items-center gap-2.5 select-none ${className}`}>
       {showIsotipo && (
         <svg
-          width="32"
-          height="34"
+          width="30"
+          height="32"
           viewBox="12 2 62 92"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -125,18 +130,22 @@ export const VibraBrandLogo: React.FC<{ showIsotipo?: boolean; className?: strin
         </svg>
       )}
       <span
-        className="font-display font-semibold text-[28px] sm:text-[32px] leading-none text-basalto-90 inline-flex items-baseline"
+        className="font-display font-semibold text-[28px] sm:text-[31px] leading-none text-basalto-90 whitespace-nowrap"
         style={{ letterSpacing: "-0.048em" }}
       >
-        <span>v</span>
-        <span className="relative inline-flex flex-col items-center">
+        v
+        <span className="relative inline-block">
+          ı
           <span
-            className="w-[6.5px] h-[6.5px] rounded-full bg-higo-70 mb-[2px]"
+            className="
+              absolute left-1/2 -translate-x-1/2
+              top-[0.06em] w-[0.21em] h-[0.21em]
+              rounded-full bg-higo-70 pointer-events-none
+            "
             aria-hidden="true"
           />
-          <span>ı</span>
         </span>
-        <span>bra</span>
+        bra
       </span>
     </span>
   );

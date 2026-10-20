@@ -33,18 +33,6 @@ import {
 import { RouteProvider, useRoute } from "@/components/RouteContext";
 import { RouteDrawer } from "@/components/RouteDrawer";
 
-const CATEGORIES = [
-  "Tops",
-  "Blusas",
-  "Casacas y abrigos",
-  "Vestidos",
-  "Jeans y pantalones",
-  "Faldas",
-  "Shorts",
-  "Conjuntos",
-  "Chompas",
-];
-
 const STYLES = [
   "Casual",
   "Elegante",
@@ -101,7 +89,8 @@ const STYLE_PRESETS = [
 const EXAMPLES = [
   {
     id: "look_sastre",
-    title: "Look sastre chic (Blazer + Palazzo)",
+    title: "Look sastre",
+    fullTitle: "Look sastre chic (Blazer + Palazzo)",
     category: "Look completo / Outfit",
     styles: ["Elegante", "Oficina", "Minimalista"],
     image: "/images/garments/look_sastre_chic.jpg",
@@ -109,7 +98,8 @@ const EXAMPLES = [
   },
   {
     id: "casaca_denim",
-    title: "Casaca denim clásica",
+    title: "Casaca denim",
+    fullTitle: "Casaca denim clásica",
     category: "Casacas y abrigos",
     styles: ["Urbano", "Casual"],
     image: "/images/garments/casaca_denim_clasica.jpg",
@@ -117,7 +107,8 @@ const EXAMPLES = [
   },
   {
     id: "vestido_burdeos",
-    title: "Vestido burdeos de fiesta",
+    title: "Vestido fiesta",
+    fullTitle: "Vestido burdeos de fiesta",
     category: "Vestidos",
     styles: ["Fiesta", "Elegante"],
     image: "/images/garments/vestido_burdeos.jpg",
@@ -125,7 +116,8 @@ const EXAMPLES = [
   },
   {
     id: "jean_celeste",
-    title: "Jean celeste urbano",
+    title: "Jean celeste",
+    fullTitle: "Jean celeste urbano",
     category: "Jeans y pantalones",
     styles: ["Urbano", "Casual"],
     image: "/images/garments/jean_celeste.jpg",
@@ -133,7 +125,8 @@ const EXAMPLES = [
   },
   {
     id: "chompa_amarilla",
-    title: "Chompa mostaza tejida",
+    title: "Chompa tejida",
+    fullTitle: "Chompa mostaza tejida",
     category: "Chompas",
     styles: ["Casual", "Minimalista"],
     image: "/images/garments/chompa_amarilla.jpg",
@@ -191,14 +184,9 @@ function VibraApp() {
   // Resultados
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [selectedGalleryFilter, setSelectedGalleryFilter] = useState<string>("todas");
-  const [groupedResults, setGroupedResults] = useState<
-    Record<string, { galleryName: string; address: string; stores: SearchResultItem[] }>
-  >({});
-  const [stats, setStats] = useState({ totalStores: 3, passedFilters: 3, passedResonance: 3 });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Ejecutar búsqueda inicial al cargar la página
   useEffect(() => {
     executeSearch({ exampleId: "vestido_burdeos" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -249,7 +237,7 @@ function VibraApp() {
       };
 
       if (activeSearchMode === "estilo") {
-        // En búsqueda por estilo no se envía imagen ni ejemplo
+        // Búsqueda por estilo
       } else if (overrideParams?.image) {
         payload.image = overrideParams.image;
       } else if (currentImageBase64) {
@@ -267,8 +255,6 @@ function VibraApp() {
       const data = await res.json();
       if (data.success) {
         setResults(data.qualifiedResults || []);
-        setGroupedResults(data.groupedByGallery || {});
-        setStats(data.stats || { totalStores: 0, passedFilters: 0, passedResonance: 0 });
 
         if (data.detectedInfo) {
           setDetectedInfo(data.detectedInfo);
@@ -298,7 +284,7 @@ function VibraApp() {
     setSelectedExampleId(ex.id);
     setCurrentImageBase64(null);
     setCurrentImagePreview(ex.image);
-    setGarmentTitle(ex.title);
+    setGarmentTitle(ex.fullTitle);
     setSelectedCategory(ex.category);
     setSelectedStyles(ex.styles);
     const targetMode = ex.isLook ? "look" : "prenda";
@@ -306,7 +292,7 @@ function VibraApp() {
     setDetectedInfo({
       category: ex.category,
       styles: ex.styles,
-      garmentTitle: ex.title,
+      garmentTitle: ex.fullTitle,
     });
     executeSearch({
       exampleId: ex.id,
@@ -464,11 +450,11 @@ function VibraApp() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {/* Botón 'Tu ruta' en familia espacial Neblina (Manual pág. 7 y 13) */}
+            {/* Botón 'Tu ruta' en familia espacial Neblina */}
             <button
               type="button"
               onClick={() => setIsRouteDrawerOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-chip text-neblina-70 text-xs sm:text-sm font-medium border border-neblina-30 hover:border-neblina-70 transition-all duration-180 ease-vibra active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-chip text-neblina-70 text-xs sm:text-[13px] font-medium hover:border-neblina-70 transition-all duration-180 ease-vibra active:scale-95"
               aria-label="Abrir mi ruta por galería"
             >
               <Compass className="w-4 h-4 text-neblina-70" />
@@ -485,7 +471,7 @@ function VibraApp() {
               <button
                 type="button"
                 onClick={() => setIsRouteDrawerOpen(true)}
-                className="flex items-center gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full neu-chip border border-caliza-20 text-xs transition-all"
+                className="flex items-center gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full neu-chip text-xs transition-all"
                 title={user.email || "Tu cuenta"}
               >
                 {user.user_metadata?.avatar_url ? (
@@ -508,7 +494,7 @@ function VibraApp() {
               <button
                 type="button"
                 onClick={signInWithGoogle}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full neu-chip text-grafito-55 hover:text-basalto-90 text-xs font-medium border border-caliza-20 transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full neu-chip text-grafito-55 hover:text-basalto-90 text-xs font-medium transition-all active:scale-95"
                 title="Iniciar sesión con Google para sincronizar tu ruta"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
@@ -539,25 +525,25 @@ function VibraApp() {
       {/* Contenedor Principal (Retícula 12 columnas max 1200px, pág. 11) */}
       <main className="max-w-[1200px] mx-auto px-5 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
         {/* ================= COLUMNA IZQUIERDA: CAPTURA Y FILTROS (5 de 12 cols) ================= */}
-        <section className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 self-start">
+        <section className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-24 self-start">
           {/* Display y Cuerpo (Escala modular pág. 10) */}
           <div>
             <h1
-              className="font-display font-bold text-[40px] leading-[42px] sm:text-[48px] sm:leading-[50px] text-basalto-90"
+              className="font-display font-bold text-[38px] leading-[40px] sm:text-[46px] sm:leading-[48px] text-basalto-90"
               style={{ letterSpacing: "-0.035em" }}
             >
               Muéstralo. <br />
               Encuéntralo cerca.
             </h1>
-            <p className="text-[15px] leading-[24px] sm:text-[16px] sm:leading-[26px] text-grafito-55 mt-3 max-w-md font-normal">
+            <p className="text-[15px] leading-[24px] text-grafito-55 mt-3 max-w-md font-normal">
               Sube una foto de una prenda o de un look completo. Vibra la compara con las
               imágenes que publican los comerciantes y ordena las tiendas que resuenan con
               más intensidad.
             </p>
           </div>
 
-          {/* Selector de modo: Pozo hundido en Caliza 10 con pestaña activa elevada en Caliza 05 */}
-          <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl neu-sunken">
+          {/* Selector de modo: Pozo hundido en Caliza 10 con pestaña activa elevada */}
+          <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl neu-sunken">
             <button
               type="button"
               onClick={() => {
@@ -565,9 +551,9 @@ function VibraApp() {
                 setSearchMode("prenda");
                 executeSearch({ overrideSearchMode: "prenda" });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
+              className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "prenda"
-                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
                   : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
@@ -578,7 +564,7 @@ function VibraApp() {
                     : "text-grafito-55"
                 }`}
               />
-              <span className="text-xs sm:text-[13px] font-medium block">Una prenda</span>
+              <span className="text-xs sm:text-[13px] block">Una prenda</span>
             </button>
 
             <button
@@ -588,9 +574,9 @@ function VibraApp() {
                 setSearchMode("look");
                 executeSearch({ overrideSearchMode: "look" });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
+              className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "look"
-                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
                   : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
@@ -601,7 +587,7 @@ function VibraApp() {
                     : "text-grafito-55"
                 }`}
               />
-              <span className="text-xs sm:text-[13px] font-medium block">Look completo</span>
+              <span className="text-xs sm:text-[13px] block">Look completo</span>
             </button>
 
             <button
@@ -610,9 +596,9 @@ function VibraApp() {
                 setInputType("estilo");
                 executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
               }}
-              className={`p-2.5 sm:p-3 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
+              className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "estilo"
-                  ? "neu-chip text-basalto-90 border border-higo-30 font-semibold"
+                  ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
                   : "text-grafito-55 hover:text-basalto-90 border border-transparent"
               }`}
             >
@@ -621,7 +607,7 @@ function VibraApp() {
                   inputType === "estilo" ? "text-higo-70" : "text-grafito-55"
                 }`}
               />
-              <span className="text-xs sm:text-[13px] font-medium block">Por estilo</span>
+              <span className="text-xs sm:text-[13px] block">Por estilo</span>
             </button>
           </div>
 
@@ -630,7 +616,7 @@ function VibraApp() {
           {/* ======================================================== */}
           {inputType === "foto" ? (
             <div className="space-y-5">
-              {/* Pozo de captura hundido (Caliza 10) con máscara orgánica superelipse */}
+              {/* Pozo de captura hundido (Caliza 10) con máscara orgánica superelipse uniforme */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
@@ -638,7 +624,7 @@ function VibraApp() {
               >
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className={`w-44 h-52 bg-caliza-5 flex items-center justify-center p-3 cursor-pointer group transition-transform overflow-hidden relative photo-frame organic-mask ${
+                  className={`w-44 h-52 flex items-center justify-center p-4 cursor-pointer group transition-transform overflow-hidden relative organic-mask ${
                     isSearching ? "organic-mask-active" : ""
                   }`}
                 >
@@ -646,7 +632,7 @@ function VibraApp() {
                   <img
                     src={currentImagePreview}
                     alt="Referencia de búsqueda"
-                    className="max-h-full max-w-full object-contain"
+                    className="w-full h-full object-contain"
                   />
                   <div className="absolute inset-0 bg-basalto-90/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity">
                     <Camera className="w-6 h-6 mb-1 text-caliza-5" />
@@ -673,11 +659,11 @@ function VibraApp() {
                   Una prenda, un conjunto o una captura de pantalla. Un fondo limpio ayuda.
                 </p>
 
-                {/* Botón principal en Higo 70 con texto blanco (Pág. 8 y 12) */}
+                {/* Botón principal en Higo 70 con texto blanco */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-4 px-6 py-3 min-h-[44px] rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] sm:text-[14px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95 shadow-sm"
+                  className="mt-4 px-6 py-2.5 min-h-[44px] rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] sm:text-[14px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95 shadow-xs"
                 >
                   <Camera className="w-4 h-4 text-white" />
                   <span>
@@ -685,7 +671,7 @@ function VibraApp() {
                   </span>
                 </button>
 
-                {/* Chips detectados por IA: Relleno Higo 30 / Caliza 05 (Pág. 7, Regla de series) */}
+                {/* Chips detectados por IA */}
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-5 pt-4 border-t border-caliza-20 w-full">
                   <span className="text-[12px] font-medium text-grafito-55">
                     Lectura visual:
@@ -701,7 +687,7 @@ function VibraApp() {
                   ).map((style) => (
                     <span
                       key={style}
-                      className="text-[12px] px-3 py-1 rounded-full bg-caliza-5 text-basalto-90 border border-caliza-20 font-normal"
+                      className="text-[12px] px-3 py-1 rounded-full bg-[#F6F7F3] text-basalto-90 border border-caliza-20 font-normal"
                     >
                       {style}
                     </span>
@@ -731,16 +717,14 @@ function VibraApp() {
                           type="button"
                           onClick={() => handleSelectExample(ex)}
                           className={`p-2 rounded-2xl flex flex-col items-center text-center transition-all duration-180 ease-vibra ${
-                            isSelected
-                              ? "neu-sunken border border-higo-70"
-                              : "neu-chip border border-transparent hover:border-caliza-20"
+                            isSelected ? "neu-chip-active" : "neu-chip hover:border-basalto-90/30"
                           }`}
                         >
-                          <div className="w-full h-16 bg-caliza-5 rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 photo-frame">
+                          <div className="w-full h-16 rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 photo-frame">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={ex.image}
-                              alt={ex.title}
+                              alt={ex.fullTitle}
                               className="max-h-full max-w-full object-contain"
                             />
                           </div>
@@ -753,7 +737,7 @@ function VibraApp() {
                 </div>
               </div>
 
-              {/* Estilos interactivos (Neomorfismo acotado: elevado inactivo, hundido/Higo activo) */}
+              {/* Estilos interactivos */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[13px] font-medium text-basalto-90">
@@ -774,10 +758,10 @@ function VibraApp() {
                         key={st}
                         type="button"
                         onClick={() => toggleStyle(st)}
-                        className={`text-[13px] px-3.5 py-2 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
+                        className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra ${
                           isSelected
-                            ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
-                            : "neu-chip text-basalto-90 font-normal hover:border-caliza-20 border border-transparent"
+                            ? "neu-chip-active font-semibold"
+                            : "neu-chip text-basalto-90 font-normal hover:border-basalto-90/30"
                         }`}
                       >
                         {st}
@@ -831,8 +815,8 @@ function VibraApp() {
                           }}
                           className={`p-3 rounded-2xl text-left transition-all duration-180 ease-vibra ${
                             isActive
-                              ? "neu-sunken border border-higo-70"
-                              : "neu-chip border border-transparent hover:border-caliza-20"
+                              ? "neu-chip-active"
+                              : "neu-chip hover:border-basalto-90/30"
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -875,8 +859,8 @@ function VibraApp() {
                         onClick={() => toggleStyle(st)}
                         className={`text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-180 ease-vibra ${
                           isSelected
-                            ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
-                            : "neu-chip text-basalto-90 font-normal border border-transparent"
+                            ? "neu-chip-active font-semibold"
+                            : "neu-chip text-basalto-90 font-normal"
                         }`}
                       >
                         {st}
@@ -909,10 +893,10 @@ function VibraApp() {
                         const newPrice = isSelected ? undefined : (p.id as PriceLevel);
                         setSelectedPrice(newPrice);
                       }}
-                      className={`text-[13px] px-4 py-2 min-h-[38px] rounded-full transition-all duration-180 ease-vibra inline-flex items-center gap-1.5 ${
+                      className={`text-[13px] px-4 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra inline-flex items-center gap-1.5 ${
                         isSelected
-                          ? "neu-sunken text-higo-70 font-semibold border border-higo-30"
-                          : "neu-chip text-basalto-90 font-normal border border-transparent"
+                          ? "neu-chip-active font-semibold"
+                          : "neu-chip text-basalto-90 font-normal"
                       }`}
                     >
                       <span className="text-[12px] text-grafito-55 tabular-nums">{p.symbol}</span>
@@ -959,7 +943,7 @@ function VibraApp() {
                             className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
                                 ? "bg-higo-70 text-white font-semibold"
-                                : "bg-caliza-5 text-basalto-90 border border-caliza-20 hover:border-caliza-30"
+                                : "bg-[#F6F7F3] text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >
                             {tz}
@@ -988,7 +972,7 @@ function VibraApp() {
                             className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
                                 ? "bg-higo-70 text-white font-semibold"
-                                : "bg-caliza-5 text-basalto-90 border border-caliza-20 hover:border-caliza-30"
+                                : "bg-[#F6F7F3] text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >
                             {tc.label}
@@ -1001,12 +985,12 @@ function VibraApp() {
               )}
             </div>
 
-            {/* Botón Principal de Acción en Higo 70 con texto blanco (Contraste 6.73 AA, pág. 8) */}
+            {/* Botón Principal de Acción en Higo 70 con texto blanco */}
             <button
               type="button"
               onClick={() => executeSearch({ isManualFilterRefinement: true })}
               disabled={isSearching}
-              className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-sm mt-2"
+              className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-xs mt-2"
             >
               {isSearching ? (
                 <span>Calculando resonancia con los catálogos...</span>
@@ -1044,16 +1028,16 @@ function VibraApp() {
             </p>
           </div>
 
-          {/* Chips de filtro de Galería (Elevado inactivo, Hundido activo, pág. 11 y 12) */}
+          {/* Chips de filtro de Galería */}
           {!isSearching && availableGalleries.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedGalleryFilter("todas")}
-                className={`text-[13px] px-4 py-2 min-h-[40px] rounded-full transition-all duration-180 ease-vibra ${
+                className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
                   selectedGalleryFilter === "todas"
-                    ? "neu-sunken text-basalto-90 font-semibold border border-higo-30"
-                    : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium border border-transparent"
+                    ? "neu-chip-active font-semibold"
+                    : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
                 }`}
               >
                 Todas las galerías ({results.length})
@@ -1066,10 +1050,10 @@ function VibraApp() {
                     key={gal}
                     type="button"
                     onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
-                    className={`text-[13px] px-4 py-2 min-h-[40px] rounded-full transition-all duration-180 ease-vibra ${
+                    className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
                       isSel
-                        ? "neu-sunken text-basalto-90 font-semibold border border-higo-30"
-                        : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium border border-transparent"
+                        ? "neu-chip-active font-semibold"
+                        : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
                     }`}
                   >
                     {gal} ({count})
@@ -1079,7 +1063,7 @@ function VibraApp() {
             </div>
           )}
 
-          {/* 3 · Estado de Carga: Esqueletos en Caliza 10 + 3 arcos barriendo en ciclo de 1.4 s (Pág. 4 y 12) */}
+          {/* 3 · Estado de Carga: Esqueletos en Caliza 10 + 3 arcos barriendo en ciclo de 1.4 s */}
           {isSearching && (
             <div className="space-y-3">
               <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
@@ -1100,7 +1084,7 @@ function VibraApp() {
             </div>
           )}
 
-          {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa, nunca disculpa (Pág. 4 y 12) */}
+          {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa */}
           {!isSearching && displayedResults.length === 0 && (
             <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
               <ResonanceEmptyNode size={48} />
@@ -1112,7 +1096,7 @@ function VibraApp() {
 
           {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
           {!isSearching && displayedResults.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {displayedResults.map((item, idx) => {
                 const isRank1 = idx === 0;
                 const inRoute = isInRoute(item.store.id);
@@ -1127,8 +1111,8 @@ function VibraApp() {
                     }`}
                   >
                     {/* ZONA 1 + 2: Compuesto fotográfico con índice de rango + Identidad y Tríada */}
-                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                      {/* Zona 1: Compuesto fotográfico con ordinal de ranking (pág. 12 y 13) */}
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      {/* Zona 1: Compuesto fotográfico con fondo blanco uniforme y filete 1px */}
                       <div className="relative shrink-0">
                         {searchMode === "look" &&
                         item.matchingGarments &&
@@ -1137,8 +1121,8 @@ function VibraApp() {
                             {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
                               <div
                                 key={mg.id}
-                                className={`relative w-[68px] h-[84px] sm:w-[76px] sm:h-[92px] bg-caliza-10 flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
-                                  gIdx === 1 ? "z-10 ring-2 ring-caliza-5" : "z-0"
+                                className={`relative w-[68px] h-[86px] sm:w-[76px] sm:h-[96px] flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
+                                  gIdx === 1 ? "z-10 ring-2 ring-[#F4F5F0]" : "z-0"
                                 }`}
                                 title={mg.name}
                               >
@@ -1152,7 +1136,7 @@ function VibraApp() {
                             ))}
                           </div>
                         ) : (
-                          <div className="relative w-[76px] h-[94px] sm:w-[84px] sm:h-[104px] bg-caliza-10 flex items-center justify-center p-2 shrink-0 overflow-hidden photo-frame">
+                          <div className="relative w-[78px] h-[98px] sm:w-[86px] sm:h-[108px] flex items-center justify-center p-1.5 shrink-0 overflow-hidden photo-frame">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={item.bestGarment.photoUrl}
@@ -1162,8 +1146,8 @@ function VibraApp() {
                           </div>
                         )}
 
-                        {/* Índice de rango (único lugar junto con la ruta donde se usa numeración, pág. 12 y 13) */}
-                        <span className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-basalto-90 text-caliza-5 text-[12px] font-semibold tabular-nums flex items-center justify-center shadow-sm z-20">
+                        {/* Índice de rango */}
+                        <span className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-basalto-90 text-caliza-5 text-[12px] font-semibold tabular-nums flex items-center justify-center shadow-xs z-20">
                           {idx + 1}
                         </span>
                       </div>
@@ -1171,42 +1155,42 @@ function VibraApp() {
                       {/* Zona 2: H4 Título de tarjeta + Tríada Galería | Piso | Stand con filetes verticales */}
                       <div className="min-w-0 flex-1">
                         <h4
-                          className="font-display font-medium text-[18px] leading-[23px] sm:text-[19px] sm:leading-[25px] text-basalto-90 truncate"
+                          className="font-display font-medium text-[18px] leading-[23px] sm:text-[20px] sm:leading-[25px] text-basalto-90 truncate"
                           style={{ letterSpacing: "-0.008em" }}
                         >
                           {item.store.name}
                         </h4>
 
                         {/* Tríada operativa en 3 celdas separadas por filete vertical (Pág. 12) */}
-                        <div className="grid grid-cols-3 mt-2 pt-1.5 pb-1 border-y border-caliza-20 max-w-md">
-                          <div className="pr-2.5 min-w-0">
-                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                        <div className="inline-grid grid-cols-[minmax(95px,auto)_auto_auto] gap-x-3 sm:gap-x-4 mt-1.5 py-1.5 border-y border-caliza-20">
+                          <div className="min-w-0">
+                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
                               Galería
                             </span>
                             <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
                               {item.store.gallery.replace(/^Galería\s+/i, "")}
                             </span>
                           </div>
-                          <div className="px-2.5 border-l border-caliza-20 min-w-0">
-                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                          <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
                               Piso
                             </span>
-                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums truncate block">
+                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
                               {item.store.floor}
                             </span>
                           </div>
-                          <div className="pl-2.5 border-l border-caliza-20 min-w-0">
-                            <span className="text-[11px] leading-[15px] text-grafito-55 block">
+                          <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                            <span className="text-[11px] leading-[14px] text-grafito-55 block">
                               Stand
                             </span>
-                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums truncate block">
+                            <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
                               {item.store.stand}
                             </span>
                           </div>
                         </div>
 
                         {/* Prenda que resuena */}
-                        <p className="text-[12px] sm:text-[13px] leading-[19px] text-grafito-55 mt-2 line-clamp-1">
+                        <p className="text-[12px] sm:text-[13px] leading-[18px] text-grafito-55 mt-1.5 line-clamp-1">
                           {searchMode === "look" &&
                           item.matchingGarments &&
                           item.matchingGarments.length > 1
@@ -1214,8 +1198,8 @@ function VibraApp() {
                             : item.bestGarment.name}
                         </p>
 
-                        {/* Controles operativos: Ruta (Neblina), WhatsApp (Higo), Mapa (Neblina) */}
-                        <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                        {/* Controles operativos en una sola fila compacta */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1226,10 +1210,10 @@ function VibraApp() {
                                 addToRoute(item.store);
                               }
                             }}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium transition-all duration-180 ease-vibra border ${
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all duration-180 ease-vibra border ${
                               inRoute
                                 ? "bg-neblina-30 text-basalto-90 border-neblina-70"
-                                : "bg-caliza-5 text-neblina-70 border-neblina-30 hover:border-neblina-70"
+                                : "bg-white/80 text-neblina-70 border-neblina-30 hover:border-neblina-70"
                             }`}
                           >
                             {inRoute ? (
@@ -1240,7 +1224,7 @@ function VibraApp() {
                             ) : (
                               <>
                                 <Plus className="w-3.5 h-3.5 text-neblina-70" />
-                                <span>Sumar a ruta</span>
+                                <span>Ruta</span>
                               </>
                             )}
                           </button>
@@ -1252,7 +1236,7 @@ function VibraApp() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-higo-70 hover:bg-vibra-600 text-white text-[12px] font-medium transition-all duration-180 ease-vibra"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[12px] font-medium transition-all duration-180 ease-vibra"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             <span>WhatsApp</span>
@@ -1270,12 +1254,12 @@ function VibraApp() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-caliza-5 text-neblina-70 hover:bg-neblina-30/40 text-[12px] font-medium border border-caliza-20 transition-all"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/80 text-neblina-70 hover:bg-neblina-30/40 text-[12px] font-medium border border-caliza-20 transition-all"
                             title="Abrir ubicación en Google Maps"
                           >
-                            <Navigation className="w-3.5 h-3.5 text-neblina-70" />
+                            <Navigation className="w-3 h-3 text-neblina-70" />
                             <span>Mapa</span>
-                            <ExternalLink className="w-3 h-3 text-grafito-55" />
+                            <ExternalLink className="w-2.5 h-2.5 text-grafito-55" />
                           </a>
 
                           <button
@@ -1284,7 +1268,7 @@ function VibraApp() {
                               e.stopPropagation();
                               setSelectedStoreItem(item);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-basalto-90 hover:text-higo-70 text-[12px] font-medium transition-colors"
+                            className="inline-flex items-center gap-0.5 px-2 py-1 rounded-full text-basalto-90 hover:text-higo-70 text-[12px] font-medium transition-colors"
                           >
                             <span>Ver ficha</span>
                             <ChevronRight className="w-3.5 h-3.5" />
