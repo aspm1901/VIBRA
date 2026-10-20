@@ -28,17 +28,17 @@ export async function optimizeImageForAi(
   try {
     const buffer = Buffer.from(rawClean, "base64");
 
-    // Si ya pesa menos de 65KB y es JPEG/PNG/WebP no hace falta re-comprimir
+    // Si ya pesa menos de 35KB y es JPEG/PNG/WebP no hace falta re-comprimir
     if (
-      buffer.length < 65 * 1024 &&
+      buffer.length < 35 * 1024 &&
       ["image/jpeg", "image/png", "image/webp"].includes(originalMime)
     ) {
       return { cleanBase64: rawClean, mimeType: originalMime };
     }
 
     const resizedBuffer = await sharp(buffer)
-      .resize(640, 640, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 80 })
+      .resize(448, 448, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 76 })
       .toBuffer();
 
     return {
@@ -129,14 +129,14 @@ export interface GarmentAnalysisResult {
   isFallback?: boolean;
 }
 
-// Cascada secuencial EXCLUSIVA de alta cuota y alto RPM (más de 29,000 consultas/día combinadas):
-// 1. gemini-3.1-flash-lite-preview -> Gemini 3.1 Flash Lite (500 RPD | 15 RPM, ~1.5s)
-// 2. gemma-4-26b-a4b-it            -> Gemma 4 26B           (14,400 RPD | 30 RPM multimodal)
-// 3. gemma-4-31b-it                -> Gemma 4 31B           (14,400 RPD | 30 RPM multimodal)
-// 4. gemini-flash-lite-latest      -> Respaldo final Flash Lite
+// Cascada EXCLUSIVA con los 4 modelos de alta cuota en tu cuenta de AI Studio (~29,800 RPD totales):
+// 1. gemini-3.1-flash-lite-preview -> 500 RPD | 15 RPM
+// 2. gemini-3.5-flash-lite         -> 500 RPD | 15 RPM
+// 3. gemma-4-26b-a4b-it            -> 14,400 RPD | 30 RPM
+// 4. gemma-4-31b-it                -> 14,400 RPD | 30 RPM
 const VISION_MODEL_CASCADE = [
-  "gemini-3-flash-preview",
   "gemini-3.1-flash-lite-preview",
+  "gemini-3.5-flash-lite",
   "gemma-4-26b-a4b-it",
   "gemma-4-31b-it",
 ];
@@ -287,7 +287,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
     const isGemma = modelName.startsWith("gemma");
-    const isGemini3 = modelName.startsWith("gemini-3");
+    const is31Lite = modelName.startsWith("gemini-3.1");
     const response = await client.models.generateContent({
       model: modelName,
       contents: [
@@ -304,7 +304,8 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
         : {
             responseMimeType: "application/json",
             responseSchema: responseSchema as any,
-            ...(isGemini3 ? { thinkingConfig: { thinkingLevel: "MINIMAL" as any } } : {}),
+            temperature: 0.1,
+            ...(is31Lite ? { thinkingConfig: { thinkingLevel: "MINIMAL" as any } } : {}),
           },
     });
 
@@ -329,22 +330,23 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
   };
 
   // En búsqueda en vivo del usuario (fastSearch = true), competimos en paralelo entre
-  // los 2 modelos más rápidos con tope de 5.5s para que jamás demore 20-30s si uno da 503.
+  // los dos modelos de 500 RPD (Gemini 3.1 Flash Lite y Gemini 3.5 Flash Lite) en una sola espera
+  // para no sumar esperas en cadena si uno de los dos está lento o da 503.
   if (fastSearch) {
     try {
       const fastWinner = await withTimeout(
         Promise.any([
-          callModel("gemini-3-flash-preview"),
           callModel("gemini-3.1-flash-lite-preview"),
+          callModel("gemini-3.5-flash-lite"),
         ]),
-        5500,
+        14500,
         null
       );
       if (fastWinner) {
         return fastWinner;
       }
     } catch {
-      // Si ambos fallan por 503 simultáneo, pasamos directo al respaldo por vector
+      // Si ambos dan 503 simultáneo, intentamos Gemma 4 26B (14,400 RPD) o respaldo por vector
     }
     return { ...fallback, isFallback: true };
   }
