@@ -186,11 +186,11 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
                     onClick={() => setSelectedGarment(g)}
                     className={`p-1.5 rounded-[12px] flex flex-col items-center text-center transition-all duration-180 ease-vibra ${
                       isSelected
-                        ? "bg-caliza-5 ring-2 ring-higo-70 shadow-sm"
-                        : "bg-caliza-5/70 hover:bg-caliza-5"
+                        ? "bg-white ring-2 ring-higo-70 shadow-xs"
+                        : "bg-white/85 hover:bg-white"
                     } photo-frame`}
                   >
-                    <div className="w-full h-20 bg-caliza-5 rounded-[10px] overflow-hidden flex items-center justify-center p-1 relative">
+                    <div className="w-full h-20 bg-white rounded-[10px] overflow-hidden flex items-center justify-center p-1 relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={g.photoUrl}
@@ -296,6 +296,26 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           Afinidad <span className="tabular-nums font-semibold text-higo-70">{formattedScore}</span> con tu búsqueda, calculada sobre{" "}
           <span className="tabular-nums font-semibold">{store.garments.length}</span> imágenes publicadas por la tienda.
         </p>
+
+        {/* Foto del stand físico para reconocer la tienda en la galería */}
+        {store.standPhotoUrl && (
+          <div className="mt-5">
+            <span className="text-[13px] font-medium text-basalto-90 block mb-2">
+              Así se ve el stand físico
+            </span>
+            <div className="w-full h-48 sm:h-56 bg-white rounded-2xl flex items-center justify-center overflow-hidden p-2 photo-frame">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={store.standPhotoUrl}
+                alt={`Stand de ${store.name}`}
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+            <p className="text-[11px] leading-[17px] text-grafito-55 mt-1.5">
+              Referencia visual del puesto para ubicarlo al caminar por los pasillos de {store.gallery}.
+            </p>
+          </div>
+        )}
 
         {/* Metadatos de tienda (Estilos, precio, tallas, redes) */}
         <div className="grid grid-cols-2 gap-y-3.5 gap-x-6 mt-4 pt-4 border-t border-caliza-20 text-[13px]">
