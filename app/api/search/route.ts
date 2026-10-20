@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
         detectGarmentStyles(
           image,
           "image/jpeg",
-          searchMode === "look" ? "look" : "prenda"
+          searchMode === "look" ? "look" : "prenda",
+          true
         ),
       ]);
 
@@ -96,10 +97,23 @@ export async function POST(req: NextRequest) {
             new Set(neighbors.flatMap((n) => n.g.styles || []))
           ).slice(0, 3);
 
+          const familyLabels: Record<string, string> = {
+            vestido: "Vestido",
+            casaca: "Casaca / Blazer",
+            pantalon_jean: "Pantalón / Jean",
+            blusa: "Blusa / Camisa",
+            polo_top: "Top / Polo",
+            chompa: "Chompa / Tejido",
+            falda_short: "Falda / Short",
+            conjunto: "Conjunto de dos piezas",
+          };
+
           if (searchMode !== "look") {
             analysis.garmentFamily = inferredFamily;
-            analysis.category = nearest.category || analysis.category;
-            analysis.garmentTitle = nearest.name || nearest.category || "Prenda identificada";
+            analysis.category = familyLabels[inferredFamily] || nearest.category || analysis.category;
+            analysis.garmentTitle = familyLabels[inferredFamily]
+              ? `${familyLabels[inferredFamily]} en búsqueda`
+              : "Prenda en búsqueda";
           }
           if (inferredStyles.length > 0) analysis.styles = inferredStyles;
         }

@@ -135,10 +135,10 @@ export interface GarmentAnalysisResult {
 // 3. gemma-4-31b-it                -> Gemma 4 31B           (14,400 RPD | 30 RPM multimodal)
 // 4. gemini-flash-lite-latest      -> Respaldo final Flash Lite
 const VISION_MODEL_CASCADE = [
+  "gemini-3-flash-preview",
   "gemini-3.1-flash-lite-preview",
   "gemma-4-26b-a4b-it",
   "gemma-4-31b-it",
-  "gemini-flash-lite-latest",
 ];
 
 export const VALID_STYLES = [
@@ -195,7 +195,8 @@ export function sanitizeStyles(rawStyles: string[] = []): string[] {
 export async function detectGarmentStyles(
   base64Data: string,
   mimeType = "image/jpeg",
-  searchMode: "prenda" | "look" = "prenda"
+  searchMode: "prenda" | "look" = "prenda",
+  fastSearch = false
 ): Promise<GarmentAnalysisResult> {
   const client = getClient();
 
@@ -286,6 +287,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
     const isGemma = modelName.startsWith("gemma");
+    const isGemini3 = modelName.startsWith("gemini-3");
     const response = await client.models.generateContent({
       model: modelName,
       contents: [
@@ -298,10 +300,11 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
         },
       ],
       config: isGemma
-        ? undefined
+        ? { temperature: 0.1 }
         : {
             responseMimeType: "application/json",
             responseSchema: responseSchema as any,
+            ...(isGemini3 ? { thinkingConfig: { thinkingLevel: "MINIMAL" as any } } : {}),
           },
     });
 
@@ -325,10 +328,31 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     };
   };
 
-  // Recorremos la cascada secuencialmente (cada prenda viaja en su propia petición con margen amplio)
+  // En búsqueda en vivo del usuario (fastSearch = true), competimos en paralelo entre
+  // los 2 modelos más rápidos con tope de 5.5s para que jamás demore 20-30s si uno da 503.
+  if (fastSearch) {
+    try {
+      const fastWinner = await withTimeout(
+        Promise.any([
+          callModel("gemini-3-flash-preview"),
+          callModel("gemini-3.1-flash-lite-preview"),
+        ]),
+        5500,
+        null
+      );
+      if (fastWinner) {
+        return fastWinner;
+      }
+    } catch {
+      // Si ambos fallan por 503 simultáneo, pasamos directo al respaldo por vector
+    }
+    return { ...fallback, isFallback: true };
+  }
+
+  // En subida de catálogo (/admin), recorremos la cascada secuencialmente para cuidar el RPM
   for (const modelName of VISION_MODEL_CASCADE) {
     try {
-      const timeoutMs = modelName.startsWith("gemma") ? 15000 : 7500;
+      const timeoutMs = modelName.startsWith("gemma") ? 18000 : 6500;
       const result = await withTimeout(callModel(modelName), timeoutMs, null);
       if (result) {
         return result;

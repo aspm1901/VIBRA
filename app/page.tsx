@@ -436,7 +436,7 @@ function VibraApp() {
       {/* Contenedor Principal (Retícula 12 columnas max 1200px, pág. 11) */}
       <main className="max-w-[1200px] mx-auto px-5 md:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
         {/* ================= COLUMNA IZQUIERDA: CAPTURA Y FILTROS (5 de 12 cols) ================= */}
-        <section className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-24 self-start">
+        <section className="lg:col-span-5 flex flex-col gap-5 self-start">
           {/* Display y Cuerpo (Escala modular pág. 10) */}
           <div>
             <h1
