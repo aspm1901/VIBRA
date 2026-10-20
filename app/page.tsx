@@ -130,6 +130,70 @@ function VibraApp() {
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [selectedGalleryFilter, setSelectedGalleryFilter] = useState<string>("todas");
 
+  // Memoria independiente por pestaña ("prenda" vs "look") para que cambiar de pestaña
+  // no arrastre la foto de una prenda individual hacia "Look completo" ni re-ejecute la IA en vano.
+  const tabSnapshotsRef = useRef<
+    Record<
+      "prenda" | "look",
+      {
+        imageBase64: string | null;
+        imagePreview: string | null;
+        garmentTitle: string;
+        detectedInfo: { category?: string; styles?: string[]; garmentTitle?: string };
+        selectedCategory?: string;
+        selectedStyles: string[];
+        results: SearchResultItem[];
+      }
+    >
+  >({
+    prenda: {
+      imageBase64: null,
+      imagePreview: null,
+      garmentTitle: "",
+      detectedInfo: {},
+      selectedCategory: undefined,
+      selectedStyles: ["Casual", "Urbano"],
+      results: [],
+    },
+    look: {
+      imageBase64: null,
+      imagePreview: null,
+      garmentTitle: "",
+      detectedInfo: {},
+      selectedCategory: undefined,
+      selectedStyles: ["Casual", "Urbano"],
+      results: [],
+    },
+  });
+
+  const switchPhotoTab = (targetMode: "prenda" | "look") => {
+    // Guardar el estado actual si veníamos de una pestaña de foto
+    if (inputType === "foto" && (searchMode === "prenda" || searchMode === "look")) {
+      tabSnapshotsRef.current[searchMode] = {
+        imageBase64: currentImageBase64,
+        imagePreview: currentImagePreview,
+        garmentTitle,
+        detectedInfo,
+        selectedCategory,
+        selectedStyles,
+        results,
+      };
+    }
+
+    // Restaurar el estado propio de la pestaña destino (limpio si aún no subió foto ahí)
+    const snap = tabSnapshotsRef.current[targetMode];
+    setInputType("foto");
+    setSearchMode(targetMode);
+    setCurrentImageBase64(snap.imageBase64);
+    setCurrentImagePreview(snap.imagePreview);
+    setGarmentTitle(snap.garmentTitle);
+    setDetectedInfo(snap.detectedInfo);
+    setSelectedCategory(snap.selectedCategory);
+    setSelectedStyles(snap.selectedStyles);
+    setResults(snap.results);
+    setSelectedGalleryFilter("todas");
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const executeSearch = async (overrideParams?: {
@@ -188,22 +252,40 @@ function VibraApp() {
 
       const data = await res.json();
       if (data.success) {
-        setResults(data.qualifiedResults || []);
+        const newResults = data.qualifiedResults || [];
+        setResults(newResults);
 
         if (data.detectedInfo && activeSearchMode !== "estilo") {
           setDetectedInfo(data.detectedInfo);
 
+          const nextTitle = data.detectedInfo.garmentTitle || garmentTitle;
           if (data.detectedInfo.garmentTitle) {
             setGarmentTitle(data.detectedInfo.garmentTitle);
           }
 
+          let nextCat = selectedCategory;
+          let nextStyles = selectedStyles;
           if (!overrideParams?.isManualFilterRefinement) {
             if (data.detectedInfo.category) {
-              setSelectedCategory(data.detectedInfo.category);
+              nextCat = data.detectedInfo.category;
+              setSelectedCategory(nextCat);
             }
             if (data.detectedInfo.styles && data.detectedInfo.styles.length > 0) {
-              setSelectedStyles(data.detectedInfo.styles);
+              nextStyles = data.detectedInfo.styles;
+              setSelectedStyles(nextStyles);
             }
+          }
+
+          if (activeSearchMode === "prenda" || activeSearchMode === "look") {
+            tabSnapshotsRef.current[activeSearchMode] = {
+              imageBase64: imageToUse || null,
+              imagePreview: imageToUse || null,
+              garmentTitle: nextTitle,
+              detectedInfo: data.detectedInfo,
+              selectedCategory: nextCat,
+              selectedStyles: nextStyles,
+              results: newResults,
+            };
           }
         }
       }
@@ -457,13 +539,7 @@ function VibraApp() {
           <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl neu-sunken">
             <button
               type="button"
-              onClick={() => {
-                setInputType("foto");
-                setSearchMode("prenda");
-                if (currentImageBase64) {
-                  executeSearch({ overrideSearchMode: "prenda" });
-                }
-              }}
+              onClick={() => switchPhotoTab("prenda")}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "prenda"
                   ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
@@ -482,13 +558,7 @@ function VibraApp() {
 
             <button
               type="button"
-              onClick={() => {
-                setInputType("foto");
-                setSearchMode("look");
-                if (currentImageBase64) {
-                  executeSearch({ overrideSearchMode: "look" });
-                }
-              }}
+              onClick={() => switchPhotoTab("look")}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "look"
                   ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
@@ -508,7 +578,19 @@ function VibraApp() {
             <button
               type="button"
               onClick={() => {
+                if (inputType === "foto" && (searchMode === "prenda" || searchMode === "look")) {
+                  tabSnapshotsRef.current[searchMode] = {
+                    imageBase64: currentImageBase64,
+                    imagePreview: currentImagePreview,
+                    garmentTitle,
+                    detectedInfo,
+                    selectedCategory,
+                    selectedStyles,
+                    results,
+                  };
+                }
                 setInputType("estilo");
+                setSelectedGalleryFilter("todas");
                 executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
               }}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
