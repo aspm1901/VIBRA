@@ -86,54 +86,6 @@ const STYLE_PRESETS = [
   },
 ];
 
-const EXAMPLES = [
-  {
-    id: "look_sastre",
-    title: "Look sastre",
-    fullTitle: "Look sastre chic (Blazer + Palazzo)",
-    category: "Look completo / Outfit",
-    styles: ["Elegante", "Oficina", "Minimalista"],
-    image: "/images/garments/look_sastre_chic.jpg",
-    isLook: true,
-  },
-  {
-    id: "casaca_denim",
-    title: "Casaca denim",
-    fullTitle: "Casaca denim clásica",
-    category: "Casacas y abrigos",
-    styles: ["Urbano", "Casual"],
-    image: "/images/garments/casaca_denim_clasica.jpg",
-    isLook: false,
-  },
-  {
-    id: "vestido_burdeos",
-    title: "Vestido fiesta",
-    fullTitle: "Vestido burdeos de fiesta",
-    category: "Vestidos",
-    styles: ["Fiesta", "Elegante"],
-    image: "/images/garments/vestido_burdeos.jpg",
-    isLook: false,
-  },
-  {
-    id: "jean_celeste",
-    title: "Jean celeste",
-    fullTitle: "Jean celeste urbano",
-    category: "Jeans y pantalones",
-    styles: ["Urbano", "Casual"],
-    image: "/images/garments/jean_celeste.jpg",
-    isLook: false,
-  },
-  {
-    id: "chompa_amarilla",
-    title: "Chompa tejida",
-    fullTitle: "Chompa mostaza tejida",
-    category: "Chompas",
-    styles: ["Casual", "Minimalista"],
-    image: "/images/garments/chompa_amarilla.jpg",
-    isLook: false,
-  },
-];
-
 function VibraApp() {
   const {
     routeItems,
@@ -149,18 +101,15 @@ function VibraApp() {
   const [searchMode, setSearchMode] = useState<"prenda" | "look" | "estilo">("prenda");
   const [inputType, setInputType] = useState<"foto" | "estilo">("foto");
 
-  // Estado de la imagen
+  // Estado de la imagen subida por el usuario (null al inicio = pozo limpio)
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
   const [currentImageBase64, setCurrentImageBase64] = useState<string | null>(null);
-  const [selectedExampleId, setSelectedExampleId] = useState<string>("vestido_burdeos");
-  const [currentImagePreview, setCurrentImagePreview] = useState<string>(
-    "/images/garments/vestido_burdeos.jpg"
-  );
-  const [garmentTitle, setGarmentTitle] = useState<string>("Vestido burdeos de fiesta");
+  const [currentImagePreview, setCurrentImagePreview] = useState<string | null>(null);
+  const [garmentTitle, setGarmentTitle] = useState<string>("");
 
   // Filtros activos
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>("Vestidos");
-  const [selectedStyles, setSelectedStyles] = useState<string[]>(["Fiesta", "Elegante"]);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(["Casual", "Urbano"]);
   const [selectedPrice, setSelectedPrice] = useState<PriceLevel | undefined>(undefined);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<PurchaseType>("cualquiera");
@@ -170,11 +119,7 @@ function VibraApp() {
     category?: string;
     styles?: string[];
     garmentTitle?: string;
-  }>({
-    category: "Vestidos",
-    styles: ["Fiesta", "Elegante"],
-    garmentTitle: "Vestido burdeos de fiesta",
-  });
+  }>({});
 
   // UI States
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -187,14 +132,14 @@ function VibraApp() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cargar las tiendas reales de Gamarra al abrir la página
   useEffect(() => {
-    executeSearch({ exampleId: "vestido_burdeos" });
+    executeSearch({ overrideSearchMode: "estilo" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const executeSearch = async (overrideParams?: {
     image?: string;
-    exampleId?: string;
     overrideCategory?: string;
     overrideStyles?: string[];
     overrideSearchMode?: "prenda" | "look" | "estilo";
@@ -203,10 +148,11 @@ function VibraApp() {
     try {
       setIsSearching(true);
 
+      const imageToUse = overrideParams?.image || currentImageBase64;
       const activeSearchMode =
         overrideParams?.overrideSearchMode !== undefined
           ? overrideParams.overrideSearchMode
-          : inputType === "estilo"
+          : inputType === "estilo" || !imageToUse
           ? "estilo"
           : searchMode;
 
@@ -236,14 +182,8 @@ function VibraApp() {
         },
       };
 
-      if (activeSearchMode === "estilo") {
-        // Búsqueda por estilo
-      } else if (overrideParams?.image) {
-        payload.image = overrideParams.image;
-      } else if (currentImageBase64) {
-        payload.image = currentImageBase64;
-      } else {
-        payload.exampleId = overrideParams?.exampleId || selectedExampleId;
+      if (activeSearchMode !== "estilo" && imageToUse) {
+        payload.image = imageToUse;
       }
 
       const res = await fetch("/api/search", {
@@ -256,14 +196,14 @@ function VibraApp() {
       if (data.success) {
         setResults(data.qualifiedResults || []);
 
-        if (data.detectedInfo) {
+        if (data.detectedInfo && activeSearchMode !== "estilo") {
           setDetectedInfo(data.detectedInfo);
 
           if (data.detectedInfo.garmentTitle) {
             setGarmentTitle(data.detectedInfo.garmentTitle);
           }
 
-          if (!overrideParams?.isManualFilterRefinement && activeSearchMode !== "estilo") {
+          if (!overrideParams?.isManualFilterRefinement) {
             if (data.detectedInfo.category) {
               setSelectedCategory(data.detectedInfo.category);
             }
@@ -278,28 +218,6 @@ function VibraApp() {
     } finally {
       setIsSearching(false);
     }
-  };
-
-  const handleSelectExample = (ex: (typeof EXAMPLES)[0]) => {
-    setSelectedExampleId(ex.id);
-    setCurrentImageBase64(null);
-    setCurrentImagePreview(ex.image);
-    setGarmentTitle(ex.fullTitle);
-    setSelectedCategory(ex.category);
-    setSelectedStyles(ex.styles);
-    const targetMode = ex.isLook ? "look" : "prenda";
-    setSearchMode(targetMode);
-    setDetectedInfo({
-      category: ex.category,
-      styles: ex.styles,
-      garmentTitle: ex.fullTitle,
-    });
-    executeSearch({
-      exampleId: ex.id,
-      overrideCategory: ex.category,
-      overrideStyles: ex.styles,
-      overrideSearchMode: targetMode,
-    });
   };
 
   const compressImageClient = (base64: string, maxDim = 640): Promise<string> => {
@@ -346,7 +264,6 @@ function VibraApp() {
       if (searchMode === "look") {
         setCurrentImageBase64(optimizedBase64);
         setCurrentImagePreview(optimizedBase64);
-        setSelectedExampleId("");
         setGarmentTitle("Analizando look completo...");
         executeSearch({
           image: optimizedBase64,
@@ -373,7 +290,6 @@ function VibraApp() {
       if (searchMode === "look") {
         setCurrentImageBase64(optimizedBase64);
         setCurrentImagePreview(optimizedBase64);
-        setSelectedExampleId("");
         setGarmentTitle("Analizando look completo...");
         executeSearch({
           image: optimizedBase64,
@@ -390,7 +306,6 @@ function VibraApp() {
     setRawImageForCrop(null);
     setCurrentImageBase64(croppedBase64);
     setCurrentImagePreview(croppedBase64);
-    setSelectedExampleId("");
     setGarmentTitle(
       searchMode === "look" ? "Analizando look completo..." : "Analizando prenda..."
     );
@@ -405,10 +320,10 @@ function VibraApp() {
       ? selectedStyles.filter((s) => s !== style)
       : [...selectedStyles, style];
     setSelectedStyles(updated);
-    if (inputType === "estilo") {
+    if (inputType === "estilo" || currentImageBase64) {
       executeSearch({
         overrideStyles: updated,
-        overrideSearchMode: "estilo",
+        overrideSearchMode: inputType === "estilo" ? "estilo" : searchMode,
         isManualFilterRefinement: true,
       });
     }
@@ -439,6 +354,8 @@ function VibraApp() {
     selectedGalleryFilter === "todas"
       ? results
       : results.filter((r) => r.store.gallery === selectedGalleryFilter);
+
+  const hasUploadedPhoto = !!currentImagePreview && inputType === "foto";
 
   return (
     <div className="min-h-screen bg-caliza-5 text-basalto-90 flex flex-col">
@@ -549,7 +466,9 @@ function VibraApp() {
               onClick={() => {
                 setInputType("foto");
                 setSearchMode("prenda");
-                executeSearch({ overrideSearchMode: "prenda" });
+                if (currentImageBase64) {
+                  executeSearch({ overrideSearchMode: "prenda" });
+                }
               }}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "prenda"
@@ -572,7 +491,9 @@ function VibraApp() {
               onClick={() => {
                 setInputType("foto");
                 setSearchMode("look");
-                executeSearch({ overrideSearchMode: "look" });
+                if (currentImageBase64) {
+                  executeSearch({ overrideSearchMode: "look" });
+                }
               }}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "foto" && searchMode === "look"
@@ -612,33 +533,74 @@ function VibraApp() {
           </div>
 
           {/* ======================================================== */}
-          {/* MODO FOTO: POZO DE CAPTURA (PÁG. 11 y 12 DEL MANUAL)     */}
+          {/* MODO FOTO: POZO DE CAPTURA (PANTALLA 1 DEL MANUAL v2.0)  */}
           {/* ======================================================== */}
           {inputType === "foto" ? (
             <div className="space-y-5">
-              {/* Pozo de captura hundido (Caliza 10) con máscara orgánica superelipse uniforme */}
+              {/* Pozo de captura hundido (Caliza 10) */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 className="neu-sunken rounded-3xl p-6 flex flex-col items-center justify-center text-center relative"
               >
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`w-44 h-52 flex items-center justify-center p-4 cursor-pointer group transition-transform overflow-hidden relative organic-mask ${
-                    isSearching ? "organic-mask-active" : ""
-                  }`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={currentImagePreview}
-                    alt="Referencia de búsqueda"
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute inset-0 bg-basalto-90/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity">
-                    <Camera className="w-6 h-6 mb-1 text-caliza-5" />
-                    <span className="text-xs font-medium">Cambiar foto</span>
+                {currentImagePreview ? (
+                  /* Estado con foto cargada por el usuario */
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`w-44 h-52 flex items-center justify-center p-4 cursor-pointer group transition-transform overflow-hidden relative organic-mask ${
+                      isSearching ? "organic-mask-active" : ""
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentImagePreview}
+                      alt="Referencia de búsqueda"
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 bg-basalto-90/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity">
+                      <Camera className="w-6 h-6 mb-1 text-caliza-5" />
+                      <span className="text-xs font-medium">Cambiar foto</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Estado inicial limpio exacto a la Pantalla 1 del Manual (Pág. 12) */
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-36 h-32 bg-caliza-20/70 hover:bg-caliza-20 flex items-center justify-center cursor-pointer transition-colors"
+                    style={{
+                      borderRadius: "48% 52% 46% 54% / 44% 48% 52% 56%",
+                    }}
+                  >
+                    <svg
+                      width="42"
+                      height="44"
+                      viewBox="12 2 62 92"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <circle cx="24" cy="48" r="8" fill="#71545B" />
+                      <path
+                        d="M 30.84 29.21 A 20 20 0 0 1 30.84 66.79"
+                        stroke="#71545B"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M 34.94 17.93 A 32 32 0 0 1 34.94 78.07"
+                        stroke="#71545B"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M 39.05 6.65 A 44 44 0 0 1 39.05 89.35"
+                        stroke="#B6B9AD"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                )}
 
                 <input
                   ref={fileInputRef}
@@ -653,7 +615,11 @@ function VibraApp() {
                   className="font-display font-medium text-[19px] leading-[25px] text-basalto-90 mt-4"
                   style={{ letterSpacing: "-0.008em" }}
                 >
-                  {garmentTitle || "Suelta una foto del look"}
+                  {currentImagePreview
+                    ? garmentTitle
+                    : searchMode === "look"
+                    ? "Suelta una foto del look"
+                    : "Suelta una foto de la prenda"}
                 </h3>
                 <p className="text-[13px] leading-[19px] text-grafito-55 mt-1 max-w-xs">
                   Una prenda, un conjunto o una captura de pantalla. Un fondo limpio ayuda.
@@ -667,109 +633,79 @@ function VibraApp() {
                 >
                   <Camera className="w-4 h-4 text-white" />
                   <span>
-                    {searchMode === "look" ? "Elegir foto de look" : "Elegir una foto"}
+                    {currentImagePreview
+                      ? "Elegir otra foto"
+                      : searchMode === "look"
+                      ? "Elegir foto de look"
+                      : "Elegir una foto"}
                   </span>
                 </button>
 
-                {/* Chips detectados por IA */}
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-5 pt-4 border-t border-caliza-20 w-full">
-                  <span className="text-[12px] font-medium text-grafito-55">
-                    Lectura visual:
-                  </span>
-                  {detectedInfo.category && (
-                    <span className="text-[12px] px-3 py-1 rounded-full bg-higo-30 text-basalto-90 font-medium">
-                      {detectedInfo.category}
+                {/* Chips detectados por IA (solo cuando ya subió su foto) */}
+                {currentImagePreview && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-5 pt-4 border-t border-caliza-20 w-full">
+                    <span className="text-[12px] font-medium text-grafito-55">
+                      Lectura visual:
                     </span>
-                  )}
-                  {(detectedInfo.styles && detectedInfo.styles.length > 0
-                    ? detectedInfo.styles
-                    : selectedStyles
-                  ).map((style) => (
-                    <span
-                      key={style}
-                      className="text-[12px] px-3 py-1 rounded-full bg-[#F6F7F3] text-basalto-90 border border-caliza-20 font-normal"
-                    >
-                      {style}
-                    </span>
-                  ))}
-                </div>
+                    {detectedInfo.category && (
+                      <span className="text-[12px] px-3 py-1 rounded-full bg-higo-30 text-basalto-90 font-medium">
+                        {detectedInfo.category}
+                      </span>
+                    )}
+                    {(detectedInfo.styles && detectedInfo.styles.length > 0
+                      ? detectedInfo.styles
+                      : selectedStyles
+                    ).map((style) => (
+                      <span
+                        key={style}
+                        className="text-[12px] px-3 py-1 rounded-full bg-[#F6F7F3] text-basalto-90 border border-caliza-20 font-normal"
+                      >
+                        {style}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-                <p className="text-[11px] leading-[17px] text-grafito-55 mt-3">
+                <p className="text-[11px] leading-[17px] text-grafito-55 mt-4">
                   Comparamos tu foto con las imágenes publicadas por cada tienda. No consultamos su inventario.
                 </p>
               </div>
 
-              {/* Referencias de ejemplo sobre Caliza */}
-              <div>
-                <span className="text-[13px] font-medium text-basalto-90 block mb-2.5">
-                  {searchMode === "look"
-                    ? "Probar con un look de referencia"
-                    : "Probar con una prenda de ejemplo"}
-                </span>
-                <div className="grid grid-cols-4 gap-2.5">
-                  {(searchMode === "look" ? EXAMPLES : EXAMPLES.filter((e) => !e.isLook))
-                    .slice(0, 4)
-                    .map((ex) => {
-                      const isSelected = selectedExampleId === ex.id;
+              {/* Estilos interactivos (visibles cuando ya subió una foto para afinar) */}
+              {currentImagePreview && (
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-[13px] font-medium text-basalto-90">
+                      Afinar estilos{" "}
+                      <span className="text-grafito-55 text-[12px] font-normal">
+                        (detectados en tu foto)
+                      </span>
+                    </span>
+                    <span className="text-[12px] text-higo-70 font-medium tabular-nums">
+                      {selectedStyles.length} activos
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {STYLES.map((st) => {
+                      const isSelected = selectedStyles.includes(st);
                       return (
                         <button
-                          key={ex.id}
+                          key={st}
                           type="button"
-                          onClick={() => handleSelectExample(ex)}
-                          className={`p-2 rounded-2xl flex flex-col items-center text-center transition-all duration-180 ease-vibra ${
-                            isSelected ? "neu-chip-active" : "neu-chip hover:border-basalto-90/30"
+                          onClick={() => toggleStyle(st)}
+                          className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra ${
+                            isSelected
+                              ? "neu-chip-active font-semibold"
+                              : "neu-chip text-basalto-90 font-normal hover:border-basalto-90/30"
                           }`}
                         >
-                          <div className="w-full h-16 rounded-xl flex items-center justify-center p-1.5 overflow-hidden mb-1.5 photo-frame">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={ex.image}
-                              alt={ex.fullTitle}
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          </div>
-                          <span className="text-[11px] font-medium text-basalto-90 truncate w-full block">
-                            {ex.title}
-                          </span>
+                          {st}
                         </button>
                       );
                     })}
+                  </div>
                 </div>
-              </div>
-
-              {/* Estilos interactivos */}
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[13px] font-medium text-basalto-90">
-                    Afinar estilos{" "}
-                    <span className="text-grafito-55 text-[12px] font-normal">
-                      (detectados en la imagen)
-                    </span>
-                  </span>
-                  <span className="text-[12px] text-higo-70 font-medium tabular-nums">
-                    {selectedStyles.length} activos
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {STYLES.map((st) => {
-                    const isSelected = selectedStyles.includes(st);
-                    return (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => toggleStyle(st)}
-                        className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra ${
-                          isSelected
-                            ? "neu-chip-active font-semibold"
-                            : "neu-chip text-basalto-90 font-normal hover:border-basalto-90/30"
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
             </div>
           ) : (
             /* ======================================================== */
@@ -988,12 +924,23 @@ function VibraApp() {
             {/* Botón Principal de Acción en Higo 70 con texto blanco */}
             <button
               type="button"
-              onClick={() => executeSearch({ isManualFilterRefinement: true })}
+              onClick={() => {
+                if (inputType === "foto" && !currentImageBase64) {
+                  fileInputRef.current?.click();
+                } else {
+                  executeSearch({ isManualFilterRefinement: true });
+                }
+              }}
               disabled={isSearching}
               className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-xs mt-2"
             >
               {isSearching ? (
-                <span>Calculando resonancia con los catálogos...</span>
+                <span>Calculando afinidad con los catálogos...</span>
+              ) : inputType === "foto" && !currentImageBase64 ? (
+                <>
+                  <Camera className="w-4 h-4 text-white" />
+                  <span>Subir foto para buscar coincidencias</span>
+                </>
               ) : (
                 <span>
                   {inputType === "estilo"
@@ -1019,12 +966,16 @@ function VibraApp() {
                 ? `${displayedResults.length} ${
                     displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
                   } con tu estilo`
-                : `${displayedResults.length} ${
+                : hasUploadedPhoto
+                ? `${displayedResults.length} ${
                     displayedResults.length === 1 ? "tienda resuena" : "tiendas resuenan"
-                  } con tu foto`}
+                  } con tu foto`
+                : `${displayedResults.length} tiendas verificadas en Gamarra`}
             </h2>
             <p className="text-[13px] leading-[19px] font-medium text-grafito-55 mt-1">
-              Agrupadas por galería, de mayor a menor resonancia
+              {hasUploadedPhoto || inputType === "estilo"
+                ? "Agrupadas por galería, de mayor a menor afinidad"
+                : "Sube una foto a la izquierda para ordenarlas según su parecido con la prenda que buscas"}
             </p>
           </div>
 
@@ -1069,7 +1020,7 @@ function VibraApp() {
               <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
                 <ResonanceSweepLoader size={52} />
                 <p className="text-[15px] leading-[22px] font-medium text-basalto-90 mt-3">
-                  Calculando resonancia visual con los catálogos de Gamarra
+                  Calculando afinidad visual con los catálogos de Gamarra
                 </p>
                 <p className="text-[13px] leading-[19px] text-grafito-55 mt-1">
                   Ordenando tiendas según color, silueta y textura de la prenda
@@ -1089,7 +1040,7 @@ function VibraApp() {
             <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
               <ResonanceEmptyNode size={48} />
               <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
-                Ninguna tienda superó 0,55 con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
+                Ninguna tienda superó el 55% de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
               </p>
             </div>
           )}
@@ -1098,9 +1049,9 @@ function VibraApp() {
           {!isSearching && displayedResults.length > 0 && (
             <div className="space-y-3.5">
               {displayedResults.map((item, idx) => {
-                const isRank1 = idx === 0;
+                const isRank1 = idx === 0 && (hasUploadedPhoto || inputType === "estilo");
                 const inRoute = isInRoute(item.store.id);
-                const formattedScore = item.resonanceScore.toFixed(2).replace(".", ",");
+                const percentageScore = `${Math.round(item.resonanceScore * 100)}%`;
 
                 return (
                   <article
@@ -1231,7 +1182,7 @@ function VibraApp() {
 
                           <a
                             href={`https://wa.me/${item.store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                              `Hola ${item.store.name}, vi su tienda en vibra (resonancia ${formattedScore}). ¿Tienen disponible: ${item.bestGarment.name}?`
+                              `Hola ${item.store.name}, vi su tienda en vibra (${percentageScore} de afinidad). ¿Tienen disponible: ${item.bestGarment.name}?`
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"

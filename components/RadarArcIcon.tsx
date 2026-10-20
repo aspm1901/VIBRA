@@ -21,7 +21,7 @@ export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
   band,
   className = "",
 }) => {
-  const formattedScore = score.toFixed(2).replace(".", ",");
+  const percentage = Math.round(score * 100);
 
   const isAlta = band === "Alta";
   const isMedia = band === "Media";
@@ -73,7 +73,7 @@ export const RadarArcIcon: React.FC<RadarArcIconProps> = ({
             isAlta ? "text-higo-70" : "text-basalto-90"
           }`}
         >
-          {formattedScore}
+          {percentage}%
         </span>
         <span
           className={`text-[11px] leading-[14px] font-medium block mt-0.5 ${

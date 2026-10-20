@@ -58,14 +58,14 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
   if (!item) return null;
 
   const { store, bestGarment, matchingGarments, resonanceScore } = item;
-  const formattedScore = resonanceScore.toFixed(2).replace(".", ",");
+  const formattedScore = `${Math.round(resonanceScore * 100)}%`;
 
   const garmentsMention =
     item.searchMode === "look" && matchingGarments && matchingGarments.length > 1
       ? matchingGarments.map((g) => g.name).join(" y ")
       : selectedGarment?.name || bestGarment.name;
 
-  const whatsappMessage = `Hola ${store.name}, vi su tienda en vibra (resonancia ${formattedScore}). ¿Tienen disponibilidad de ${garmentsMention}?`;
+  const whatsappMessage = `Hola ${store.name}, vi su tienda en vibra (${formattedScore} de afinidad). ¿Tienen disponibilidad de ${garmentsMention}?`;
   const whatsappUrl = `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
   const googleMapsUrl =
     store.googleMapsUrl ||
@@ -293,7 +293,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
         {/* Resumen de resonancia (Pág. 13) */}
         <p className="mt-4 text-[13px] leading-[19px] font-medium text-basalto-90">
-          Resonancia <span className="tabular-nums font-semibold text-higo-70">{formattedScore}</span> con tu foto, calculada sobre{" "}
+          Afinidad <span className="tabular-nums font-semibold text-higo-70">{formattedScore}</span> con tu búsqueda, calculada sobre{" "}
           <span className="tabular-nums font-semibold">{store.garments.length}</span> imágenes publicadas por la tienda.
         </p>
 
