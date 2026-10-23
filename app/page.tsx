@@ -336,18 +336,7 @@ function VibraApp() {
     reader.onload = async () => {
       const rawBase64 = reader.result as string;
       const optimizedBase64 = await compressImageClient(rawBase64);
-
-      if (searchMode === "look") {
-        setCurrentImageBase64(optimizedBase64);
-        setCurrentImagePreview(optimizedBase64);
-        setGarmentTitle("Analizando look completo...");
-        executeSearch({
-          image: optimizedBase64,
-          overrideSearchMode: "look",
-        });
-      } else {
-        setRawImageForCrop(optimizedBase64);
-      }
+      setRawImageForCrop(optimizedBase64);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -362,18 +351,7 @@ function VibraApp() {
     reader.onload = async () => {
       const rawBase64 = reader.result as string;
       const optimizedBase64 = await compressImageClient(rawBase64);
-
-      if (searchMode === "look") {
-        setCurrentImageBase64(optimizedBase64);
-        setCurrentImagePreview(optimizedBase64);
-        setGarmentTitle("Analizando look completo...");
-        executeSearch({
-          image: optimizedBase64,
-          overrideSearchMode: "look",
-        });
-      } else {
-        setRawImageForCrop(optimizedBase64);
-      }
+      setRawImageForCrop(optimizedBase64);
     };
     reader.readAsDataURL(file);
   };
@@ -637,18 +615,16 @@ function VibraApp() {
                   /* Estado con foto cargada por el usuario */
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className={`w-44 h-52 flex items-center justify-center p-4 cursor-pointer group transition-transform overflow-hidden relative organic-mask ${
-                      isSearching ? "organic-mask-active" : ""
-                    }`}
+                    className="w-48 h-60 sm:w-52 sm:h-64 rounded-2xl bg-white p-2.5 photo-frame shadow-xs flex items-center justify-center cursor-pointer group transition-transform overflow-hidden relative"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={currentImagePreview}
                       alt="Referencia de búsqueda"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-xl"
                     />
-                    <div className="absolute inset-0 bg-basalto-90/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity">
-                      <Camera className="w-6 h-6 mb-1 text-caliza-5" />
+                    <div className="absolute inset-0 bg-basalto-90/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity rounded-2xl">
+                      <Camera className="w-6 h-6 mb-1 text-white" />
                       <span className="text-xs font-medium">Cambiar foto</span>
                     </div>
                   </div>
