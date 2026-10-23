@@ -77,18 +77,21 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-basalto-90/55 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-180"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 bg-basalto-90/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-caliza-5 border border-caliza-20 rounded-3xl p-5 sm:p-7 text-basalto-90 shadow-2xl my-auto max-h-[92vh] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-240 ease-vibra"
+        className="relative w-full max-w-xl bg-white border border-caliza-20/80 rounded-t-[32px] sm:rounded-3xl text-basalto-90 shadow-[0_25px_70px_-15px_rgba(20,22,25,0.45)] ring-1 ring-black/5 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-240 ease-vibra"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header de la Ficha (Bricolage Grotesque + Medidor de Resonancia) */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-caliza-20">
+        {/* Mobile handle pill */}
+        <div className="w-10 h-1 bg-caliza-20 rounded-full mx-auto mt-2.5 -mb-1 sm:hidden shrink-0" />
+
+        {/* Header de la Ficha (Sticky superior para nunca perder el nombre ni el botón cerrar) */}
+        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm px-5 sm:px-7 pt-3.5 pb-4 border-b border-caliza-10 flex items-start justify-between gap-4 shrink-0">
           <div className="min-w-0">
             <h2
-              className="font-display font-semibold text-[26px] leading-[31px] sm:text-[30px] sm:leading-[35px] text-basalto-90"
+              className="font-display font-semibold text-[24px] leading-[29px] sm:text-[30px] sm:leading-[35px] text-basalto-90"
               style={{ letterSpacing: "-0.02em" }}
             >
               {store.name}
@@ -110,6 +113,9 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             </button>
           </div>
         </div>
+
+        {/* Contenido desplazable único (sin doble scrollbar) */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 py-4">
 
         {/* Rejilla fotográfica sobre el pliegue: Imagen principal 4:5 + mampostería de 3 columnas (Pág. 13) */}
         {item.searchMode === "look" && matchingGarments && matchingGarments.length > 1 ? (
@@ -404,6 +410,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             <MessageCircle className="w-4 h-4 text-white" />
             <span>Escribir por WhatsApp</span>
           </a>
+        </div>
         </div>
       </div>
     </div>
