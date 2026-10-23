@@ -280,10 +280,13 @@ export async function getAllStores(): Promise<Store[]> {
     try {
       const { data, error } = await supabase
         .from("stores")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
       if (!error && data && data.length > 0) {
+        data.sort(
+          (a: any, b: any) =>
+            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        );
         const mapped = data.map(mapRowToStore);
         memoryCache = { stores: mapped, timestamp: now };
         return mapped;
