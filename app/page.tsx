@@ -1242,7 +1242,7 @@ function VibraApp() {
                 <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
                   <ResonanceEmptyNode size={48} />
                   <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
-                    Ninguna tienda superó el 55% de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
+                    Ninguna tienda superó el umbral de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
                   </p>
                 </div>
               )}
