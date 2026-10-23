@@ -17,7 +17,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "vibra — Muéstralo. Encuéntralo cerca.",
+  title: "Vibra",
   description:
     "Identidad visual para búsqueda multimodal en Gamarra. Entra una fotografía, sale un ranking de tiendas físicas reales ordenadas por resonancia.",
   icons: {

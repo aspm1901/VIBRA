@@ -987,35 +987,37 @@ function VibraApp() {
             </div>
 
             {/* Botón Principal de Acción en Higo 70 con texto blanco */}
-            <button
-              type="button"
-              onClick={() => {
-                if (inputType === "foto" && !currentImageBase64) {
-                  fileInputRef.current?.click();
-                } else {
-                  executeSearch({ isManualFilterRefinement: true });
-                }
-              }}
-              disabled={isSearching}
-              className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-xs mt-2"
-            >
-              {isSearching ? (
-                <span>Calculando afinidad con los catálogos...</span>
-              ) : inputType === "foto" && !currentImageBase64 ? (
-                <>
-                  <Camera className="w-4 h-4 text-white" />
-                  <span>Subir foto para buscar coincidencias</span>
-                </>
-              ) : (
-                <span>
-                  {inputType === "estilo"
-                    ? "Actualizar ranking por estilo"
-                    : searchMode === "look"
-                    ? "Actualizar tiendas para este look"
-                    : "Actualizar ranking de tiendas"}
-                </span>
-              )}
-            </button>
+            {/* Botón de Actualizar / Buscar (Solo visible cuando hay foto cargada o en modo estilo) */}
+            {(inputType === "estilo" || currentImageBase64) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputType === "estilo") {
+                    executeSearch({
+                      overrideSearchMode: "estilo",
+                      overrideStyles: selectedStyles,
+                      isManualFilterRefinement: true,
+                    });
+                  } else {
+                    executeSearch({ isManualFilterRefinement: true });
+                  }
+                }}
+                disabled={isSearching}
+                className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-xs mt-2"
+              >
+                {isSearching ? (
+                  <span>Calculando afinidad con los catálogos...</span>
+                ) : (
+                  <span>
+                    {inputType === "estilo"
+                      ? "Actualizar ranking por estilo"
+                      : searchMode === "look"
+                      ? "Actualizar tiendas para este look"
+                      : "Actualizar ranking de tiendas"}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </section>
 
@@ -1032,31 +1034,8 @@ function VibraApp() {
                 Sube una foto para ver el ranking de tiendas
               </h2>
               <p className="text-[14px] sm:text-[15px] leading-[23px] text-grafito-55 mt-2 max-w-md font-normal">
-                Elige o toma una fotografía de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra.
+                Usa el recuadro de la izquierda para subir una foto de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra.
               </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-2.5 min-h-[44px] rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] sm:text-[14px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95 shadow-xs"
-                >
-                  <Camera className="w-4 h-4 text-white" />
-                  <span>Elegir una foto</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputType("estilo");
-                    executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
-                  }}
-                  className="px-5 py-2.5 min-h-[44px] rounded-full neu-chip text-basalto-90 hover:text-higo-70 text-[13px] font-medium flex items-center gap-2 transition-all duration-180 ease-vibra active:scale-95"
-                >
-                  <Sparkles className="w-4 h-4 text-higo-70" />
-                  <span>Explorar por estilo sin foto</span>
-                </button>
-              </div>
             </div>
           ) : (
             <>
