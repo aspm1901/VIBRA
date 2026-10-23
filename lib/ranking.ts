@@ -447,26 +447,30 @@ export function doesStoreSellFamily(
   });
   if (hasGarment) return true;
 
-  // 2. ¿Declara en sus categorías que confecciona/vende esta familia?
-  const categoriesText = (store.categories || []).join(" ").toLowerCase();
+  // 2. ¿Declara en sus categorías o en las piezas de sus conjuntos que confecciona/vende esta familia?
+  const garmentsText = (store.garments || [])
+    .map((g) => `${g.name || ""} ${g.category || ""}`)
+    .join(" ")
+    .toLowerCase();
+  const categoriesText = `${(store.categories || []).join(" ").toLowerCase()} ${garmentsText}`;
 
   switch (family) {
     case "vestido":
-      return /\b(vestido|vestidos|gala|enterizo|enterizos|jumpsuit|cocktail|coctel)\b/.test(categoriesText);
+      return /\b(vestidos?|gala|enterizos?|mamelucos?|jumpsuits?|cocktail|coctel|cóctel)\b/.test(categoriesText);
     case "casaca":
-      return /\b(casaca|casacas|chaqueta|chaquetas|blazer|blazers|abrigo|abrigos|cazadora|bomber)\b/.test(categoriesText);
+      return /\b(casacas?|chaquetas?|blazers?|abrigos?|cazadoras?|bombers?|chalecos?|sacos?)\b/.test(categoriesText);
     case "pantalon_jean":
-      return /\b(jean|jeans|pantalon|pantalones|palazzo|denim|cargos|joggers)\b/.test(categoriesText);
+      return /\b(jeans?|pantalón|pantalon(es)?|palazzos?|denim|cargos?|joggers?|leggings?|leggins)\b/.test(categoriesText);
     case "chompa":
-      return /\b(chompa|chompas|sueter|sweater|tejido|tejidos|cardigan)\b/.test(categoriesText);
+      return /\b(chompas?|sueter(es)?|suéter(es)?|sweaters?|cardigans?|cárdigans?|poleras?|hoodies?)\b/.test(categoriesText);
     case "blusa":
-      return /\b(blusa|blusas|camisa|camisas)\b/.test(categoriesText);
+      return /\b(blusas?|camisas?|blusones?)\b/.test(categoriesText);
     case "polo_top":
-      return /\b(polo|polos|top|tops|camiseta|camisetas|corset|bustier)\b/.test(categoriesText);
+      return /\b(polos?|tops?|camisetas?|corsets?|bustiers?|bodys?|bikinis?)\b/.test(categoriesText);
     case "falda_short":
-      return /\b(falda|faldas|short|shorts|bermuda)\b/.test(categoriesText);
+      return /\b(faldas?|minifaldas?|shorts?|bermudas?|pareos?|skorts?)\b/.test(categoriesText);
     case "conjunto":
-      return /\b(conjunto|conjuntos|set|sets|traje)\b/.test(categoriesText);
+      return /\b(conjuntos?|sets?|trajes?)\b/.test(categoriesText);
     default:
       return true;
   }

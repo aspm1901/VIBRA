@@ -4,13 +4,12 @@ import {
   cosineSimilarity,
   calculateStyleMatch,
   calculateGarmentStyleAffinity,
-  calculateResonanceScore,
   determineBand,
   extractGarmentFamily,
-  doesStoreSellFamily,
 } from "@/lib/ranking";
+import { scoreLookStore, scorePrendaStore } from "@/lib/search-scoring";
 import { generateImageEmbedding, detectGarmentStyles } from "@/lib/ai/gemini";
-import { SearchFilters, SearchResultItem, StoreGarment } from "@/types";
+import { SearchFilters, SearchResultItem } from "@/types";
 
 export const maxDuration = 60; // 60s timeout for AI calls
 
@@ -334,240 +333,21 @@ export async function POST(req: NextRequest) {
       // CASO B: MODO LOOK COMPLETO (outfit entero)
       // ==========================================
       if (searchMode === "look") {
-        let bestGarment = store.garments[0];
-        let maxLookScore = -1;
-        let maxPhotoSim = 0;
-
-        // Evaluar todas las prendas de la tienda contra el look
-        const scoredGarments = store.garments
-          .map((garment) => {
-            const sim =
-              garment.embedding && garment.embedding.length > 0 && queryVector && queryVector.length > 0
-                ? cosineSimilarity(queryVector, garment.embedding)
-                : 0;
-            const garmentAffinity = calculateGarmentStyleAffinity(garment, activeStyles);
-            // Ponderación de look: afinidad estilística pura 65% + compatibilidad visual 35%
-            const lookScore = 0.65 * garmentAffinity + 0.35 * sim;
-            return { garment, sim, garmentAffinity, lookScore };
-          })
-          .sort((a, b) => b.lookScore - a.lookScore);
-
-        const matchingGarments: StoreGarment[] = [];
-
-        if (scoredGarments.length > 0) {
-          bestGarment = scoredGarments[0].garment;
-          maxLookScore = scoredGarments[0].lookScore;
-          maxPhotoSim = scoredGarments[0].sim;
-
-          // Recoger prendas relevantes que arman el look (ej: prenda superior + prenda inferior)
-          const seenTypes = new Set<string>();
-          for (const sg of scoredGarments) {
-            if (matchingGarments.length >= 2) break;
-            if (sg.lookScore >= 0.45) {
-              const cat = (sg.garment.category || "").toLowerCase();
-              const name = sg.garment.name.toLowerCase();
-              const isBottom =
-                cat.includes("jean") ||
-                cat.includes("pantalon") ||
-                cat.includes("falda") ||
-                name.includes("jean") ||
-                name.includes("pantalon") ||
-                name.includes("palazzo");
-              const isTop =
-                cat.includes("polo") ||
-                cat.includes("top") ||
-                cat.includes("blusa") ||
-                cat.includes("chompa") ||
-                cat.includes("casaca") ||
-                name.includes("blazer") ||
-                name.includes("polo") ||
-                name.includes("top") ||
-                name.includes("blusa") ||
-                name.includes("casaca");
-              const typeKey = isBottom ? "bottom" : isTop ? "top" : cat;
-
-              if (!seenTypes.has(typeKey)) {
-                seenTypes.add(typeKey);
-                matchingGarments.push(sg.garment);
-              }
-            }
-          }
-        }
-
-        const { score: storeStyleScore, matchingCount } = calculateStyleMatch(
-          activeStyles,
-          store.styles
-        );
-
-        // Si la tienda no comparte ningún estilo con la estética del look, no la incluimos como recomendación
-        if (storeStyleScore === 0 && matchingCount === 0) {
-          continue;
-        }
-
-        // Algoritmo de resonancia Look Completo: 70% estilo del outfit + 30% armonía visual
-        const { resonance, visualScore, band } = calculateResonanceScore(
-          maxPhotoSim,
-          storeStyleScore,
-          true,
-          "look"
-        );
-
-        rankedItems.push({
-          store,
-          bestGarment,
-          matchingGarments: matchingGarments.length > 0 ? matchingGarments : [bestGarment],
-          resonanceScore: resonance,
-          photoSimilarity: visualScore,
-          styleMatchScore: Number(storeStyleScore.toFixed(2)),
-          matchingStylesCount: matchingCount,
-          totalSearchedStyles: activeStyles.length,
-          band,
-          searchMode: "look",
-        });
+        const item = scoreLookStore(store, { queryVector, activeStyles });
+        if (item) rankedItems.push(item);
         continue;
       }
 
       // ==========================================
       // CASO C: MODO PRENDA INDIVIDUAL (máxima fidelidad de silueta)
       // ==========================================
-      if (queryFamily !== "otro") {
-        const sellsFamily = doesStoreSellFamily(store, queryFamily);
-        if (!sellsFamily) {
-          // La tienda no confecciona ni vende esta familia de prendas (ej. Denim Lab cuando la usuaria busca un vestido)
-          continue;
-        }
-      }
-
-      const COLOR_GROUPS: string[][] = [
-        ["negro", "black", "oscuro", "azabache", "carbon"],
-        ["blanco", "white", "marfil", "hueso", "perla", "crema", "crudo"],
-        ["beige", "arena", "camel", "caqui", "nude", "tierra", "champagne", "almendra"],
-        ["marron", "marrón", "chocolate", "cafe", "café", "canela", "terracota", "cobre", "tabaco"],
-        ["azul", "celeste", "denim", "marino", "indigo", "índigo", "turquesa", "cobalto", "petroleo"],
-        ["rojo", "burdeos", "vino", "tinto", "guinda", "granate", "coral", "carmesi", "escarlata"],
-        ["rosa", "rosado", "fucsia", "palo rosa", "magenta", "melon", "melón", "salmon"],
-        ["morado", "lila", "violeta", "lavanda", "ciruela", "purpura", "púrpura"],
-        ["verde", "oliva", "militar", "esmeralda", "menta", "sage", "pistacho", "botella"],
-        ["amarillo", "mostaza", "ocre", "dorado", "oro", "ambar", "ámbar"],
-        ["gris", "plomo", "plata", "plateado", "ceniza", "melange", "jaspeado"],
-      ];
-
-      const hasColorAffinity = (queryColorRaw: string, garment: StoreGarment): boolean => {
-        if (!queryColorRaw) return false;
-        const qColor = queryColorRaw.toLowerCase();
-        const gColorText = `${garment.primaryColor || ""} ${garment.name || ""} ${garment.description || ""}`.toLowerCase();
-        return COLOR_GROUPS.some(
-          (group) =>
-            group.some((term) => qColor.includes(term)) &&
-            group.some((term) => gColorText.includes(term))
-        );
-      };
-
-      let bestGarment = store.garments[0];
-      let maxPhotoSim = 0;
-      let bestFamilyRelation: "same" | "different" | "neutral" = "neutral";
-      let additionalMatchesCount = 0;
-      let maxComparisonScore = -1;
-
-      for (const garment of store.garments) {
-        if (!garment.embedding || garment.embedding.length === 0) continue;
-        const sim = queryVector && queryVector.length > 0 ? cosineSimilarity(queryVector, garment.embedding) : 0;
-
-        const garmentFamily = extractGarmentFamily(
-          garment.name,
-          garment.category,
-          garment.garmentFamily
-        );
-
-        let familyRelation: "same" | "different" | "neutral" = "neutral";
-        if (queryFamily !== "otro" && garmentFamily !== "otro") {
-          if (queryFamily === garmentFamily) {
-            familyRelation = "same";
-          } else if (garmentFamily === "conjunto" || queryFamily === "conjunto") {
-            const gText = `${garment.name} ${garment.category}`
-              .replace(/\b(conjunto|look\s*\d*|dos piezas|2 piezas)\b/gi, "")
-              .trim();
-            const innerFamily = extractGarmentFamily(gText, "");
-            familyRelation = innerFamily === queryFamily ? "same" : "neutral";
-          } else if (
-            (queryFamily === "blusa" && garmentFamily === "polo_top") ||
-            (queryFamily === "polo_top" && garmentFamily === "blusa")
-          ) {
-            familyRelation = "neutral";
-          } else {
-            familyRelation = "different";
-          }
-        }
-
-        // Conteo de prendas de catálogo adicionales del mismo tipo con similitud aceptable (para bono de variedad)
-        if (familyRelation === "same" && sim >= 0.65) {
-          additionalMatchesCount++;
-        }
-
-        // PRIORIDAD SEMÁNTICA + AFINIDAD DE COLOR EN SELECCIÓN DE PRENDA:
-        let comparisonScore = sim;
-        if (familyRelation === "same") {
-          comparisonScore = sim * 1.35;
-          if (hasColorAffinity(detectedInfo.primaryColor, garment)) {
-            comparisonScore *= 1.06;
-          }
-        } else if (familyRelation === "different") {
-          comparisonScore = sim * 0.65;
-        }
-
-        if (comparisonScore > maxComparisonScore) {
-          maxComparisonScore = comparisonScore;
-          maxPhotoSim = sim;
-          bestGarment = garment;
-          bestFamilyRelation = familyRelation;
-        }
-      }
-
-      if (!bestGarment) continue;
-
-      // Coincidencia de estilos: evaluamos tanto los estilos de la tienda como los estilos específicos de la prenda ganadora
-      const combinedStoreAndGarmentStyles = Array.from(
-        new Set([...(store.styles || []), ...(bestGarment.styles || [])])
-      );
-      const { score: styleMatchScore, matchingCount } = calculateStyleMatch(
+      const item = scorePrendaStore(store, {
+        queryVector,
+        queryFamily,
+        primaryColor: detectedInfo.primaryColor,
         activeStyles,
-        combinedStoreAndGarmentStyles
-      );
-
-      // Resonancia final inteligente calibrada 4.0
-      let { resonance, visualScore, band } = calculateResonanceScore(
-        maxPhotoSim,
-        styleMatchScore,
-        bestFamilyRelation,
-        "prenda"
-      );
-
-      // Bono de color (+0.04) si coinciden tonos cromáticos en prendas del mismo tipo
-      if (bestFamilyRelation === "same" && hasColorAffinity(detectedInfo.primaryColor, bestGarment)) {
-        resonance += 0.04;
-      }
-
-      // Bono de variedad (+0.02 por prenda adicional con sim >= 0.65, máx +0.06)
-      if (additionalMatchesCount > 1) {
-        const varietyBonus = Math.min(0.06, (additionalMatchesCount - 1) * 0.02);
-        resonance += varietyBonus;
-      }
-
-      // Resonancia máxima tope 0.99
-      resonance = Number(Math.min(0.99, resonance).toFixed(2));
-      band = determineBand(resonance);
-
-      rankedItems.push({
-        store,
-        bestGarment,
-        resonanceScore: resonance,
-        photoSimilarity: visualScore,
-        styleMatchScore: Number(styleMatchScore.toFixed(2)),
-        matchingStylesCount: matchingCount,
-        totalSearchedStyles: activeStyles.length,
-        band,
-        searchMode: "prenda",
       });
+      if (item) rankedItems.push(item);
     }
 
     // 3. Ordenar de mayor a menor resonancia
