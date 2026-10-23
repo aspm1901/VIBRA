@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   RadarArcIcon,
@@ -425,7 +425,21 @@ function VibraApp() {
     }
   };
 
-  const availableGalleries = Array.from(new Set(results.map((r) => r.store.gallery)));
+  const cleanGalleryName = (gal: string) => {
+    return gal
+      .split("|")[0]
+      .replace(/^(Galería|Galleria|Centro Comercial)\s+/i, "")
+      .trim();
+  };
+
+  const availableGalleries: string[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    results.forEach((r) => {
+      const g = r.store.gallery;
+      counts.set(g, (counts.get(g) || 0) + 1);
+    });
+    return Array.from(counts.keys()).sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0));
+  }, [results]);
   const displayedResults =
     selectedGalleryFilter === "todas"
       ? results
@@ -1092,38 +1106,59 @@ function VibraApp() {
                 </p>
               </div>
 
-              {/* Chips de filtro de Galería */}
+              {/* Chips de filtro de Galería (Barra deslizable horizontal limpia, una sola fila ordenada por cantidad) */}
               {!isSearching && availableGalleries.length > 1 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedGalleryFilter("todas")}
-                    className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
-                      selectedGalleryFilter === "todas"
-                        ? "neu-chip-active font-semibold"
-                        : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
-                    }`}
-                  >
-                    Todas las galerías ({results.length})
-                  </button>
-                  {availableGalleries.map((gal) => {
-                    const count = results.filter((r) => r.store.gallery === gal).length;
-                    const isSel = selectedGalleryFilter === gal;
-                    return (
-                      <button
-                        key={gal}
-                        type="button"
-                        onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
-                        className={`text-[13px] px-4 py-1.5 min-h-[38px] rounded-full transition-all duration-180 ease-vibra ${
-                          isSel
-                            ? "neu-chip-active font-semibold"
-                            : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
+                <div className="relative -mx-1 px-1">
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGalleryFilter("todas")}
+                      className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full shrink-0 whitespace-nowrap transition-all duration-180 ease-vibra flex items-center gap-1.5 ${
+                        selectedGalleryFilter === "todas"
+                          ? "neu-chip-active font-semibold shadow-xs"
+                          : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
+                      }`}
+                    >
+                      <span>Todas</span>
+                      <span
+                        className={`text-[11px] px-1.5 py-0.5 rounded-full tabular-nums font-semibold leading-none ${
+                          selectedGalleryFilter === "todas"
+                            ? "bg-higo-70 text-white"
+                            : "bg-caliza-20 text-grafito-55"
                         }`}
                       >
-                        {gal} ({count})
-                      </button>
-                    );
-                  })}
+                        {results.length}
+                      </span>
+                    </button>
+                    {availableGalleries.map((gal) => {
+                      const count = results.filter((r) => r.store.gallery === gal).length;
+                      const isSel = selectedGalleryFilter === gal;
+                      const displayName = cleanGalleryName(gal);
+                      return (
+                        <button
+                          key={gal}
+                          type="button"
+                          onClick={() => setSelectedGalleryFilter(isSel ? "todas" : gal)}
+                          className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full shrink-0 whitespace-nowrap transition-all duration-180 ease-vibra flex items-center gap-1.5 ${
+                            isSel
+                              ? "neu-chip-active font-semibold shadow-xs"
+                              : "neu-chip text-grafito-55 hover:text-basalto-90 font-medium"
+                          }`}
+                        >
+                          <span>{displayName}</span>
+                          <span
+                            className={`text-[11px] px-1.5 py-0.5 rounded-full tabular-nums font-semibold leading-none ${
+                              isSel
+                                ? "bg-higo-70 text-white"
+                                : "bg-caliza-20 text-grafito-55"
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
