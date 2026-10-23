@@ -1170,12 +1170,12 @@ function VibraApp() {
                       <article
                         key={item.store.id}
                         onClick={() => setSelectedStoreItem(item)}
-                        className={`rounded-3xl p-4 sm:p-5 transition-all duration-240 ease-vibra cursor-pointer flex items-center justify-between gap-4 ${
+                        className={`rounded-3xl p-3.5 sm:p-5 transition-all duration-240 ease-vibra cursor-pointer flex items-center justify-between gap-2.5 sm:gap-4 ${
                           isRank1 ? "neu-rank1" : "neu-elevated"
                         }`}
                       >
                         {/* ZONA 1 + 2: Compuesto fotográfico con índice de rango + Identidad y Tríada */}
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                           {/* Zona 1: Compuesto fotográfico con fondo blanco uniforme y filete 1px */}
                           <div className="relative shrink-0">
                             {searchMode === "look" &&
@@ -1200,7 +1200,7 @@ function VibraApp() {
                                 ))}
                               </div>
                             ) : (
-                              <div className="relative w-[78px] h-[98px] sm:w-[86px] sm:h-[108px] flex items-center justify-center p-1.5 shrink-0 overflow-hidden photo-frame">
+                              <div className="relative w-[74px] h-[94px] sm:w-[86px] sm:h-[108px] flex items-center justify-center p-1.5 shrink-0 overflow-hidden photo-frame">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   src={item.bestGarment.photoUrl}
@@ -1226,28 +1226,31 @@ function VibraApp() {
                             </h4>
 
                             {/* Tríada operativa en 3 celdas separadas por filete vertical (Pág. 12) */}
-                            <div className="inline-grid grid-cols-[minmax(95px,auto)_auto_auto] gap-x-3 sm:gap-x-4 mt-1.5 py-1.5 border-y border-caliza-20">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] sm:inline-grid sm:grid-cols-[minmax(95px,auto)_auto_auto] max-w-full gap-x-2.5 sm:gap-x-4 mt-1.5 py-1.5 border-y border-caliza-20">
                               <div className="min-w-0">
                                 <span className="text-[11px] leading-[14px] text-grafito-55 block">
                                   Galería
                                 </span>
-                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
-                                  {item.store.gallery.replace(/^Galería\s+/i, "")}
+                                <span className="text-[13px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 truncate block">
+                                  {item.store.gallery
+                                    .split("|")[0]
+                                    .replace(/^(Galería|Galleria|Centro Comercial)\s+/i, "")
+                                    .trim()}
                                 </span>
                               </div>
-                              <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                              <div className="pl-2.5 sm:pl-4 border-l border-caliza-20 min-w-0">
                                 <span className="text-[11px] leading-[14px] text-grafito-55 block">
                                   Piso
                                 </span>
-                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
+                                <span className="text-[13px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
                                   {item.store.floor}
                                 </span>
                               </div>
-                              <div className="pl-3 sm:pl-4 border-l border-caliza-20 min-w-0">
+                              <div className="pl-2.5 sm:pl-4 border-l border-caliza-20 min-w-0">
                                 <span className="text-[11px] leading-[14px] text-grafito-55 block">
                                   Stand
                                 </span>
-                                <span className="text-[14px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
+                                <span className="text-[13px] sm:text-[15px] leading-[20px] font-semibold text-basalto-90 tabular-nums whitespace-nowrap block">
                                   {item.store.stand}
                                 </span>
                               </div>

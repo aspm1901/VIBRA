@@ -22,6 +22,28 @@ interface RouteContextType {
 
 const LOCAL_STORAGE_KEY = "vibra_my_route";
 
+/**
+ * Elimina los vectores pesados (3072 floats) de las prendas antes de guardar
+ * la tienda en localStorage o en user_routes de Supabase (~3 KB en vez de ~750 KB por tienda).
+ */
+function stripStoreEmbeddings(store: Store): Store {
+  if (!store || !Array.isArray(store.garments)) return store;
+  return {
+    ...store,
+    garments: store.garments.map(({ embedding, ...rest }) => rest),
+  };
+}
+
+function sanitizeRouteItems(items: RouteItem[]): RouteItem[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((item) => item && item.storeId && item.store)
+    .map((item) => ({
+      ...item,
+      store: stripStoreEmbeddings(item.store),
+    }));
+}
+
 const RouteContext = createContext<RouteContextType | undefined>(undefined);
 
 export function RouteProvider({ children }: { children: React.ReactNode }) {
@@ -38,7 +60,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setRouteItems(parsed);
+          setRouteItems(sanitizeRouteItems(parsed));
         }
       }
     } catch (err) {
@@ -52,7 +74,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hasHydrated) return;
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(routeItems));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sanitizeRouteItems(routeItems)));
     } catch (err) {
       console.warn("No se pudo persistir la ruta en localStorage:", err);
     }
@@ -63,10 +85,11 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     const client = supabase;
     try {
+      const cleanItems = sanitizeRouteItems(items);
       await client.from("user_routes").upsert(
         {
           user_id: userId,
-          route_items: items,
+          route_items: cleanItems,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -76,6 +99,51 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Descargar ruta de la cuenta en Supabase y fusionarla con la ruta local sin perder paradas
+  const loadAndMergeCloudRoute = useCallback(
+    async (userId: string) => {
+      if (!supabase) return;
+      const client = supabase;
+      try {
+        const { data, error } = await client
+          .from("user_routes")
+          .select("route_items")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Aviso leyendo user_routes:", error.message);
+          return;
+        }
+
+        const cloudItems: RouteItem[] = Array.isArray(data?.route_items)
+          ? sanitizeRouteItems(data.route_items)
+          : [];
+
+        setRouteItems((localItems) => {
+          const map = new Map<string, RouteItem>();
+          cloudItems.forEach((item) => map.set(item.storeId, item));
+          sanitizeRouteItems(localItems).forEach((item) => {
+            const existing = map.get(item.storeId);
+            map.set(
+              item.storeId,
+              existing ? { ...item, visited: existing.visited || item.visited } : item
+            );
+          });
+          const merged = Array.from(map.values());
+          // Si había paradas locales nuevas o aún no existía fila en Supabase, guardamos la fusión
+          if (merged.length !== cloudItems.length || !data) {
+            syncWithSupabase(userId, merged);
+          }
+          return merged;
+        });
+      } catch (fetchErr) {
+        console.warn("Error cargando ruta remota:", fetchErr);
+      }
+    },
+    [syncWithSupabase]
+  );
+
   // 3. Manejo de autenticación con Supabase (Google OAuth)
   useEffect(() => {
     if (!supabase) {
@@ -83,6 +151,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const client = supabase;
+    let lastSyncedUserId: string | null = null;
 
     async function initAuth() {
       try {
@@ -93,28 +162,9 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
         setIsLoadingAuth(false);
 
-        if (currentUser) {
-          try {
-            const { data, error } = await client
-              .from("user_routes")
-              .select("route_items")
-              .eq("user_id", currentUser.id)
-              .maybeSingle();
-
-            if (!error && data?.route_items && Array.isArray(data.route_items)) {
-              const cloudItems: RouteItem[] = data.route_items;
-              setRouteItems((localItems) => {
-                const map = new Map<string, RouteItem>();
-                cloudItems.forEach((item) => map.set(item.storeId, item));
-                localItems.forEach((item) => map.set(item.storeId, item));
-                const merged = Array.from(map.values());
-                syncWithSupabase(currentUser.id, merged);
-                return merged;
-              });
-            }
-          } catch (fetchErr) {
-            console.warn("Error cargando ruta remota:", fetchErr);
-          }
+        if (currentUser && lastSyncedUserId !== currentUser.id) {
+          lastSyncedUserId = currentUser.id;
+          await loadAndMergeCloudRoute(currentUser.id);
         }
       } catch (authErr) {
         console.warn("Error obteniendo sesión de Supabase:", authErr);
@@ -124,36 +174,40 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Suscribirse a cambios de auth
+    // Suscribirse a cambios de auth (ej. retorno de login OAuth con Google)
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, session) => {
+    } = client.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setIsLoadingAuth(false);
 
-      if (currentUser) {
-        syncWithSupabase(currentUser.id, routeItems);
+      if (currentUser && (event === "SIGNED_IN" || lastSyncedUserId !== currentUser.id)) {
+        lastSyncedUserId = currentUser.id;
+        loadAndMergeCloudRoute(currentUser.id);
+      } else if (!currentUser) {
+        lastSyncedUserId = null;
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [syncWithSupabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadAndMergeCloudRoute]);
 
   // Operaciones de ruta
   const addToRoute = useCallback(
     (store: Store) => {
+      const cleanStore = stripStoreEmbeddings(store);
       setRouteItems((prev) => {
-        if (prev.some((item) => item.storeId === store.id)) {
+        if (prev.some((item) => item.storeId === cleanStore.id)) {
           return prev;
         }
         const updated: RouteItem[] = [
           ...prev,
           {
-            storeId: store.id,
-            store,
+            storeId: cleanStore.id,
+            store: cleanStore,
             addedAt: Date.now(),
             visited: false,
           },

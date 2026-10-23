@@ -350,15 +350,29 @@ export async function POST(req: NextRequest) {
       if (item) rankedItems.push(item);
     }
 
-    // 3. Ordenar de mayor a menor resonancia
+    // 3. Ordenar de mayor a menor resonancia y quitar vectores pesados (3072 floats) antes de enviar al cliente
     rankedItems.sort((a, b) => b.resonanceScore - a.resonanceScore);
+    const stripGarment = (g: any) => {
+      if (!g) return g;
+      const { embedding, ...rest } = g;
+      return rest;
+    };
+    const lightRankedItems: SearchResultItem[] = rankedItems.map((item) => ({
+      ...item,
+      bestGarment: stripGarment(item.bestGarment),
+      matchingGarments: item.matchingGarments ? item.matchingGarments.map(stripGarment) : undefined,
+      store: {
+        ...item.store,
+        garments: (item.store.garments || []).map(stripGarment),
+      },
+    }));
 
     // Filtrar aquellas con resonancia aceptable (en look completo mínimo 0.50 según especificación)
     const minThreshold = searchMode === "prenda" ? 0.38 : searchMode === "look" ? 0.50 : 0.35;
-    let passedResonance = rankedItems.filter((item) => item.resonanceScore >= minThreshold);
-    if (passedResonance.length === 0 && rankedItems.length > 0) {
-      if (rankedItems[0].resonanceScore >= 0.38) {
-        passedResonance = [rankedItems[0]];
+    let passedResonance = lightRankedItems.filter((item) => item.resonanceScore >= minThreshold);
+    if (passedResonance.length === 0 && lightRankedItems.length > 0) {
+      if (lightRankedItems[0].resonanceScore >= 0.38) {
+        passedResonance = [lightRankedItems[0]];
       }
     }
 
@@ -382,7 +396,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      results: rankedItems,
+      results: lightRankedItems,
       qualifiedResults: passedResonance,
       groupedByGallery,
       detectedInfo,
