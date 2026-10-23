@@ -379,6 +379,20 @@ export function calculateGarmentStyleAffinity(
 }
 
 /**
+ * Tope de resonancia en todos los modos: la afinidad es una recomendación, nunca un 100 %.
+ */
+export const MAX_RESONANCE = 0.99;
+
+/**
+ * Redondeo a 2 decimales "mitad hacia arriba" que no sufre errores de coma flotante
+ * (ej. 0.695 -> 0.70, mientras que (0.695).toFixed(2) da "0.69").
+ * Las bandas se asignan SIEMPRE sobre el valor ya redondeado.
+ */
+export function roundScore(x: number): number {
+  return Math.round(x * 100 + 1e-6) / 100;
+}
+
+/**
  * Algoritmo de Resonancia Inteligente 4.0:
  * - Modo "prenda": La silueta del tipo de prenda manda (visualScore) + bonus de estilo (+0.06 max).
  * - Modo "look": La coherencia estética del outfit completo manda (70% estilo) + 30% armonía visual (paleta, corte).
@@ -410,23 +424,20 @@ export function calculateResonanceScore(
   } else {
     // Modo prenda: visualScore manda + bonus de estilo (+0.06 max)
     const styleBonus = styleScore * 0.06;
-    resonance = Math.min(1.0, visualScore + styleBonus);
+    resonance = visualScore + styleBonus;
   }
 
-  resonance = Number(resonance.toFixed(2));
-
-  let band: ResonanceBand = "Baja";
-  if (resonance >= 0.70) band = "Alta";
-  else if (resonance >= 0.45) band = "Media";
-  else if (resonance >= 0.25) band = "Exploratoria";
+  resonance = roundScore(Math.min(MAX_RESONANCE, resonance));
+  const band = determineBand(resonance);
 
   return { resonance, visualScore, band };
 }
 
 export function determineBand(score: number): ResonanceBand {
-  if (score >= 0.70) return "Alta";
-  if (score >= 0.45) return "Media";
-  if (score >= 0.25) return "Exploratoria";
+  const s = roundScore(score);
+  if (s >= 0.70) return "Alta";
+  if (s >= 0.45) return "Media";
+  if (s >= 0.25) return "Exploratoria";
   return "Baja";
 }
 

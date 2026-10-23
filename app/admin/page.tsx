@@ -51,6 +51,8 @@ const CATEGORIES_LIST = [
   "Chompas",
 ];
 
+const SIZES_LIST = ["XS", "S", "M", "L", "XL", "Estándar"];
+
 const POPULAR_GAMARRA_GALLERIES = [
   { name: "Galería Santa Rosa", address: "Agustín Gamarra 789, La Victoria 15018", lat: -12.0662726, lng: -77.0131215 },
   { name: "Galería El Rey", address: "Jirón Agustín Gamarra 1000, La Victoria 15018", lat: -12.06495, lng: -77.01255 },
@@ -102,6 +104,7 @@ export default function AdminPage() {
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["Urbano"]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["Tops"]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(["S", "M", "L"]);
+  const [customSizeInput, setCustomSizeInput] = useState<string>("");
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("cualquiera");
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
@@ -238,7 +241,8 @@ export default function AdminPage() {
     setPriceLevel(store.priceLevel);
     setSelectedStyles(store.styles || []);
     setSelectedCategories(store.categories || []);
-    setSelectedSizes(store.sizes || ["S", "M", "L"]);
+    setSelectedSizes(Array.isArray(store.sizes) && store.sizes.length > 0 ? store.sizes : ["S", "M", "L"]);
+    setCustomSizeInput("");
     setPurchaseType(store.purchaseType || "cualquiera");
     setStandPhotoBase64(null);
     setCurrentStandPhotoUrl(store.standPhotoUrl || null);
@@ -266,6 +270,7 @@ export default function AdminPage() {
     setSelectedStyles(["Urbano"]);
     setSelectedCategories(["Tops"]);
     setSelectedSizes(["S", "M", "L"]);
+    setCustomSizeInput("");
     setPurchaseType("cualquiera");
     setInstagram("");
     setTiktok("");
@@ -612,6 +617,20 @@ export default function AdminPage() {
     setSelectedCategories((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
+  };
+
+  const toggleSize = (size: string) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+  };
+
+  const handleAddCustomSize = () => {
+    const trimmed = customSizeInput.trim().toUpperCase();
+    if (trimmed && !selectedSizes.includes(trimmed)) {
+      setSelectedSizes((prev) => [...prev, trimmed]);
+    }
+    setCustomSizeInput("");
   };
 
   return (
@@ -1036,6 +1055,113 @@ export default function AdminPage() {
                   <option value="envio">Solo con envío</option>
                   <option value="presencial">Solo presencial</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Tallas que confecciona o comercializa la tienda */}
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <label className="text-xs font-semibold text-gray-300 block">
+                  Tallas disponibles en tienda
+                </label>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSizes(["Estándar"])}
+                    className="text-vibra-400 hover:text-vibra-300 transition-colors"
+                  >
+                    Solo Estándar
+                  </button>
+                  <span className="text-gray-600">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSizes(["S", "M", "L"])}
+                    className="text-vibra-400 hover:text-vibra-300 transition-colors"
+                  >
+                    Curva S-M-L
+                  </button>
+                  <span className="text-gray-600">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSizes([...SIZES_LIST])}
+                    className="text-vibra-400 hover:text-vibra-300 transition-colors"
+                  >
+                    Todas
+                  </button>
+                  <span className="text-gray-600">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSizes([])}
+                    className="text-gray-400 hover:text-rose-400 transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+
+              {/* Tallas y campo para agregar en una misma fila continua */}
+              <div className="flex flex-wrap items-center gap-2">
+                {SIZES_LIST.map((size) => {
+                  const isSelected = selectedSizes.includes(size);
+                  return (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => toggleSize(size)}
+                      className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all ${
+                        isSelected
+                          ? "bg-higo-70 text-white font-bold shadow-sm ring-1 ring-white/20"
+                          : "bg-[#20202a] text-gray-300 border border-[#2d2d3c] hover:bg-[#292936]"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
+
+                {/* Tallas personalizadas que no estén en SIZES_LIST */}
+                {selectedSizes
+                  .filter((s) => !SIZES_LIST.includes(s))
+                  .map((customSize) => (
+                    <span
+                      key={customSize}
+                      className="inline-flex items-center gap-1 text-xs px-3 py-2 rounded-xl bg-higo-70 text-white font-bold shadow-sm ring-1 ring-white/20"
+                    >
+                      {customSize}
+                      <button
+                        type="button"
+                        onClick={() => toggleSize(customSize)}
+                        className="hover:text-rose-200 ml-0.5"
+                        title="Quitar talla"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+
+                {/* Campo para escribir al costado en la misma fila */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={customSizeInput}
+                    onChange={(e) => setCustomSizeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddCustomSize();
+                      }
+                    }}
+                    placeholder="Otra talla (ej. 28, 30)..."
+                    className="bg-[#1e1e27] border border-[#30303e] rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-vibra-500 w-[155px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomSize}
+                    className="px-3 py-2 bg-[#282836] hover:bg-[#343448] text-xs text-gray-200 rounded-xl font-medium transition-colors whitespace-nowrap"
+                  >
+                    + Agregar
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1522,6 +1648,21 @@ export default function AdminPage() {
                         </span>
                       ))}
                     </div>
+
+                    {/* Tallas declaradas de la tienda */}
+                    {s.sizes && s.sizes.length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                        <span className="text-[10px] text-gray-400 font-medium">Tallas:</span>
+                        {s.sizes.map((sz) => (
+                          <span
+                            key={sz}
+                            className="text-[9px] px-1.5 py-0.5 rounded bg-[#2c2328] text-higo-30 border border-higo-70/30 font-semibold"
+                          >
+                            {sz}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

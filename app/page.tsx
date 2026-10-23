@@ -107,12 +107,12 @@ function VibraApp() {
   const [currentImagePreview, setCurrentImagePreview] = useState<string | null>(null);
   const [garmentTitle, setGarmentTitle] = useState<string>("");
 
-  // Filtros activos
+  // Filtros activos (con soporte para selección múltiple)
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["Casual", "Urbano"]);
-  const [selectedPrice, setSelectedPrice] = useState<PriceLevel | undefined>(undefined);
-  const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
-  const [selectedPurchaseType, setSelectedPurchaseType] = useState<PurchaseType>("cualquiera");
+  const [selectedPrices, setSelectedPrices] = useState<PriceLevel[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedPurchaseTypes, setSelectedPurchaseTypes] = useState<PurchaseType[]>([]);
 
   // Detección pura de la IA
   const [detectedInfo, setDetectedInfo] = useState<{
@@ -200,6 +200,9 @@ function VibraApp() {
     image?: string;
     overrideCategory?: string;
     overrideStyles?: string[];
+    overridePrices?: PriceLevel[];
+    overrideSizes?: string[];
+    overridePurchaseTypes?: PurchaseType[];
     overrideSearchMode?: "prenda" | "look" | "estilo";
     isManualFilterRefinement?: boolean;
   }) => {
@@ -228,14 +231,32 @@ function VibraApp() {
         ? overrideParams.overrideStyles
         : selectedStyles;
 
+      const pricesToSend =
+        overrideParams?.overridePrices !== undefined
+          ? overrideParams.overridePrices
+          : selectedPrices;
+
+      const sizesToSend =
+        overrideParams?.overrideSizes !== undefined
+          ? overrideParams.overrideSizes
+          : selectedSizes;
+
+      const purchaseTypesToSend =
+        overrideParams?.overridePurchaseTypes !== undefined
+          ? overrideParams.overridePurchaseTypes
+          : selectedPurchaseTypes;
+
       const payload: any = {
         isManualFilterRefinement: overrideParams?.isManualFilterRefinement ?? false,
         filters: {
           category: categoryToSend,
           styles: stylesToSend,
-          priceLevel: selectedPrice,
-          size: selectedSize,
-          purchaseType: selectedPurchaseType,
+          priceLevel: pricesToSend.length === 1 ? pricesToSend[0] : undefined,
+          priceLevels: pricesToSend,
+          size: sizesToSend.length === 1 ? sizesToSend[0] : undefined,
+          sizes: sizesToSend,
+          purchaseType: purchaseTypesToSend.length === 1 ? purchaseTypesToSend[0] : "cualquiera",
+          purchaseTypes: purchaseTypesToSend,
           searchMode: activeSearchMode,
         },
       };
@@ -377,6 +398,53 @@ function VibraApp() {
     if (inputType === "estilo" || currentImageBase64) {
       executeSearch({
         overrideStyles: updated,
+        overrideSearchMode: inputType === "estilo" ? "estilo" : searchMode,
+        isManualFilterRefinement: true,
+      });
+    }
+  };
+
+  const togglePrice = (priceId: PriceLevel) => {
+    const updated = selectedPrices.includes(priceId)
+      ? selectedPrices.filter((p) => p !== priceId)
+      : [...selectedPrices, priceId];
+    setSelectedPrices(updated);
+    if (inputType === "estilo" || currentImageBase64) {
+      executeSearch({
+        overridePrices: updated,
+        overrideSearchMode: inputType === "estilo" ? "estilo" : searchMode,
+        isManualFilterRefinement: true,
+      });
+    }
+  };
+
+  const toggleSize = (size: string) => {
+    const updated = selectedSizes.includes(size)
+      ? selectedSizes.filter((s) => s !== size)
+      : [...selectedSizes, size];
+    setSelectedSizes(updated);
+    if (inputType === "estilo" || currentImageBase64) {
+      executeSearch({
+        overrideSizes: updated,
+        overrideSearchMode: inputType === "estilo" ? "estilo" : searchMode,
+        isManualFilterRefinement: true,
+      });
+    }
+  };
+
+  const togglePurchaseType = (typeId: PurchaseType) => {
+    let updated: PurchaseType[];
+    if (typeId === "cualquiera") {
+      updated = [];
+    } else if (selectedPurchaseTypes.includes(typeId)) {
+      updated = selectedPurchaseTypes.filter((t) => t !== typeId);
+    } else {
+      updated = [...selectedPurchaseTypes, typeId];
+    }
+    setSelectedPurchaseTypes(updated);
+    if (inputType === "estilo" || currentImageBase64) {
+      executeSearch({
+        overridePurchaseTypes: updated,
         overrideSearchMode: inputType === "estilo" ? "estilo" : searchMode,
         isManualFilterRefinement: true,
       });
@@ -876,28 +944,41 @@ function VibraApp() {
           {/* Bloque Común de Filtros: Precio, Tallas y Tipo de Compra */}
           <div className="space-y-4 pt-1">
             <div>
-              <span className="text-[13px] font-medium text-basalto-90 block mb-2">
-                Nivel de precio
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[13px] font-medium text-basalto-90">
+                  Nivel de precio
+                </span>
+                {selectedPrices.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPrices([]);
+                      if (inputType === "estilo" || currentImageBase64) {
+                        executeSearch({ overridePrices: [], isManualFilterRefinement: true });
+                      }
+                    }}
+                    className="text-[11px] text-higo-70 hover:underline font-medium"
+                  >
+                    Quitar filtro
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {[
                   { id: "economico", name: "Económico", symbol: "S/" },
                   { id: "medio", name: "Medio", symbol: "S/S/" },
                   { id: "alto", name: "Alto", symbol: "S/S/S/" },
                 ].map((p) => {
-                  const isSelected = selectedPrice === p.id;
+                  const isSelected = selectedPrices.includes(p.id as PriceLevel);
                   return (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => {
-                        const newPrice = isSelected ? undefined : (p.id as PriceLevel);
-                        setSelectedPrice(newPrice);
-                      }}
+                      onClick={() => togglePrice(p.id as PriceLevel)}
                       className={`text-[13px] px-4 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra inline-flex items-center gap-1.5 ${
                         isSelected
-                          ? "neu-chip-active font-semibold"
-                          : "neu-chip text-basalto-90 font-normal"
+                          ? "neu-chip-active font-semibold shadow-xs"
+                          : "neu-chip text-basalto-90 font-normal hover:border-basalto-90/30"
                       }`}
                     >
                       <span className="text-[12px] text-grafito-55 tabular-nums">{p.symbol}</span>
@@ -930,20 +1011,36 @@ function VibraApp() {
               {showMoreFilters && (
                 <div className="space-y-3 mt-3 p-4 neu-sunken rounded-2xl animate-vibra-fade-up">
                   <div>
-                    <span className="text-[12px] font-medium text-grafito-55 block mb-1.5">
-                      Talla
-                    </span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[12px] font-medium text-grafito-55">
+                        Talla
+                      </span>
+                      {selectedSizes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSizes([]);
+                            if (inputType === "estilo" || currentImageBase64) {
+                              executeSearch({ overrideSizes: [], isManualFilterRefinement: true });
+                            }
+                          }}
+                          className="text-[11px] text-higo-70 hover:underline font-medium"
+                        >
+                          Limpiar ({selectedSizes.length})
+                        </button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {["XS", "S", "M", "L", "XL", "Estándar"].map((tz) => {
-                        const isSelected = selectedSize === tz;
+                        const isSelected = selectedSizes.includes(tz);
                         return (
                           <button
                             key={tz}
                             type="button"
-                            onClick={() => setSelectedSize(isSelected ? undefined : tz)}
+                            onClick={() => toggleSize(tz)}
                             className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
-                                ? "bg-higo-70 text-white font-semibold"
+                                ? "bg-higo-70 text-white font-semibold shadow-xs"
                                 : "bg-[#F6F7F3] text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >
@@ -964,15 +1061,18 @@ function VibraApp() {
                         { id: "envio", label: "Con envío" },
                         { id: "presencial", label: "Solo en tienda" },
                       ].map((tc) => {
-                        const isSelected = selectedPurchaseType === tc.id;
+                        const isCualquiera = tc.id === "cualquiera";
+                        const isSelected = isCualquiera
+                          ? selectedPurchaseTypes.length === 0 || selectedPurchaseTypes.length === 2
+                          : selectedPurchaseTypes.includes(tc.id as PurchaseType) && selectedPurchaseTypes.length < 2;
                         return (
                           <button
                             key={tc.id}
                             type="button"
-                            onClick={() => setSelectedPurchaseType(tc.id as PurchaseType)}
+                            onClick={() => togglePurchaseType(tc.id as PurchaseType)}
                             className={`text-[12px] px-3 py-1.5 rounded-lg transition-all ${
                               isSelected
-                                ? "bg-higo-70 text-white font-semibold"
+                                ? "bg-higo-70 text-white font-semibold shadow-xs"
                                 : "bg-[#F6F7F3] text-basalto-90 border border-caliza-20 hover:border-caliza-30"
                             }`}
                           >

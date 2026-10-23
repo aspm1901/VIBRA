@@ -57,6 +57,9 @@ export interface SearchFilters {
   styles?: string[];
   priceLevel?: PriceLevel;
   size?: string;
+  sizes?: string[];
+  priceLevels?: PriceLevel[];
+  purchaseTypes?: PurchaseType[];
   purchaseType?: PurchaseType;
   searchMode?: "prenda" | "look" | "estilo";
 }

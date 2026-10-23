@@ -7,6 +7,9 @@ import {
   determineBand,
   extractGarmentFamily,
   doesStoreSellFamily,
+  roundScore,
+  cleanStyleStr,
+  MAX_RESONANCE,
   type GarmentFamily,
 } from "@/lib/ranking";
 
@@ -66,6 +69,15 @@ export function colorGroupOf(text: string): number {
 }
 
 type FamilyRelation = "same" | "different" | "neutral";
+
+/**
+ * Puntaje mínimo para que una tienda se publique en resultados, por modo.
+ * (Se comparte con scripts/eval-search.ts para medir exactamente lo mismo que producción.)
+ * - Prenda: 0.38 (evita ruido visual de prendas no relacionadas)
+ * - Look: 0.50 (requiere armonía y coherencia de outfit)
+ * - Estilo: 0.25 (coincide con el inicio exacto de la Banda Exploratoria: 1 de 3 estilos)
+ */
+export const PUBLISH_THRESHOLD = { prenda: 0.38, look: 0.5, estilo: 0.25 } as const;
 
 // Peso del color (calibrado con scripts/eval-search.ts sobre las 277 prendas reales)
 const COLOR_SELECTION_BOOST = 1.08;
@@ -222,12 +234,12 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
     resonance += COLOR_RESONANCE_BONUS;
   }
 
-  // Bono de variedad (+0.02 por prenda adicional con sim >= 0.65, máx +0.06)
+  // Bono de alternativas: +0.02 por cada prenda adicional del mismo tipo con coseno >= 0.65 (máx +0.06)
   if (additionalMatchesCount > 1) {
     resonance += Math.min(0.06, (additionalMatchesCount - 1) * 0.02);
   }
 
-  resonance = Number(Math.min(0.99, resonance).toFixed(2));
+  resonance = roundScore(Math.min(MAX_RESONANCE, resonance));
   band = determineBand(resonance);
 
   return {
@@ -240,6 +252,67 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
     totalSearchedStyles: q.activeStyles.length,
     band,
     searchMode: "prenda",
+  };
+}
+
+/**
+ * Modo "Por estilo" (sin foto).
+ *
+ *   Coincidencia = estilos de la tienda que coinciden / estilos elegidos por la compradora (1 a 3)
+ *   Resonancia   = 0,75 × Coincidencia + Bono insignia (+0,06) + Bono de catálogo (hasta +0,07)
+ *
+ * - Sin ningún estilo en común la tienda NO se muestra (antes recibía un piso de 0,55).
+ * - Con 3 estilos elegidos: 1/3 -> 0,25 (Exploratoria), 2/3 -> 0,50 (Media), 3/3 -> 0,75 (Alta).
+ *   Los bonos suman como máximo 0,13, así que no hacen saltar de banda en ese caso.
+ * - Bono insignia: el PRIMER estilo que declaró la tienda (su estilo principal) está entre los buscados.
+ * - Bono de catálogo: afinidad promedio (0 a 1) de las prendas de la tienda con los estilos buscados.
+ *   Es un valor continuo, así que también sirve para desempatar.
+ */
+export const ESTILO_COINCIDENCIA_PESO = 0.75;
+export const ESTILO_BONO_INSIGNIA = 0.06;
+export const ESTILO_BONO_CATALOGO_MAX = 0.07;
+
+export function scoreEstiloStore(store: Store, activeStyles: string[]): SearchResultItem | null {
+  const { score: storeStyleScore, matchingCount } = calculateStyleMatch(activeStyles, store.styles);
+  if (activeStyles.length > 0 && matchingCount === 0) return null;
+
+  let bestGarment = store.garments[0];
+  let maxAffinity = -1;
+  let affinitySum = 0;
+
+  for (const garment of store.garments) {
+    const affinity = calculateGarmentStyleAffinity(garment, activeStyles);
+    affinitySum += Math.min(1, Math.max(0, affinity));
+    if (affinity > maxAffinity) {
+      maxAffinity = affinity;
+      bestGarment = garment;
+    }
+  }
+
+  const catalogAffinity = store.garments.length > 0 ? affinitySum / store.garments.length : 0;
+  const insignia =
+    !!store.styles[0] &&
+    activeStyles.some((s) => cleanStyleStr(s) === cleanStyleStr(store.styles[0]));
+
+  const resonance = roundScore(
+    Math.min(
+      MAX_RESONANCE,
+      ESTILO_COINCIDENCIA_PESO * storeStyleScore +
+        (insignia ? ESTILO_BONO_INSIGNIA : 0) +
+        ESTILO_BONO_CATALOGO_MAX * catalogAffinity
+    )
+  );
+
+  return {
+    store,
+    bestGarment,
+    resonanceScore: resonance,
+    photoSimilarity: 0,
+    styleMatchScore: Number(storeStyleScore.toFixed(2)),
+    matchingStylesCount: matchingCount,
+    totalSearchedStyles: activeStyles.length,
+    band: determineBand(resonance),
+    searchMode: "estilo",
   };
 }
 

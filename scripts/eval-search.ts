@@ -13,8 +13,15 @@
 import fs from "fs";
 import { createClient } from "@supabase/supabase-js";
 import type { Store, StoreGarment } from "@/types";
-import { cosineSimilarity, extractGarmentFamily } from "@/lib/ranking";
-import { scoreLookStore, scorePrendaStore, colorGroupOf, garmentContainsFamily } from "@/lib/search-scoring";
+import { cosineSimilarity, extractGarmentFamily, cleanStyleStr } from "@/lib/ranking";
+import {
+  scoreLookStore,
+  scorePrendaStore,
+  scoreEstiloStore,
+  colorGroupOf,
+  garmentContainsFamily,
+  PUBLISH_THRESHOLD,
+} from "@/lib/search-scoring";
 
 fs.readFileSync(".env.local", "utf8")
   .split("\n")
@@ -23,8 +30,16 @@ fs.readFileSync(".env.local", "utf8")
     if (m) process.env[m[1].trim()] = m[2].trim().replace(/^['"]|['"]$/g, "");
   });
 
-const PRENDA_MIN = 0.38;
-const LOOK_MIN = 0.5;
+const PRENDA_MIN = PUBLISH_THRESHOLD.prenda;
+const LOOK_MIN = PUBLISH_THRESHOLD.look;
+const ESTILO_MIN = PUBLISH_THRESHOLD.estilo;
+
+function bandOf(score: number): string {
+  if (score >= 0.7) return "Alta";
+  if (score >= 0.45) return "Media";
+  if (score >= 0.25) return "Exploratoria";
+  return "Baja";
+}
 
 function pct(n: number, d: number) {
   return d === 0 ? "-" : `${((100 * n) / d).toFixed(1)}%`;
@@ -153,6 +168,8 @@ async function main() {
   let lQ = 0, lFound = 0, lTop3 = 0, lResults = 0;
   const singleStyleStores = stores.filter((s) => s.styles.length === 1);
   let singleEligible = 0, singleShown = 0;
+  const lookBands: Record<string, number> = {};
+  let lookAlta = 0, lookAltaWeakVisual = 0, lookMax = 0;
 
   for (const { s: origin, g: query } of lookQueries) {
     lQ++;
@@ -165,6 +182,15 @@ async function main() {
       .filter((r): r is NonNullable<typeof r> => !!r && r.resonanceScore >= LOOK_MIN)
       .sort((a, b) => b.resonanceScore - a.resonanceScore);
     lResults += results.length;
+    for (const r of results) {
+      const b = bandOf(r.resonanceScore);
+      lookBands[b] = (lookBands[b] || 0) + 1;
+      if (b === "Alta") {
+        lookAlta++;
+        if ((r.photoSimilarity ?? 0) < 0.6) lookAltaWeakVisual++;
+      }
+      lookMax = Math.max(lookMax, r.resonanceScore);
+    }
     const rank = results.findIndex((r) => r.store.id === origin.id);
     if (rank >= 0) lFound++;
     if (rank >= 0 && rank < 3) lTop3++;
@@ -184,6 +210,51 @@ async function main() {
   console.log(`Tienda de origen aparece:                 ${pct(lFound, lQ)}`);
   console.log(`Tienda de origen en el top 3:             ${pct(lTop3, lQ)}`);
   console.log(`Tiendas de 1 solo estilo que coinciden y SÍ aparecen: ${pct(singleShown, singleEligible)} (${singleEligible} casos)`);
+  console.log(`Bandas mostradas: ${JSON.stringify(lookBands)}  | puntaje máximo: ${lookMax.toFixed(2)}`);
+  console.log(`Altas con parecido visual calibrado < 0,60: ${lookAltaWeakVisual} de ${lookAlta}`);
+
+  // ---------- 4. Modo "Por estilo" ----------
+  const styleDict = Array.from(new Set(stores.flatMap((s) => s.styles))).sort();
+  const combos: string[][] = [];
+  for (let i = 0; i < styleDict.length; i++) {
+    combos.push([styleDict[i]]);
+    for (let j = i + 1; j < styleDict.length; j++) {
+      combos.push([styleDict[i], styleDict[j]]);
+      for (let k = j + 1; k < styleDict.length; k++) combos.push([styleDict[i], styleDict[j], styleDict[k]]);
+    }
+  }
+  let eShown = 0, eZeroMatchShown = 0, eTopTies = 0, eWithTwo = 0;
+  const eBands: Record<string, number> = {};
+  const bandByMatch: Record<string, Record<string, number>> = {};
+  let eMax = 0;
+  for (const combo of combos) {
+    const results = stores
+      .map((s) => scoreEstiloStore(s, combo))
+      .filter((r): r is NonNullable<typeof r> => !!r && r.resonanceScore >= ESTILO_MIN)
+      .sort((a, b) => b.resonanceScore - a.resonanceScore);
+    eShown += results.length;
+    if (results.length >= 2) {
+      eWithTwo++;
+      if (results[0].resonanceScore === results[1].resonanceScore) eTopTies++;
+    }
+    for (const r of results) {
+      const b = bandOf(r.resonanceScore);
+      eBands[b] = (eBands[b] || 0) + 1;
+      eMax = Math.max(eMax, r.resonanceScore);
+      const matches = combo.filter((c) => r.store.styles.map(cleanStyleStr).includes(cleanStyleStr(c))).length;
+      if (matches === 0) eZeroMatchShown++;
+      const key = `${matches}/${combo.length}`;
+      bandByMatch[key] = bandByMatch[key] || {};
+      bandByMatch[key][b] = (bandByMatch[key][b] || 0) + 1;
+    }
+  }
+  console.log(`\n=== Modo "Por estilo" (${combos.length} combinaciones de 1 a 3 estilos, ${styleDict.length} estilos) ===`);
+  console.log(`Tiendas mostradas por búsqueda (promedio): ${(eShown / combos.length).toFixed(1)}`);
+  console.log(`Tiendas mostradas SIN ningún estilo en común: ${eZeroMatchShown} de ${eShown}`);
+  console.log(`Empate exacto en el puesto 1:             ${pct(eTopTies, eWithTwo)}`);
+  console.log(`Bandas mostradas: ${JSON.stringify(eBands)}  | puntaje máximo: ${eMax.toFixed(2)}`);
+  console.log(`Banda según coincidencias (coinciden/elegidos):`);
+  for (const k of Object.keys(bandByMatch).sort()) console.log(`  ${k}: ${JSON.stringify(bandByMatch[k])}`);
 }
 
 main().catch((e) => {

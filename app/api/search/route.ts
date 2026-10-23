@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllStores } from "@/lib/stores-db";
+import { cosineSimilarity, extractGarmentFamily } from "@/lib/ranking";
 import {
-  cosineSimilarity,
-  calculateStyleMatch,
-  calculateGarmentStyleAffinity,
-  determineBand,
-  extractGarmentFamily,
-} from "@/lib/ranking";
-import { scoreLookStore, scorePrendaStore } from "@/lib/search-scoring";
+  PUBLISH_THRESHOLD,
+  scoreEstiloStore,
+  scoreLookStore,
+  scorePrendaStore,
+} from "@/lib/search-scoring";
 import { generateImageEmbedding, detectGarmentStyles } from "@/lib/ai/gemini";
 import { SearchFilters, SearchResultItem } from "@/types";
 
 export const maxDuration = 60; // 60s timeout for AI calls
+
+function normalizeSize(s: string): string {
+  const clean = s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (clean === "standard" || clean === "estandar") return "estandar";
+  return clean;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -240,29 +245,54 @@ export async function POST(req: NextRequest) {
       (detectedInfo as any).garmentFamily || ""
     );
 
+    // Normalizar filtros para soportar selección múltiple (o individual como fallback)
+    const rawPrices = filters.priceLevels ?? filters.priceLevel;
+    const allowedPrices: string[] = Array.isArray(rawPrices)
+      ? rawPrices.map((p: string) => String(p).toLowerCase())
+      : rawPrices
+      ? [String(rawPrices).toLowerCase()]
+      : [];
+
+    const rawPurchaseTypes = filters.purchaseTypes ?? filters.purchaseType;
+    const allowedPurchaseTypes: string[] = Array.isArray(rawPurchaseTypes)
+      ? rawPurchaseTypes.map((pt: string) => String(pt).toLowerCase()).filter((pt: string) => pt !== "cualquiera")
+      : rawPurchaseTypes && rawPurchaseTypes !== "cualquiera"
+      ? [String(rawPurchaseTypes).toLowerCase()]
+      : [];
+
+    const rawSizes = filters.sizes ?? filters.size;
+    const allowedSizes: string[] = Array.isArray(rawSizes)
+      ? rawSizes.map((s: string) => normalizeSize(String(s)))
+      : rawSizes
+      ? [normalizeSize(String(rawSizes))]
+      : [];
+
     for (const store of allStores) {
-      // Filtros de inclusión estricta (si el usuario los activó)
+      // 1. Filtro estricto de Precio (soporta individual o múltiple)
       if (
-        filters.priceLevel &&
-        store.priceLevel.toLowerCase() !== filters.priceLevel.toLowerCase()
+        allowedPrices.length > 0 &&
+        !allowedPrices.includes(store.priceLevel.toLowerCase())
       ) {
         continue;
       }
 
+      // 2. Filtro estricto de Modalidad de Compra
       if (
-        filters.purchaseType &&
-        filters.purchaseType !== "cualquiera" &&
+        allowedPurchaseTypes.length > 0 &&
         store.purchaseType !== "cualquiera" &&
-        store.purchaseType !== filters.purchaseType
+        !allowedPurchaseTypes.includes(store.purchaseType.toLowerCase())
       ) {
         continue;
       }
 
-      if (
-        filters.size &&
-        !store.sizes.map((s) => s.toLowerCase()).includes(filters.size.toLowerCase())
-      ) {
-        continue;
+      // 3. Filtro estricto de Tallas (lógica OR: pasa si la tienda tiene al menos una de las tallas buscadas)
+      // La talla "Estándar" es una talla independiente y no equivale a XS, S, M, L o XL
+      if (allowedSizes.length > 0) {
+        const storeSizesNormalized = (store.sizes || []).map((s) => normalizeSize(s));
+        const hasMatchingSize = allowedSizes.some((s) => storeSizesNormalized.includes(s));
+        if (!hasMatchingSize) {
+          continue;
+        }
       }
 
       passedFiltersCount++;
@@ -271,61 +301,8 @@ export async function POST(req: NextRequest) {
       // CASO A: MODO POR ESTILO (100% sin foto)
       // ==========================================
       if (searchMode === "estilo") {
-        let bestGarment = store.garments[0];
-        let maxAffinity = -1;
-        let matchingGarmentsCount = 0;
-
-        for (const garment of store.garments) {
-          const affinity = calculateGarmentStyleAffinity(garment, activeStyles);
-          const { matchingCount: gMatchCount } = calculateStyleMatch(
-            activeStyles,
-            garment.styles
-          );
-          if (gMatchCount > 0) matchingGarmentsCount++;
-
-          if (affinity > maxAffinity) {
-            maxAffinity = affinity;
-            bestGarment = garment;
-          }
-        }
-
-        const { score: storeStyleScore, matchingCount } = calculateStyleMatch(
-          activeStyles,
-          store.styles
-        );
-
-        // Calibración T6: Base según estilo de tienda (0.55 a 0.85)
-        let resonance = 0.55 + 0.30 * storeStyleScore;
-        // Bonificación de especialidad si coincide el estilo insignia (#1) (+0.06)
-        if (
-          store.styles[0] &&
-          activeStyles.some(
-            (s) => s.toLowerCase().trim() === store.styles[0].toLowerCase().trim()
-          )
-        ) {
-          resonance += 0.06;
-        }
-        // Bonificación por variedad en catálogo (hasta +0.07)
-        if (store.garments.length > 0 && matchingGarmentsCount > 0) {
-          resonance += (matchingGarmentsCount / store.garments.length) * 0.07;
-        }
-        // Tope de seguridad
-        resonance = Math.min(0.98, resonance);
-
-        resonance = Number(resonance.toFixed(2));
-        const band = determineBand(resonance);
-
-        rankedItems.push({
-          store,
-          bestGarment,
-          resonanceScore: resonance,
-          photoSimilarity: 0,
-          styleMatchScore: Number(storeStyleScore.toFixed(2)),
-          matchingStylesCount: matchingCount,
-          totalSearchedStyles: activeStyles.length,
-          band,
-          searchMode: "estilo",
-        });
+        const item = scoreEstiloStore(store, activeStyles);
+        if (item) rankedItems.push(item);
         continue;
       }
 
@@ -367,8 +344,8 @@ export async function POST(req: NextRequest) {
       },
     }));
 
-    // Filtrar aquellas con resonancia aceptable (en look completo mínimo 0.50 según especificación)
-    const minThreshold = searchMode === "prenda" ? 0.38 : searchMode === "look" ? 0.50 : 0.35;
+    // Filtrar las tiendas que superan el piso de publicación de cada modo
+    const minThreshold = PUBLISH_THRESHOLD[searchMode];
     let passedResonance = lightRankedItems.filter((item) => item.resonanceScore >= minThreshold);
     if (passedResonance.length === 0 && lightRankedItems.length > 0) {
       if (lightRankedItems[0].resonanceScore >= 0.38) {
