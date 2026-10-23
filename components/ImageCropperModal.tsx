@@ -206,11 +206,11 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-basalto-90/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-basalto-90/80 backdrop-blur-md overflow-y-auto animate-vibra-fade"
       onClick={onCancel}
     >
       <div
-        className="relative w-full max-w-lg bg-white border border-caliza-20/80 rounded-3xl p-5 sm:p-6 text-basalto-90 shadow-[0_25px_70px_-15px_rgba(20,22,25,0.45)] ring-1 ring-black/5 flex flex-col my-auto max-h-[96vh] overflow-y-auto animate-in zoom-in-95 duration-240 ease-vibra"
+        className="relative w-full max-w-lg bg-white border border-caliza-20/80 rounded-3xl p-5 sm:p-6 text-basalto-90 shadow-[0_25px_70px_-15px_rgba(20,22,25,0.45)] ring-1 ring-black/5 flex flex-col my-auto max-h-[96vh] overflow-y-auto animate-vibra-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

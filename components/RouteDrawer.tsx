@@ -104,16 +104,16 @@ export const RouteDrawer: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-label="Tu ruta por galería"
-      className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-180"
+      className="fixed inset-0 z-50 flex justify-end overflow-hidden"
     >
       {/* Fondo oscurecido en Basalto 90 */}
       <div
-        className="fixed inset-0 bg-basalto-90/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-basalto-90/60 backdrop-blur-sm animate-vibra-fade"
         onClick={() => setIsRouteDrawerOpen(false)}
       />
 
       {/* Hoja de ruta sobre Caliza 05 con dominio semántico Neblina (Pág. 7 y 13) */}
-      <div className="relative w-full max-w-md bg-caliza-5 border-l border-caliza-20 text-basalto-90 h-full flex flex-col shadow-2xl z-10 overflow-hidden">
+      <div className="relative w-full max-w-md bg-white sm:bg-caliza-5 border-l border-caliza-20 text-basalto-90 h-full flex flex-col shadow-2xl z-10 overflow-hidden animate-vibra-drawer">
         {/* Cabecera */}
         <div className="p-5 border-b border-caliza-20 flex items-center justify-between">
           <div>

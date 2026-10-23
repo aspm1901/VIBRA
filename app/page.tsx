@@ -626,7 +626,7 @@ function VibraApp() {
           {/* MODO FOTO: POZO DE CAPTURA (PANTALLA 1 DEL MANUAL v2.0)  */}
           {/* ======================================================== */}
           {inputType === "foto" ? (
-            <div className="space-y-5">
+            <div className="space-y-5 animate-vibra-fade" key="mode-foto">
               {/* Pozo de captura hundido (Caliza 10) */}
               <div
                 onDragOver={(e) => e.preventDefault()}
@@ -801,7 +801,7 @@ function VibraApp() {
             /* ======================================================== */
             /* MODO ESTILO: EXPLORACIÓN SIN FOTO                        */
             /* ======================================================== */
-            <div className="space-y-5">
+            <div className="space-y-5 animate-vibra-fade" key="mode-estilo">
               <div className="neu-sunken rounded-3xl p-5">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-9 h-9 rounded-xl bg-higo-30 text-higo-70 flex items-center justify-center">
@@ -953,7 +953,7 @@ function VibraApp() {
               </button>
 
               {showMoreFilters && (
-                <div className="space-y-3 mt-3 p-4 neu-sunken rounded-2xl">
+                <div className="space-y-3 mt-3 p-4 neu-sunken rounded-2xl animate-vibra-fade-up">
                   <div>
                     <span className="text-[12px] font-medium text-grafito-55 block mb-1.5">
                       Talla
@@ -1195,7 +1195,7 @@ function VibraApp() {
 
               {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
               {!isSearching && displayedResults.length > 0 && (
-                <div className="space-y-3.5">
+                <div className="space-y-3.5 animate-vibra-fade" key={selectedGalleryFilter}>
                   {displayedResults.map((item, idx) => {
                     const isRank1 = idx === 0;
                     const inRoute = isInRoute(item.store.id);

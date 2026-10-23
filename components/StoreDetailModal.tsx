@@ -77,11 +77,11 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 bg-basalto-90/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 bg-basalto-90/80 backdrop-blur-md overflow-hidden animate-vibra-fade"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-white border border-caliza-20/80 rounded-t-[32px] sm:rounded-3xl text-basalto-90 shadow-[0_25px_70px_-15px_rgba(20,22,25,0.45)] ring-1 ring-black/5 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-240 ease-vibra"
+        className="relative w-full max-w-xl bg-white border border-caliza-20/80 rounded-t-[32px] sm:rounded-3xl text-basalto-90 shadow-[0_25px_70px_-15px_rgba(20,22,25,0.45)] ring-1 ring-black/5 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-vibra-sheet sm:animate-vibra-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile handle pill */}
@@ -151,9 +151,10 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             <div className="w-full h-72 sm:h-80 bg-white flex items-center justify-center p-4 overflow-hidden photo-frame">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                key={selectedGarment?.id || bestGarment.id}
                 src={selectedGarment?.photoUrl || bestGarment.photoUrl}
                 alt={selectedGarment?.name || bestGarment.name}
-                className="max-h-full max-w-full object-contain transition-all duration-200"
+                className="max-h-full max-w-full object-contain animate-vibra-fade"
               />
             </div>
             <p className="text-center text-[13px] text-grafito-55 mt-2">
@@ -190,7 +191,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
                     key={g.id}
                     type="button"
                     onClick={() => setSelectedGarment(g)}
-                    className={`p-1.5 rounded-[12px] flex flex-col items-center text-center transition-all duration-180 ease-vibra ${
+                    className={`p-1.5 rounded-[12px] flex flex-col items-center text-center transition-all duration-180 ease-vibra active:scale-95 ${
                       isSelected
                         ? "bg-white ring-2 ring-higo-70 shadow-xs"
                         : "bg-white/85 hover:bg-white"
