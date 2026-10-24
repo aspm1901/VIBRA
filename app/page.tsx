@@ -86,6 +86,17 @@ const STYLE_PRESETS = [
   },
 ];
 
+interface SearchOverrides {
+  image?: string;
+  overrideCategory?: string;
+  overrideStyles?: string[];
+  overridePrices?: PriceLevel[];
+  overrideSizes?: string[];
+  overridePurchaseTypes?: PurchaseType[];
+  overrideSearchMode?: "prenda" | "look" | "estilo";
+  isManualFilterRefinement?: boolean;
+}
+
 function VibraApp() {
   const {
     routeItems,
@@ -124,6 +135,10 @@ function VibraApp() {
   // UI States
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchRequestRef = useRef<AbortController | null>(null);
+  const lastSearchParamsRef = useRef<SearchOverrides | undefined>(undefined);
+  useEffect(() => () => searchRequestRef.current?.abort(), []);
   const [selectedStoreItem, setSelectedStoreItem] = useState<SearchResultItem | null>(null);
 
   // Resultados
@@ -167,6 +182,10 @@ function VibraApp() {
   });
 
   const switchPhotoTab = (targetMode: "prenda" | "look") => {
+    if (inputType === "foto" && targetMode === searchMode) return;
+    searchRequestRef.current?.abort();
+    setIsSearching(false);
+    setSearchError(null);
     // Guardar el estado actual si veníamos de una pestaña de foto
     if (inputType === "foto" && (searchMode === "prenda" || searchMode === "look")) {
       tabSnapshotsRef.current[searchMode] = {
@@ -196,18 +215,15 @@ function VibraApp() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const executeSearch = async (overrideParams?: {
-    image?: string;
-    overrideCategory?: string;
-    overrideStyles?: string[];
-    overridePrices?: PriceLevel[];
-    overrideSizes?: string[];
-    overridePurchaseTypes?: PurchaseType[];
-    overrideSearchMode?: "prenda" | "look" | "estilo";
-    isManualFilterRefinement?: boolean;
-  }) => {
+  const executeSearch = async (overrideParams?: SearchOverrides) => {
+    lastSearchParamsRef.current = overrideParams;
+    searchRequestRef.current?.abort();
+    const controller = new AbortController();
+    searchRequestRef.current = controller;
     try {
       setIsSearching(true);
+      setSearchError(null);
+      setResults([]);
 
       const imageToUse = overrideParams?.image || currentImageBase64;
       const activeSearchMode =
@@ -269,12 +285,18 @@ function VibraApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (controller.signal.aborted) return;
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "No pudimos completar la búsqueda. Reintenta en unos momentos.");
+      }
       if (data.success) {
         const newResults = data.qualifiedResults || [];
         setResults(newResults);
+        setSelectedGalleryFilter("todas");
 
         if (data.detectedInfo && activeSearchMode !== "estilo") {
           setDetectedInfo(data.detectedInfo);
@@ -311,9 +333,14 @@ function VibraApp() {
         }
       }
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error("Error al buscar tiendas:", err);
+      setSearchError(err instanceof Error && err.message !== "Failed to fetch"
+        ? err.message
+        : "No pudimos conectar con el buscador. Revisa tu conexión y vuelve a intentar.");
+      if (overrideParams?.image) setGarmentTitle(searchMode === "look" ? "Look de referencia" : "Prenda de referencia");
     } finally {
-      setIsSearching(false);
+      if (searchRequestRef.current === controller) setIsSearching(false);
     }
   };
 
@@ -391,6 +418,7 @@ function VibraApp() {
   };
 
   const toggleStyle = (style: string) => {
+    if (!selectedStyles.includes(style) && selectedStyles.length >= 3) return;
     const updated = selectedStyles.includes(style)
       ? selectedStyles.filter((s) => s !== style)
       : [...selectedStyles, style];
@@ -815,7 +843,7 @@ function VibraApp() {
                       </span>
                     </span>
                     <span className="text-[12px] text-higo-70 font-medium tabular-nums">
-                      {selectedStyles.length} activos
+                      {selectedStyles.length}/3 activos
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -826,7 +854,9 @@ function VibraApp() {
                           key={st}
                           type="button"
                           onClick={() => toggleStyle(st)}
-                          className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra ${
+                          disabled={!isSelected && selectedStyles.length >= 3}
+                          aria-pressed={isSelected}
+                          className={`text-[13px] px-3.5 py-1.5 min-h-[36px] rounded-full transition-all duration-180 ease-vibra disabled:opacity-45 disabled:cursor-not-allowed ${
                             isSelected
                               ? "neu-chip-active font-semibold"
                               : "neu-chip text-basalto-90 font-normal hover:border-basalto-90/30"
@@ -911,11 +941,11 @@ function VibraApp() {
                       Todos los estilos
                     </span>
                     <span className="text-[11px] text-grafito-55">
-                      Toca para activar o quitar estilos
+                      Elige hasta 3 estilos
                     </span>
                   </div>
                   <span className="text-[12px] text-higo-70 font-medium px-2.5 py-0.5 rounded-full bg-higo-30 tabular-nums">
-                    {selectedStyles.length} activos
+                    {selectedStyles.length}/3 activos
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -926,7 +956,9 @@ function VibraApp() {
                         key={st}
                         type="button"
                         onClick={() => toggleStyle(st)}
-                        className={`text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-180 ease-vibra ${
+                        disabled={!isSelected && selectedStyles.length >= 3}
+                        aria-pressed={isSelected}
+                        className={`text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-180 ease-vibra disabled:opacity-45 disabled:cursor-not-allowed ${
                           isSelected
                             ? "neu-chip-active font-semibold"
                             : "neu-chip text-basalto-90 font-normal"
@@ -1145,7 +1177,9 @@ function VibraApp() {
                   className="font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
                   style={{ letterSpacing: "-0.025em" }}
                 >
-                  {isSearching
+                  {searchError
+                    ? "No pudimos completar la búsqueda"
+                    : isSearching
                     ? "Analizando afinidad en Gamarra..."
                     : inputType === "estilo"
                     ? `${displayedResults.length} ${
@@ -1161,7 +1195,7 @@ function VibraApp() {
               </div>
 
               {/* Chips de filtro de Galería (Barra deslizable horizontal limpia, una sola fila ordenada por cantidad) */}
-              {!isSearching && availableGalleries.length > 1 && (
+              {!isSearching && !searchError && availableGalleries.length > 1 && (
                 <div className="relative -mx-1 px-1">
                   <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth">
                     <button
@@ -1238,17 +1272,32 @@ function VibraApp() {
               )}
 
               {/* 4 · Estado vacío: Núcleo sin propagación + instrucción directa */}
-              {!isSearching && displayedResults.length === 0 && (
+              {!isSearching && searchError && (
+                <div role="alert" className="p-6 sm:p-8 rounded-3xl neu-sunken border border-oxido-65/30 text-center">
+                  <p className="text-[15px] leading-[24px] text-basalto-90">{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={() => executeSearch(lastSearchParamsRef.current)}
+                    className="mt-4 px-5 py-2.5 rounded-xl bg-higo-70 text-white font-medium text-[14px] hover:bg-vibra-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-higo-70 cursor-pointer"
+                  >
+                    Reintentar búsqueda
+                  </button>
+                </div>
+              )}
+
+              {!isSearching && !searchError && displayedResults.length === 0 && (
                 <div className="p-10 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
                   <ResonanceEmptyNode size={48} />
                   <p className="text-[15px] leading-[24px] text-basalto-90 font-medium mt-3 max-w-md">
-                    Ninguna tienda superó el umbral de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla.
+                    {inputType === "estilo"
+                      ? "No encontramos tiendas con esta combinación. Prueba otros estilos o quita los filtros de precio y talla."
+                      : "Ninguna tienda superó el umbral de afinidad con esta foto. Prueba con un encuadre más cerrado de la prenda o quita los filtros de precio y talla."}
                   </p>
                 </div>
               )}
 
               {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
-              {!isSearching && displayedResults.length > 0 && (
+              {!isSearching && !searchError && displayedResults.length > 0 && (
                 <div className="space-y-3.5 animate-vibra-fade" key={selectedGalleryFilter}>
                   {displayedResults.map((item, idx) => {
                     const isRank1 = idx === 0;

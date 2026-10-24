@@ -1,58 +1,62 @@
-# VIBRA — Buscador Visual de Ropa para Gamarra (MVP)
+# VIBRA · Buscador visual para Gamarra
 
-Plataforma web de recomendación de tiendas por afinidad de estilo visual y semántica mediante Inteligencia Artificial multimodal.
+Prototipo universitario que recomienda tiendas de moda por afinidad con una foto o una selección de estilos. El puntaje representa el perfil del comercio: no garantiza stock, precio ni disponibilidad de una prenda.
 
----
+## Ejecutar
 
-## 🚀 Inicio Rápido
-
-### 1. Requisitos
-* Node.js v18+ (o superior)
-* npm o pnpm
-
-### 2. Configurar la clave de IA (Gratis)
-Obtén tu clave de API gratuita en [Google AI Studio](https://aistudio.google.com) y colócala en `.env.local`:
+Node.js 20 o posterior y npm:
 
 ```bash
-GEMINI_API_KEY=tu_clave_aqui
-```
-
-> **Nota:** La aplicación cuenta con un sistema de respaldo (*fallback*) integrado, por lo que funcionará y mostrará resultados inmediatamente incluso si no colocas una clave API en la primera prueba.
-
-### 3. Ejecutar en modo desarrollo
-
-```bash
+npm ci
 npm run dev
 ```
 
-Abre tu navegador en [http://localhost:3000](http://localhost:3000).
+Abre http://localhost:3000 y configura `.env.local` a partir de `.env.example`. Las fotos requieren Gemini; la exploración por estilo funciona sin IA. Sin Supabase se usa `data/stores.json`, cuyo catálogo puede ser distinto del remoto.
 
----
+## Funciones y arquitectura
 
-## 📱 Pantallas Principales
+- **Una prenda:** subir, recortar y comparar una referencia. Familia y parecido visual dominan el ranking.
+- **Look completo:** 30 % visual y 70 % estilo. La pareja destacada requiere superior e inferior compatibles.
+- **Por estilo:** hasta tres estilos; cobertura declarada más bonos de especialidad y catálogo.
+- Filtros múltiples de precio y talla con OR. **Estándar es independiente de XS/S/M/L/XL.**
+- Ficha, WhatsApp y recorrido por galería y piso; guardado local y sincronización de cuenta cuando está configurada.
+- Panel `/admin` con edición y carga de prendas con vectorización.
 
-1. **Buscador Principal (`/`)**:
-   - Subida de foto con cámara o archivo.
-   - Recorte táctil con encuadre de prenda (`react-easy-crop`).
-   - Detección automática de estilos con Gemini Flash.
-   - Filtros por categoría, estilo, nivel de precio, talla y compra.
-   - Resultados agrupados por galería ordenados de mayor a menor resonancia.
-   - Indicador visual de resonancia de 3 arcos (Alta $\ge 0.85$, Media $\ge 0.70$, Exploratoria $\ge 0.55$).
-   - Modal detallado de tienda con foto comparativa más cercana y botón directo a WhatsApp.
+Next.js 15, React 19, TypeScript y Tailwind. Gemini usa `gemini-embedding-2-preview` para embeddings y los modelos de visión configurados en `lib/ai/gemini.ts` para familia, título, estilos y color.
 
-2. **Panel de Administración (`/admin`)**:
-   - Registro de nuevas tiendas de prueba.
-   - Carga masiva de fotos de prendas para el catálogo.
-   - **Vectorización automática con IA**: Al guardar la tienda, el sistema genera los embeddings de cada prenda en segundo plano usando `gemini-embedding-2`.
-   - Gestión y eliminación de tiendas del catálogo.
+Supabase guarda tiendas y prendas en JSONB, incluidos los vectores; las imágenes están en Storage. El servidor Next.js calcula coseno y ranking. **La versión actual no utiliza FashionCLIP ni consultas pgvector.** No se comparan vectores de distinta dimensión.
 
----
+`lib/ranking.ts` contiene calibración y bandas; `lib/search-scoring.ts`, los tres modos; `app/api/search/route.ts`, la orquestación. La respuesta elimina embeddings y distingue `analysisSource`: visión, respaldo por catálogo, estilos o ejemplo.
 
-## 🛠️ Arquitectura Técnica
+Bandas: Alta >= 70 %, Media 45–69 %, Exploratoria 25–44 %. Tope 99 %. Publicación: prenda >= 38 %, look >= 50 %, estilo >= 25 %. El rescate del mejor resultado desde 38 % no elude el mínimo visual y los estilos compartidos de look.
 
-* **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons.
-* **Recorte de Imágenes:** `react-easy-crop`.
-* **IA Multimodal:** Google GenAI SDK (`@google/genai`):
-  * `gemini-embedding-2`: Generación de huellas vectoriales de 768 dimensiones.
-  * `gemini-2.5-flash`: Extracción de categorías y estilos de moda en JSON estructurado.
-* **Persistencia Local:** `data/stores.json` con 3 tiendas semilla precargadas y carpeta `public/uploads/stores` para imágenes de prueba.
+## Verificación
+
+```bash
+npx tsx --test scripts/test-search-regressions.ts scripts/test-search-api.ts
+npx tsx scripts/test-ejemplo-6-3.ts
+npx tsx scripts/test-multi-select-filters.ts
+npx tsx scripts/test-admin-sizes.ts
+npx tsx scripts/eval-search.ts
+npx tsc --noEmit
+npm run build
+```
+
+`test-admin-sizes.ts` ejecuta la persistencia sobre una copia temporal local. `eval-search.ts` requiere Supabase y `.env.local`; mide recuperación interna con metadatos ya calculados, no reconocimiento de fotos nuevas.
+
+Interfaz con Playwright y Edge: `node scripts/test-search-ui.cjs`, con la app en puerto 3010 o `VIBRA_TEST_URL`. Admite `VIBRA_PLAYWRIGHT_MODULE` para una instalación externa y `VIBRA_BROWSER_CHANNEL` para otro navegador. Las respuestas simuladas prueban errores, reintento, concurrencia, tres estilos y móvil; no miden IA.
+
+Fotos externas:
+
+```bash
+npx tsx scripts/eval-external-search.ts manifest.json http://localhost:3010 resultado.json
+```
+
+Manifest: `[{ "id": "caso-1", "path": "foto.jpg", "expectedFamily": "blusa", "source": "origen" }]`. Envía fotos a la API real y registra detección, primeros resultados y fallos; no modifica tiendas.
+
+## Para la sustentación
+
+- [Ranking implementado](docs/logica-ranking-vibra-real.md).
+- [Verificación y límites de la demostración](docs/validacion-demo.md).
+
+Los Word originales conservan texto de etapas anteriores. Para explicar tecnología, fórmulas y resultados actuales utiliza estos documentos técnicos; evita mezclar FashionCLIP/pgvector históricos con Gemini.

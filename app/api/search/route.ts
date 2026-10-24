@@ -21,13 +21,41 @@ function normalizeSize(s: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image, exampleId, filters = {} } = body as {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "La búsqueda debe contener una foto o filtros válidos." }, { status: 400 });
+    }
+    const candidateFilters = body.filters ?? {};
+    if (typeof candidateFilters !== "object" || Array.isArray(candidateFilters)) {
+      return NextResponse.json({ error: "Los filtros de búsqueda no son válidos." }, { status: 400 });
+    }
+    for (const key of ["styles", "sizes", "priceLevels", "purchaseTypes"]) {
+      const values = candidateFilters[key];
+      if (values !== undefined && (!Array.isArray(values) || values.some((value: unknown) => typeof value !== "string"))) {
+        return NextResponse.json({ error: "Selecciona opciones válidas para los filtros." }, { status: 400 });
+      }
+    }
+    for (const key of ["category", "priceLevel", "size", "purchaseType", "searchMode"]) {
+      if (candidateFilters[key] !== undefined && typeof candidateFilters[key] !== "string") {
+        return NextResponse.json({ error: "Selecciona opciones válidas para los filtros." }, { status: 400 });
+      }
+    }
+    if (candidateFilters.styles?.length > 3) {
+      return NextResponse.json({ error: "Elige hasta 3 estilos para comparar las tiendas." }, { status: 400 });
+    }
+    if (candidateFilters.searchMode && !["prenda", "look", "estilo"].includes(candidateFilters.searchMode)) {
+      return NextResponse.json({ error: "El modo de búsqueda no es válido." }, { status: 400 });
+    }
+    if (body.image !== undefined && (typeof body.image !== "string" || !/^data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=\s]+$/.test(body.image))) {
+      return NextResponse.json({ error: "Sube una imagen válida para buscar prendas." }, { status: 400 });
+    }
+    const { image, exampleId, filters = {} } = { ...body, filters: candidateFilters } as {
       image?: string;
       exampleId?: string;
       filters?: SearchFilters;
     };
 
     let queryVector: number[] | null = null;
+    let analysisSource: "vision" | "catalog" | "styles" | "example" = "styles";
     let detectedInfo: {
       category: string;
       garmentFamily?: string;
@@ -67,6 +95,7 @@ export async function POST(req: NextRequest) {
         description: "Filtrado directo por estética y especialidad de tiendas en Gamarra",
       };
     } else if (image) {
+      analysisSource = "vision";
       // Subida de imagen real por la usuaria (Prenda individual o Look completo)
       const [embedding, analysis] = await Promise.all([
         generateImageEmbedding(image),
@@ -79,10 +108,17 @@ export async function POST(req: NextRequest) {
       ]);
 
       queryVector = embedding;
+      if (!queryVector?.length || !queryVector.every(Number.isFinite)) {
+        return NextResponse.json(
+          { error: "No pudimos comparar tu foto en este momento. Reintenta la búsqueda o explora por estilo." },
+          { status: 503 }
+        );
+      }
 
       // Si la IA de visión no respondió, inferimos tipo de prenda y estilos
       // a partir de las fotos del catálogo más parecidas (el embedding sí funcionó).
       if (analysis.isFallback && queryVector && queryVector.length > 0) {
+        analysisSource = "catalog";
         const neighbors = allGarments
           .filter((g) => g.embedding && g.embedding.length === queryVector!.length)
           .map((g) => ({ g, sim: cosineSimilarity(queryVector!, g.embedding!) }))
@@ -138,6 +174,7 @@ export async function POST(req: NextRequest) {
         description: analysis.description || "",
       };
     } else if (exampleId) {
+      analysisSource = "example";
       // Caso de ejemplo rápido predeterminado
       let targetGarment = null;
 
@@ -214,10 +251,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let isApproximateSearch = false;
     if (searchMode !== "estilo" && (!queryVector || queryVector.length === 0)) {
       if (detectedInfo.category && detectedInfo.category !== "Prenda de referencia") {
-        isApproximateSearch = true;
+        return NextResponse.json(
+          { error: "La referencia no tiene un vector visual disponible. Intenta con otra foto o busca por estilo." },
+          { status: 503 }
+        );
       } else {
         return NextResponse.json(
           { error: "No se proporcionó imagen ni ejemplo válido." },
@@ -377,6 +416,7 @@ export async function POST(req: NextRequest) {
       qualifiedResults: passedResonance,
       groupedByGallery,
       detectedInfo,
+      analysisSource,
       stats: {
         totalStores: allStores.length,
         passedFilters: passedFiltersCount,

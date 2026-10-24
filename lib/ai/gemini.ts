@@ -220,7 +220,7 @@ export async function detectGarmentStyles(
         };
 
   if (!client || !base64Data) {
-    return fallback;
+    return { ...fallback, isFallback: true };
   }
 
   const { cleanBase64, mimeType: optMime } = await optimizeImageForAi(base64Data);

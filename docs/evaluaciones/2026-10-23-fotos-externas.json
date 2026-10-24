@@ -1,0 +1,536 @@
+{
+  "summary": {
+    "total": 16,
+    "completed": 16,
+    "failures": 0,
+    "recognized": 12,
+    "recognitionRateAmongCompleted": 0.75,
+    "top3FamilyMatches": 36,
+    "top3Slots": 48
+  },
+  "cases": [
+    {
+      "id": "fashion-26960",
+      "title": "Jealous 21 Women Purple Shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=7",
+      "expectedFamily": "blusa",
+      "status": 200,
+      "elapsedMs": 19853,
+      "analysisSource": "catalog",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": true,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Vanana",
+          "garment": "Blusa beige cuello nerú",
+          "score": 0.83,
+          "familyCorrect": true
+        },
+        {
+          "store": "Banaty",
+          "garment": "Blusa estructurada celeste",
+          "score": 0.76,
+          "familyCorrect": true
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Camisa de algodón amarillo pastel",
+          "score": 0.68,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-3954",
+      "title": "Jealous 21 Women's Pink T-shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=39",
+      "expectedFamily": "polo_top",
+      "status": 200,
+      "elapsedMs": 5237,
+      "analysisSource": "vision",
+      "detectedFamily": "polo_top",
+      "recognitionCorrect": true,
+      "resultCount": 21,
+      "top3": [
+        {
+          "store": "I Am Poser",
+          "garment": "Conjunto Y2K de top y pantalón rosado",
+          "score": 0.89,
+          "familyCorrect": true
+        },
+        {
+          "store": "Speakers",
+          "garment": "Polo rosa con frase",
+          "score": 0.86,
+          "familyCorrect": true
+        },
+        {
+          "store": "HiBabe",
+          "garment": "Top básico de tirantes",
+          "score": 0.86,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-38630",
+      "title": "Nike Women Purple Polo T-shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=56",
+      "expectedFamily": "polo_top",
+      "status": 200,
+      "elapsedMs": 1982,
+      "analysisSource": "vision",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": false,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Vanana",
+          "garment": "Blusa rosada con botones y cuello mao",
+          "score": 0.78,
+          "familyCorrect": false
+        },
+        {
+          "store": "Banaty",
+          "garment": "Blusa amarilla entallada",
+          "score": 0.75,
+          "familyCorrect": false
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Blusa celeste clásica de manga larga",
+          "score": 0.63,
+          "familyCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "fashion-39716",
+      "title": "Arrow Woman Women Blue Dress",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=92",
+      "expectedFamily": "vestido",
+      "status": 200,
+      "elapsedMs": 3728,
+      "analysisSource": "vision",
+      "detectedFamily": "vestido",
+      "recognitionCorrect": true,
+      "resultCount": 11,
+      "top3": [
+        {
+          "store": "Cielo Boutique",
+          "garment": "Vestido beige corto manga larga",
+          "score": 0.76,
+          "familyCorrect": true
+        },
+        {
+          "store": "Aura",
+          "garment": "Vestido largo tejido halter",
+          "score": 0.76,
+          "familyCorrect": true
+        },
+        {
+          "store": "Ms ashira",
+          "garment": "Vestido corto acampanado celeste",
+          "score": 0.73,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-28456",
+      "title": "Urban Yoga Women Blue Skirt With Leggings",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=98",
+      "expectedFamily": "falda_short",
+      "status": 200,
+      "elapsedMs": 2659,
+      "analysisSource": "vision",
+      "detectedFamily": "pantalon_jean",
+      "recognitionCorrect": false,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Bruzh fit",
+          "garment": "Leggings deportivos beige de tiro alto",
+          "score": 0.76,
+          "familyCorrect": false
+        },
+        {
+          "store": "Mirana Fit",
+          "garment": "Leggings deportivos fucsia",
+          "score": 0.73,
+          "familyCorrect": false
+        },
+        {
+          "store": "Milano 14",
+          "garment": "Pantalón wide leg con detalle cruzado",
+          "score": 0.68,
+          "familyCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "fashion-26994",
+      "title": "Jealous 21 Women Black Jeans",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=116",
+      "expectedFamily": "pantalon_jean",
+      "status": 200,
+      "elapsedMs": 4885,
+      "analysisSource": "vision",
+      "detectedFamily": "pantalon_jean",
+      "recognitionCorrect": true,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Milano 14",
+          "garment": "Pantalón wide leg con detalle cruzado",
+          "score": 0.79,
+          "familyCorrect": true
+        },
+        {
+          "store": "Mirana Fit",
+          "garment": "Leggings deportivos negros de tiro alto",
+          "score": 0.79,
+          "familyCorrect": true
+        },
+        {
+          "store": "Alene for you",
+          "garment": "Pantalón sastre wide leg negro",
+          "score": 0.71,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-15341",
+      "title": "Nike Women Solid Pink Shorts",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=192",
+      "expectedFamily": "falda_short",
+      "status": 200,
+      "elapsedMs": 5487,
+      "analysisSource": "vision",
+      "detectedFamily": "falda_short",
+      "recognitionCorrect": true,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Bruzh fit",
+          "garment": "Short deportivo rosa",
+          "score": 0.91,
+          "familyCorrect": true
+        },
+        {
+          "store": "Mirana Fit",
+          "garment": "Short deportivo para running",
+          "score": 0.76,
+          "familyCorrect": true
+        },
+        {
+          "store": "Joly",
+          "garment": "Falda mini de lentejuelas con cadena",
+          "score": 0.75,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-7193",
+      "title": "Jealous 21 Women Black Jegging",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=202",
+      "expectedFamily": "pantalon_jean",
+      "status": 200,
+      "elapsedMs": 10668,
+      "analysisSource": "vision",
+      "detectedFamily": "pantalon_jean",
+      "recognitionCorrect": true,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Pixie",
+          "garment": "Jean acampanado azul con lavado desgastado",
+          "score": 0.88,
+          "familyCorrect": true
+        },
+        {
+          "store": "Speakers",
+          "garment": "Jean wide leg con pretina sobrepuesta",
+          "score": 0.84,
+          "familyCorrect": true
+        },
+        {
+          "store": "Abril 87",
+          "garment": "Jean flare con detalles bordados",
+          "score": 0.81,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-6889",
+      "title": "Forever New Women Stone Cream Jacket",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=255",
+      "expectedFamily": "casaca",
+      "status": 200,
+      "elapsedMs": 7721,
+      "analysisSource": "vision",
+      "detectedFamily": "casaca",
+      "recognitionCorrect": true,
+      "resultCount": 12,
+      "top3": [
+        {
+          "store": "Vanana",
+          "garment": "Chaleco sastre beige con cinturón",
+          "score": 0.91,
+          "familyCorrect": true
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Chaleco tejido de punto con botones",
+          "score": 0.8,
+          "familyCorrect": true
+        },
+        {
+          "store": "Isabella Merino",
+          "garment": "Blazer sastre entallado marfil",
+          "score": 0.8,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-4988",
+      "title": "Gini and Jony Girl's Vanya White Polka Dot Kidswear",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=301",
+      "expectedFamily": "vestido",
+      "status": 200,
+      "elapsedMs": 14570,
+      "analysisSource": "catalog",
+      "detectedFamily": "falda_short",
+      "recognitionCorrect": false,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Cielo Boutique",
+          "garment": "Falda blanca con capas",
+          "score": 0.88,
+          "familyCorrect": false
+        },
+        {
+          "store": "Joly",
+          "garment": "Conjunto brillante de fiesta",
+          "score": 0.84,
+          "familyCorrect": false
+        },
+        {
+          "store": "Allisson-Sofia",
+          "garment": "Look 1: Conjunto de top y falda metalizados",
+          "score": 0.79,
+          "familyCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "fashion-49654",
+      "title": "Mineral Women Grey Skirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=389",
+      "expectedFamily": "falda_short",
+      "status": 200,
+      "elapsedMs": 10975,
+      "analysisSource": "vision",
+      "detectedFamily": "falda_short",
+      "recognitionCorrect": true,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Chic Girls",
+          "garment": "Conjunto romántico top de encaje y falda midi",
+          "score": 0.83,
+          "familyCorrect": true
+        },
+        {
+          "store": "Cielo Boutique",
+          "garment": "Conjunto floral de top y falda con volantes",
+          "score": 0.83,
+          "familyCorrect": true
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Falda larga beige con lunares y volantes",
+          "score": 0.79,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-32903",
+      "title": "Allen Solly Women Red Shorts",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=440",
+      "expectedFamily": "falda_short",
+      "status": 200,
+      "elapsedMs": 6742,
+      "analysisSource": "vision",
+      "detectedFamily": "falda_short",
+      "recognitionCorrect": true,
+      "resultCount": 17,
+      "top3": [
+        {
+          "store": "Bruzh fit",
+          "garment": "Short deportivo burdeos",
+          "score": 0.8,
+          "familyCorrect": true
+        },
+        {
+          "store": "Banaty",
+          "garment": "Short estampado estilo vaca",
+          "score": 0.75,
+          "familyCorrect": true
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Short sastre azul marino con pinzas",
+          "score": 0.75,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-26369",
+      "title": "Arrow Woman Blue Shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=447",
+      "expectedFamily": "blusa",
+      "status": 200,
+      "elapsedMs": 8225,
+      "analysisSource": "vision",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": true,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Banaty",
+          "garment": "Blusa estructurada celeste",
+          "score": 0.85,
+          "familyCorrect": true
+        },
+        {
+          "store": "Vanana",
+          "garment": "Blusa beige cuello nerú",
+          "score": 0.84,
+          "familyCorrect": true
+        },
+        {
+          "store": "Milano 14",
+          "garment": "Blusa satinada de un solo hombro",
+          "score": 0.78,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-6887",
+      "title": "Forever New Women Indigo Wash Blue Jacket",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=728",
+      "expectedFamily": "casaca",
+      "status": 200,
+      "elapsedMs": 2729,
+      "analysisSource": "vision",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": false,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Abril 87",
+          "garment": "Blusa de crochet bordada con peplum",
+          "score": 0.86,
+          "familyCorrect": false
+        },
+        {
+          "store": "Zahid Zaroa",
+          "garment": "Blusa tie dye con botones y bolsillos",
+          "score": 0.8,
+          "familyCorrect": false
+        },
+        {
+          "store": "Banaty",
+          "garment": "Blusa estructurada celeste",
+          "score": 0.78,
+          "familyCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "fashion-25527",
+      "title": "Wrangler Women Stella Green Shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=548",
+      "expectedFamily": "blusa",
+      "status": 200,
+      "elapsedMs": 14563,
+      "analysisSource": "catalog",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": true,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Vanana",
+          "garment": "Blusa rosada con botones y cuello mao",
+          "score": 0.84,
+          "familyCorrect": true
+        },
+        {
+          "store": "Banaty",
+          "garment": "Blusa amarilla entallada",
+          "score": 0.79,
+          "familyCorrect": true
+        },
+        {
+          "store": "Pepuño",
+          "garment": "Camisa de algodón amarillo pastel",
+          "score": 0.79,
+          "familyCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "fashion-26958",
+      "title": "Jealous 21 Women Teal Shirt",
+      "source": "https://huggingface.co/datasets/ashraq/fashion-product-images-small/viewer/default/train?row=578",
+      "expectedFamily": "blusa",
+      "status": 200,
+      "elapsedMs": 8165,
+      "analysisSource": "vision",
+      "detectedFamily": "blusa",
+      "recognitionCorrect": true,
+      "resultCount": 13,
+      "top3": [
+        {
+          "store": "Vanana",
+          "garment": "Blusa beige cuello nerú",
+          "score": 0.85,
+          "familyCorrect": true
+        },
+        {
+          "store": "Banaty",
+          "garment": "Blusa estructurada celeste",
+          "score": 0.83,
+          "familyCorrect": true
+        },
+        {
+          "store": "Milano 14",
+          "garment": "Blusa satinada de un solo hombro",
+          "score": 0.81,
+          "familyCorrect": true
+        }
+      ]
+    }
+  ],
+  "methodology": {
+    "dataset": "https://huggingface.co/datasets/ashraq/fashion-product-images-small",
+    "sample": "16 imágenes ajenas al catálogo, 60 x 80 px, etiquetas de origen; seis familias oficiales, sin chompa ni conjunto. No es una muestra representativa.",
+    "date": "2026-10-23",
+    "limitations": [
+      "Etiquetas ambiguas: falda con leggings y chaqueta superpuesta sobre blusa.",
+      "Imágenes pequeñas; no valida fotos de celular, fondos difíciles, cortes ni materiales.",
+      "Vision puede variar entre consultas; se informa la primera pasada completa sin escoger reintentos favorables.",
+      "Los resultados de ranking están condicionados a la familia detectada."
+    ]
+  }
+}

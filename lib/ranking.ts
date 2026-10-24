@@ -120,14 +120,15 @@ export function extractGarmentFamily(
  * Calcula la similitud de coseno entre dos vectores numéricos
  */
 export function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
+  if (!vecA || !vecB || vecA.length === 0 || vecA.length !== vecB.length) return 0;
 
-  const length = Math.min(vecA.length, vecB.length);
+  const length = vecA.length;
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
 
   for (let i = 0; i < length; i++) {
+    if (!Number.isFinite(vecA[i]) || !Number.isFinite(vecB[i])) return 0;
     dotProduct += vecA[i] * vecB[i];
     normA += vecA[i] * vecA[i];
     normB += vecB[i] * vecB[i];

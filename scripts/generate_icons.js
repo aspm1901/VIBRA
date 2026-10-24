@@ -27,14 +27,12 @@ async function generateAllVibraIcons() {
 
   // 1. 512x512 Master PWA / Web icon
   const icon512 = await sharp(svgBuffer).resize(512, 512).png().toBuffer();
-  fs.writeFileSync('public/icon.png', icon512);
   fs.writeFileSync('app/icon.png', icon512);
   fs.writeFileSync('public/logo_vibra_badge.png', icon512);
 
   // 2. 180x180 Apple Touch Icon (iOS home screen & Safari bookmarks)
   const apple180 = await sharp(svgBuffer).resize(180, 180).png().toBuffer();
   fs.writeFileSync('app/apple-icon.png', apple180);
-  fs.writeFileSync('public/apple-icon.png', apple180);
 
   // 3. 48x48 Favicon
   const fav48 = await sharp(svgBuffer).resize(48, 48).png().toBuffer();
@@ -45,11 +43,9 @@ async function generateAllVibraIcons() {
   fs.writeFileSync('public/favicon-32x32.png', fav32);
 
   // 5. favicon.ico (Standard browser tab icon)
-  fs.writeFileSync('public/favicon.ico', fav32);
   fs.writeFileSync('app/favicon.ico', fav32);
 
   // 6. SVG vector icon for ultra-sharp retina displays
-  fs.writeFileSync('public/icon.svg', svgBadge);
   fs.writeFileSync('app/icon.svg', svgBadge);
 
   console.log('✅ Todos los favicons e iconos oficiales de Vibra fueron generados con éxito!');

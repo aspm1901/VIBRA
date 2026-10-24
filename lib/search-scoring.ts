@@ -10,6 +10,7 @@ import {
   roundScore,
   cleanStyleStr,
   MAX_RESONANCE,
+  scalePerceptualSimilarity,
   type GarmentFamily,
 } from "@/lib/ranking";
 
@@ -170,6 +171,7 @@ export interface PrendaQuery {
 }
 
 export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem | null {
+  if (!q.queryVector?.length) return null;
   if (q.queryFamily !== "otro" && !doesStoreSellFamily(store, q.queryFamily)) {
     // La tienda no confecciona ni vende esta familia de prendas
     return null;
@@ -182,9 +184,10 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
   let maxComparisonScore = -1;
 
   for (const garment of store.garments) {
-    if (!garment.embedding || garment.embedding.length === 0) continue;
+    if (!garment.embedding || garment.embedding.length !== q.queryVector.length) continue;
     const sim =
       q.queryVector && q.queryVector.length > 0 ? cosineSimilarity(q.queryVector, garment.embedding) : 0;
+    if (sim <= 0) continue;
     const familyRelation = getFamilyRelation(q.queryFamily, garment);
 
     // Conteo de prendas del mismo tipo con similitud aceptable (para bono de variedad)
@@ -211,7 +214,7 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
     }
   }
 
-  if (!bestGarment) return null;
+  if (!bestGarment || maxComparisonScore < 0) return null;
 
   // Estilos de la tienda + estilos específicos de la prenda ganadora
   const combinedStoreAndGarmentStyles = Array.from(
@@ -273,6 +276,7 @@ export const ESTILO_BONO_INSIGNIA = 0.06;
 export const ESTILO_BONO_CATALOGO_MAX = 0.07;
 
 export function scoreEstiloStore(store: Store, activeStyles: string[]): SearchResultItem | null {
+  if (store.garments.length === 0) return null;
   const { score: storeStyleScore, matchingCount } = calculateStyleMatch(activeStyles, store.styles);
   if (activeStyles.length > 0 && matchingCount === 0) return null;
 
@@ -322,40 +326,22 @@ export interface LookQuery {
 }
 
 function isBottomGarment(g: StoreGarment): boolean {
-  const cat = (g.category || "").toLowerCase();
-  const name = g.name.toLowerCase();
-  return (
-    cat.includes("jean") ||
-    cat.includes("pantalon") ||
-    cat.includes("falda") ||
-    name.includes("jean") ||
-    name.includes("pantalon") ||
-    name.includes("palazzo")
-  );
+  const family = extractGarmentFamily(g.name, g.category, g.garmentFamily);
+  return family === "pantalon_jean" || family === "falda_short";
 }
 
 function isTopGarment(g: StoreGarment): boolean {
-  const cat = (g.category || "").toLowerCase();
-  const name = g.name.toLowerCase();
-  return (
-    cat.includes("polo") ||
-    cat.includes("top") ||
-    cat.includes("blusa") ||
-    cat.includes("chompa") ||
-    cat.includes("casaca") ||
-    name.includes("blazer") ||
-    name.includes("polo") ||
-    name.includes("top") ||
-    name.includes("blusa") ||
-    name.includes("casaca")
-  );
+  const family = extractGarmentFamily(g.name, g.category, g.garmentFamily);
+  return ["polo_top", "blusa", "chompa", "casaca"].includes(family);
 }
 
 export function scoreLookStore(store: Store, q: LookQuery): SearchResultItem | null {
+  if (!q.queryVector?.length || q.activeStyles.length === 0) return null;
   let bestGarment = store.garments[0];
   let maxPhotoSim = 0;
 
   const scoredGarments = store.garments
+    .filter((garment) => garment.embedding?.length === q.queryVector!.length)
     .map((garment) => {
       const sim =
         garment.embedding && garment.embedding.length > 0 && q.queryVector && q.queryVector.length > 0
@@ -366,7 +352,11 @@ export function scoreLookStore(store: Store, q: LookQuery): SearchResultItem | n
       const lookScore = 0.65 * garmentAffinity + 0.35 * sim;
       return { garment, sim, garmentAffinity, lookScore };
     })
+    // El estilo no puede compensar una prenda sin parecido visual suficiente.
+    .filter((sg) => sg.sim > 0 && scalePerceptualSimilarity(sg.sim, "neutral") >= 0.45)
     .sort((a, b) => b.lookScore - a.lookScore);
+
+  if (scoredGarments.length === 0) return null;
 
   const matchingGarments: StoreGarment[] = [];
 
@@ -374,18 +364,11 @@ export function scoreLookStore(store: Store, q: LookQuery): SearchResultItem | n
     bestGarment = scoredGarments[0].garment;
     maxPhotoSim = scoredGarments[0].sim;
 
-    // Prendas que arman el look (ej. prenda superior + prenda inferior)
-    const seenTypes = new Set<string>();
-    for (const sg of scoredGarments) {
-      if (matchingGarments.length >= 2) break;
-      if (sg.lookScore >= 0.45) {
-        const cat = (sg.garment.category || "").toLowerCase();
-        const typeKey = isBottomGarment(sg.garment) ? "bottom" : isTopGarment(sg.garment) ? "top" : cat;
-        if (!seenTypes.has(typeKey)) {
-          seenTypes.add(typeKey);
-          matchingGarments.push(sg.garment);
-        }
-      }
+    // La pareja destacada requiere una superior y una inferior, ambas ya filtradas por parecido.
+    const top = scoredGarments.find((sg) => isTopGarment(sg.garment) && sg.garmentAffinity >= 0.45);
+    const bottom = scoredGarments.find((sg) => isBottomGarment(sg.garment) && sg.garmentAffinity >= 0.45);
+    if (top && bottom) {
+      matchingGarments.push(top.garment, bottom.garment);
     }
   }
 

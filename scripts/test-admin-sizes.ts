@@ -1,42 +1,46 @@
-import { getAllStores, saveStore } from "../lib/stores-db";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 async function main() {
-  console.log("=== Verificando persistencia de tallas al editar tiendas ===");
-  const stores = await getAllStores();
-  if (stores.length === 0) {
-    console.log("No hay tiendas cargadas.");
+  if (process.env.VIBRA_SIZES_TEST_WORKER !== "1") {
+    const projectRoot = process.cwd();
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "vibra-sizes-test-"));
+    fs.mkdirSync(path.join(directory, "data"));
+    fs.copyFileSync(path.join(projectRoot, "data/stores.json"), path.join(directory, "data/stores.json"));
+    const env = { ...process.env, VIBRA_SIZES_TEST_WORKER: "1", TSX_TSCONFIG_PATH: path.join(projectRoot, "tsconfig.json") };
+    for (const key of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY"]) {
+      delete (env as Record<string, string | undefined>)[key];
+    }
+    const result = spawnSync(process.execPath, [...process.execArgv, path.resolve(process.argv[1])], {
+      cwd: directory, env, stdio: "inherit",
+    });
+    if (result.error) throw result.error;
+    process.exitCode = result.status ?? 1;
+    // Solo se elimina el directorio temporal exacto creado por esta prueba.
+    if (path.dirname(directory) === path.resolve(os.tmpdir()) && path.basename(directory).startsWith("vibra-sizes-test-")) {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
     return;
   }
 
+  const { getAllStores, saveStore } = await import("../lib/stores-db");
+  const stores = await getAllStores();
+  assert.ok(stores.length > 0, "La copia local debe contener tiendas");
   const target = stores[0];
-  console.log(`Tienda seleccionada: ${target.name} (${target.id})`);
-  console.log("Tallas iniciales:", target.sizes);
-
-  const originalSizes = [...target.sizes];
   const testSizes = ["XS", "S", "M", "L", "XL", "Estándar", "32"];
-
-  console.log("\nSimulando actualización desde Panel Admin (PUT) con nuevas tallas...");
-  await saveStore({ ...target, sizes: testSizes });
-
-  const storesAfter = await getAllStores();
-  const updatedTarget = storesAfter.find((s) => s.id === target.id);
-  console.log("Tallas leídas luego de guardar:", updatedTarget?.sizes);
-
-  const isExactMatch =
-    JSON.stringify(updatedTarget?.sizes) === JSON.stringify(testSizes);
-
-  if (isExactMatch) {
-    console.log("✅ ÉXITO: Las tallas se guardan y persisten al 100%.");
-  } else {
-    console.error("❌ ERROR: Las tallas no coinciden.");
+  try {
+    await saveStore({ ...target, sizes: testSizes });
+    const updated = (await getAllStores()).find(store => store.id === target.id);
+    assert.deepEqual(updated?.sizes, testSizes);
+    console.log("PASÓ: persistencia exacta de tallas múltiples, Estándar y talla numérica en copia aislada.");
+  } finally {
+    await saveStore(target);
   }
-
-  // Restaurar tallas originales para no alterar datos existentes
-  await saveStore({ ...target, sizes: originalSizes });
-  const storesRestored = await getAllStores();
-  const restoredTarget = storesRestored.find((s) => s.id === target.id);
-  console.log("Tallas restauradas a su valor original:", restoredTarget?.sizes);
-  console.log("✅ Restauración completada.");
+  assert.deepEqual((await getAllStores()).find(store => store.id === target.id)?.sizes, target.sizes);
+  console.log("PASÓ: restauración de la copia. Catálogo original y Supabase sin modificaciones.");
 }
 
-main().catch(console.error);
+main().catch(error => { console.error(error); process.exitCode = 1; });
