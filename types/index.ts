@@ -32,7 +32,7 @@ export interface Store {
   standPhotoUrl: string;
   instagram?: string;
   tiktok?: string;
-  updatedAt: string;
+  updatedAt: string; // ISO 8601 con zona horaria en nuevos guardados; las fichas antiguas pueden contener texto relativo.
   garments: StoreGarment[];
   latitude?: number;
   longitude?: number;

@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
       standPhotoUrl,
       instagram: instagram ? String(instagram).trim() : undefined,
       tiktok: tiktok ? String(tiktok).trim() : undefined,
-      updatedAt: "Recién agregada",
+      updatedAt: new Date().toISOString(),
       garments: processedGarments,
       latitude: latitude ? Number(latitude) : undefined,
       longitude: longitude ? Number(longitude) : undefined,
@@ -376,7 +376,7 @@ export async function PUT(req: NextRequest) {
             ? String(tiktok).trim()
             : undefined
           : existingStore.tiktok,
-      updatedAt: "Actualizada recientemente",
+      updatedAt: new Date().toISOString(),
       garments: finalGarments,
       latitude: latitude !== undefined ? (latitude ? Number(latitude) : undefined) : existingStore.latitude,
       longitude: longitude !== undefined ? (longitude ? Number(longitude) : undefined) : existingStore.longitude,

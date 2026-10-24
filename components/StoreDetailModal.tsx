@@ -10,9 +10,11 @@ import {
   ExternalLink,
   Plus,
   Check,
+  Clock,
 } from "lucide-react";
 import { useRoute } from "./RouteContext";
 import { RadarArcIcon } from "./RadarArcIcon";
+import { formatStoreUpdatedAt } from "@/lib/store-updated-at";
 
 interface StoreDetailModalProps {
   item: SearchResultItem | null;
@@ -59,6 +61,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
   const { store, bestGarment, matchingGarments, resonanceScore } = item;
   const formattedScore = `${Math.round(resonanceScore * 100)}%`;
+  const lastUpdated = formatStoreUpdatedAt(store.updatedAt);
 
   const garmentsMention =
     item.searchMode === "look" && matchingGarments && matchingGarments.length > 1
@@ -116,6 +119,21 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
         {/* Contenido desplazable único (sin doble scrollbar) */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 py-4">
+
+        <div className="flex items-start gap-2.5 rounded-xl bg-caliza-5 px-3.5 py-3">
+          <Clock className="w-4 h-4 text-grafito-55 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="min-w-0 text-[12px] leading-[18px]">
+            <span className="block font-medium text-basalto-90">Última actualización de la ficha</span>
+            {lastUpdated ? (
+              <p className="text-grafito-55 mt-0.5">
+                <time dateTime={lastUpdated.dateTime}>{lastUpdated.label}</time>
+                <span className="block text-[11px]">Hora de Lima</span>
+              </p>
+            ) : (
+              <p className="text-grafito-55 mt-0.5">Fecha exacta no registrada</p>
+            )}
+          </div>
+        </div>
 
         {/* Rejilla fotográfica sobre el pliegue: Imagen principal 4:5 + mampostería de 3 columnas (Pág. 13) */}
         {item.searchMode === "look" && matchingGarments && matchingGarments.length > 1 ? (

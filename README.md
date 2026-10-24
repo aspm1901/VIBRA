@@ -20,6 +20,7 @@ Abre http://localhost:3000 y configura `.env.local` a partir de `.env.example`. 
 - **Por estilo:** hasta tres estilos; cobertura declarada más bonos de especialidad y catálogo.
 - Filtros múltiples de precio y talla con OR. **Estándar es independiente de XS/S/M/L/XL.**
 - Ficha, WhatsApp y recorrido por galería y piso; guardado local y sincronización de cuenta cuando está configurada.
+- Última actualización de la ficha con fecha y hora de Lima. Los nuevos guardados registran el instante real; las fichas históricas sin fecha exacta lo indican.
 - Panel `/admin` con edición y carga de prendas con vectorización.
 
 Next.js 15, React 19, TypeScript y Tailwind. Gemini usa `gemini-embedding-2-preview` para embeddings y los modelos de visión configurados en `lib/ai/gemini.ts` para familia, título, estilos y color.
@@ -34,6 +35,7 @@ Bandas: Alta >= 70 %, Media 45–69 %, Exploratoria 25–44 %. Tope 99 %. Public
 
 ```bash
 npx tsx --test scripts/test-search-regressions.ts scripts/test-search-api.ts
+npx tsx --test scripts/test-store-updated-at.ts
 npx tsx scripts/test-ejemplo-6-3.ts
 npx tsx scripts/test-multi-select-filters.ts
 npx tsx scripts/test-admin-sizes.ts

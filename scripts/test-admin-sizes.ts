@@ -36,6 +36,20 @@ async function main() {
     const updated = (await getAllStores()).find(store => store.id === target.id);
     assert.deepEqual(updated?.sizes, testSizes);
     console.log("PASÓ: persistencia exacta de tallas múltiples, Estándar y talla numérica en copia aislada.");
+
+    const { PUT } = await import("../app/api/admin/stores/route");
+    const { NextRequest } = await import("next/server");
+    const beforeSave = Date.now();
+    const response = await PUT(new NextRequest("http://localhost/api/admin/stores", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...target, updatedAt: "2099-01-01T00:00:00Z", existingGarments: target.garments, newGarmentsData: [] }),
+    }));
+    assert.equal(response.status, 200);
+    const saved = (await response.json()).store;
+    assert.match(saved.updatedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    assert.ok(Date.parse(saved.updatedAt) >= beforeSave && Date.parse(saved.updatedAt) <= Date.now());
+    assert.equal((await getAllStores()).find(store => store.id === target.id)?.updatedAt, saved.updatedAt);
+    console.log("PASÓ: editar la ficha registra y persiste fecha y hora del servidor, sin aceptar fechas del cliente.");
   } finally {
     await saveStore(target);
   }
