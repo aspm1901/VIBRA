@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useRoute } from "./RouteContext";
 import { RadarArcIcon } from "./RadarArcIcon";
-import { formatStoreUpdatedAt } from "@/lib/store-updated-at";
+import { getStoreActivityDate } from "@/lib/store-updated-at";
 
 interface StoreDetailModalProps {
   item: SearchResultItem | null;
@@ -61,7 +61,7 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
 
   const { store, bestGarment, matchingGarments, resonanceScore } = item;
   const formattedScore = `${Math.round(resonanceScore * 100)}%`;
-  const lastUpdated = formatStoreUpdatedAt(store.updatedAt);
+  const activityDate = getStoreActivityDate(store);
 
   const garmentsMention =
     item.searchMode === "look" && matchingGarments && matchingGarments.length > 1
@@ -123,10 +123,10 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
         <div className="flex items-start gap-2.5 rounded-xl bg-caliza-5 px-3.5 py-3">
           <Clock className="w-4 h-4 text-grafito-55 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0 text-[12px] leading-[18px]">
-            <span className="block font-medium text-basalto-90">Última actualización de la ficha</span>
-            {lastUpdated ? (
+            <span className="block font-medium text-basalto-90">{activityDate?.title || "Última actualización de la ficha"}</span>
+            {activityDate ? (
               <p className="text-grafito-55 mt-0.5">
-                <time dateTime={lastUpdated.dateTime}>{lastUpdated.label}</time>
+                <time dateTime={activityDate.dateTime}>{activityDate.label}</time>
                 <span className="block text-[11px]">Hora de Lima</span>
               </p>
             ) : (

@@ -201,6 +201,7 @@ function mapRowToStore(row: any): Store {
     instagram: row.instagram || undefined,
     tiktok,
     updatedAt: row.updated_at || row.updatedAt || "",
+    createdAt: row.created_at || row.createdAt || undefined,
     garments: cleanGarments,
     latitude: lat !== null && lat !== undefined ? Number(lat) : undefined,
     longitude: lng !== null && lng !== undefined ? Number(lng) : undefined,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatStoreUpdatedAt } from "../lib/store-updated-at";
+import { formatStoreUpdatedAt, getStoreActivityDate } from "../lib/store-updated-at";
 
 test("la fecha exacta se presenta siempre en hora de Lima", () => {
   const result = formatStoreUpdatedAt("2026-10-24T02:05:00.000Z");
@@ -24,4 +24,22 @@ test("las fichas históricas y fechas sin hora no reciben una hora inventada", (
 
 test("una fecha imposible se trata como información no disponible", () => {
   assert.equal(formatStoreUpdatedAt("2026-99-99T25:99:00Z"), null);
+});
+
+test("una ficha histórica muestra el registro exacto de Supabase, con su etiqueta propia", () => {
+  const result = getStoreActivityDate({ updatedAt: "Actualizada recientemente", createdAt: "2026-10-22T21:37:25.864552+00:00" });
+  assert.equal(result?.title, "Registrada el");
+  assert.equal(result?.dateTime, "2026-10-22T21:37:25.864Z");
+  assert.match(result?.label || "", /22 de octubre de 2026.*4:37/);
+});
+
+test("la última edición exacta tiene prioridad sobre la fecha de registro", () => {
+  const result = getStoreActivityDate({ updatedAt: "2026-10-24T02:05:00Z", createdAt: "2026-10-22T21:37:25Z" });
+  assert.equal(result?.title, "Última actualización de la ficha");
+  assert.equal(result?.dateTime, "2026-10-24T02:05:00.000Z");
+});
+
+test("sin fechas precisas disponibles se conserva el aviso de fecha no registrada", () => {
+  assert.equal(getStoreActivityDate({ updatedAt: "Hace 14 días" }), null);
+  assert.equal(getStoreActivityDate({ updatedAt: "", createdAt: "2026-10-22" }), null);
 });

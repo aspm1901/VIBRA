@@ -11,10 +11,11 @@ const { chromium } = require(process.env.VIBRA_PLAYWRIGHT_MODULE || "playwright"
     // El dispositivo está en otra zona: la ficha debe seguir mostrando Lima.
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, timezoneId: "Asia/Tokyo" });
     let updatedAt = "2026-10-24T02:05:00.000Z";
+    let createdAt = "2026-10-22T21:37:25.864552+00:00";
     const garment = { id: "g1", storeId: "test", name: "Blusa blanca", photoUrl: "/images/garments/blusa_beige.jpg", category: "Blusas", styles: ["Casual"] };
     await page.route("**/api/search", route => route.fulfill({ status: 200, json: {
       success: true, qualifiedResults: [{
-        store: { id: "test", name: "Tienda de ejemplo", gallery: "Galería Santa Rosa", galleryAddress: "Gamarra", floor: 2, stand: "101", referenceLocation: "Pasillo central", whatsapp: "51999999999", priceLevel: "medio", styles: ["Casual"], categories: ["Blusas"], sizes: ["M"], purchaseType: "presencial", standPhotoUrl: "", updatedAt, garments: [garment] },
+        store: { id: "test", name: "Tienda de ejemplo", gallery: "Galería Santa Rosa", galleryAddress: "Gamarra", floor: 2, stand: "101", referenceLocation: "Pasillo central", whatsapp: "51999999999", priceLevel: "medio", styles: ["Casual"], categories: ["Blusas"], sizes: ["M"], purchaseType: "presencial", standPhotoUrl: "", updatedAt, createdAt, garments: [garment] },
         bestGarment: garment, resonanceScore: 0.8, photoSimilarity: 0.75, styleMatchScore: 1,
         matchingStylesCount: 1, totalSearchedStyles: 2, band: "Alta", searchMode: "estilo",
       }],
@@ -35,11 +36,19 @@ const { chromium } = require(process.env.VIBRA_PLAYWRIGHT_MODULE || "playwright"
     updatedAt = "Actualizada recientemente";
     await page.getByRole("button", { name: "Actualizar ranking por estilo" }).click();
     await page.getByText("Tienda de ejemplo", { exact: true }).click();
+    await page.getByText("Registrada el", { exact: true }).waitFor();
+    assert.equal(await page.locator("time").getAttribute("datetime"), "2026-10-22T21:37:25.864Z");
+    assert.match(await page.locator("time").innerText(), /22 de octubre de 2026.*4:37/);
+    await page.screenshot({ path: path.join(outputDir, "registro-mobile.png") });
+    await page.getByRole("button", { name: "Cerrar ficha de tienda" }).click();
+    createdAt = undefined;
+    await page.getByRole("button", { name: "Actualizar ranking por estilo" }).click();
+    await page.getByText("Tienda de ejemplo", { exact: true }).click();
     await page.getByText("Fecha exacta no registrada", { exact: true }).waitFor();
     assert.equal(await page.locator("time").count(), 0);
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("button", { name: "Cerrar ficha de tienda" }).count(), 0);
-    console.log("PASÓ: fecha y hora de Lima visibles en escritorio/móvil, zona independiente del dispositivo y fichas históricas sin hora inventada.");
+    console.log("PASÓ: edición exacta tiene prioridad; fichas históricas muestran registro de Supabase en hora de Lima; sin datos no se inventa fecha.");
     console.log(`Capturas: ${outputDir}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
