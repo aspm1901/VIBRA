@@ -17,7 +17,7 @@ Abre http://localhost:3000 y configura `.env.local` a partir de `.env.example`. 
 
 - **Una prenda:** subir, recortar y comparar una referencia. Familia y parecido visual dominan el ranking.
 - **Look completo:** 30 % visual y 70 % estilo. La pareja destacada requiere superior e inferior compatibles.
-- **Por estilo:** hasta tres estilos; cobertura declarada más bonos de especialidad y catálogo.
+- **Por estilo:** espera una elección explícita, sin estilos heredados de la foto ni búsqueda al abrir la pestaña. Hasta tres estilos; cobertura declarada más bonos de especialidad y catálogo. Las tarjetas muestran cuántos estilos coinciden.
 - Filtros múltiples de precio y talla con OR. **Estándar es independiente de XS/S/M/L/XL.**
 - Ficha, WhatsApp y recorrido por galería y piso; guardado local y sincronización de cuenta cuando está configurada.
 - «Última actualización de la ficha» muestra fecha y hora de Lima: usa la edición exacta más reciente o, si no existe, el registro inicial conservado por Supabase. Los nuevos guardados registran el instante real.

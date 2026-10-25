@@ -215,6 +215,31 @@ function VibraApp() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const switchStyleTab = () => {
+    if (inputType === "estilo") return;
+    if (searchMode === "prenda" || searchMode === "look") {
+      tabSnapshotsRef.current[searchMode] = {
+        imageBase64: currentImageBase64,
+        imagePreview: currentImagePreview,
+        garmentTitle,
+        detectedInfo,
+        selectedCategory,
+        selectedStyles,
+        results,
+      };
+    }
+    searchRequestRef.current?.abort();
+    lastSearchParamsRef.current = undefined;
+    setIsSearching(false);
+    setSearchError(null);
+    setInputType("estilo");
+    setSearchMode("estilo");
+    setSelectedStyles([]);
+    setSelectedCategory(undefined);
+    setResults([]);
+    setSelectedGalleryFilter("todas");
+  };
+
   const executeSearch = async (overrideParams?: SearchOverrides) => {
     lastSearchParamsRef.current = overrideParams;
     searchRequestRef.current?.abort();
@@ -246,6 +271,9 @@ function VibraApp() {
         : overrideParams?.overrideStyles !== undefined
         ? overrideParams.overrideStyles
         : selectedStyles;
+
+      // Sin elección explícita, no buscar ni sustituirla por estilos predeterminados.
+      if (activeSearchMode === "estilo" && !stylesToSend?.length) return;
 
       const pricesToSend =
         overrideParams?.overridePrices !== undefined
@@ -665,22 +693,7 @@ function VibraApp() {
 
             <button
               type="button"
-              onClick={() => {
-                if (inputType === "foto" && (searchMode === "prenda" || searchMode === "look")) {
-                  tabSnapshotsRef.current[searchMode] = {
-                    imageBase64: currentImageBase64,
-                    imagePreview: currentImagePreview,
-                    garmentTitle,
-                    detectedInfo,
-                    selectedCategory,
-                    selectedStyles,
-                    results,
-                  };
-                }
-                setInputType("estilo");
-                setSelectedGalleryFilter("todas");
-                executeSearch({ overrideSearchMode: "estilo", overrideStyles: selectedStyles });
-              }}
+              onClick={switchStyleTab}
               className={`py-2.5 px-2 rounded-xl text-center transition-all duration-180 ease-vibra flex flex-col items-center justify-center gap-1 min-h-[44px] ${
                 inputType === "estilo"
                   ? "bg-[#F6F7F3] text-basalto-90 border border-higo-70/50 shadow-xs font-semibold"
@@ -890,7 +903,7 @@ function VibraApp() {
                   </div>
                 </div>
                 <p className="text-[13px] leading-[19px] text-grafito-55">
-                  Selecciona una combinación rápida o marca los estilos debajo para ordenar las tiendas de Gamarra que trabajan esa línea.
+                  Selecciona una combinación rápida o marca hasta 3 estilos. Cuantos más comparta una tienda con tu selección, mayor será su afinidad.
                 </p>
 
                 <div className="mt-4 pt-4 border-t border-caliza-20">
@@ -899,7 +912,7 @@ function VibraApp() {
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {STYLE_PRESETS.map((preset) => {
-                      const isActive = preset.styles.every((s) => selectedStyles.includes(s));
+                      const isActive = selectedStyles.length === preset.styles.length && preset.styles.every((s) => selectedStyles.includes(s));
                       return (
                         <button
                           key={preset.id}
@@ -1134,14 +1147,16 @@ function VibraApp() {
                     executeSearch({ isManualFilterRefinement: true });
                   }
                 }}
-                disabled={isSearching}
+                disabled={isSearching || (inputType === "estilo" && selectedStyles.length === 0)}
                 className="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-higo-70 hover:bg-vibra-600 active:scale-[0.99] text-white font-medium text-[14px] transition-all duration-180 ease-vibra flex items-center justify-center gap-2 shadow-xs mt-2"
               >
                 {isSearching ? (
                   <span>Calculando afinidad con los catálogos...</span>
                 ) : (
                   <span>
-                    {inputType === "estilo"
+                    {inputType === "estilo" && selectedStyles.length === 0
+                      ? "Selecciona al menos un estilo"
+                      : inputType === "estilo"
                       ? "Actualizar ranking por estilo"
                       : searchMode === "look"
                       ? "Actualizar tiendas para este look"
@@ -1156,17 +1171,19 @@ function VibraApp() {
         {/* ================= COLUMNA DERECHA: RANKING DE AFINIDAD (7 de 12 cols) ================= */}
         <section className="lg:col-span-7 flex flex-col gap-5">
           {/* Estado inicial limpio cuando está en modo Foto y aún no ha subido ninguna imagen */}
-          {inputType === "foto" && !hasUploadedPhoto && !isSearching ? (
+          {(inputType === "foto" && !hasUploadedPhoto && !isSearching) || (inputType === "estilo" && selectedStyles.length === 0) ? (
             <div className="p-10 sm:p-14 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center min-h-[420px]">
               <ResonanceEmptyNode size={56} />
               <h2
                 className="font-display font-semibold text-[24px] leading-[29px] sm:text-[28px] sm:leading-[33px] text-basalto-90 mt-4 max-w-md"
                 style={{ letterSpacing: "-0.02em" }}
               >
-                Sube una foto para ver el ranking de tiendas
+                {inputType === "estilo" ? "Elige los estilos que buscas" : "Sube una foto para ver el ranking de tiendas"}
               </h2>
               <p className="text-[14px] sm:text-[15px] leading-[23px] text-grafito-55 mt-2 max-w-md font-normal">
-                Usa el recuadro de la izquierda para subir una foto de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra.
+                {inputType === "estilo"
+                  ? "Selecciona una combinación o marca de 1 a 3 estilos. Después verás las tiendas que coinciden con tu elección."
+                  : "Usa el recuadro de la izquierda para subir una foto de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra."}
               </p>
             </div>
           ) : (
@@ -1256,10 +1273,10 @@ function VibraApp() {
                   <div className="p-8 rounded-3xl neu-sunken flex flex-col items-center justify-center text-center">
                     <ResonanceSweepLoader size={52} />
                     <p className="text-[15px] leading-[22px] font-medium text-basalto-90 mt-3">
-                      Calculando afinidad visual con los catálogos de Gamarra
+                      {inputType === "estilo" ? "Comparando tus estilos con las tiendas" : "Calculando afinidad visual con los catálogos de Gamarra"}
                     </p>
                     <p className="text-[13px] leading-[19px] text-grafito-55 mt-1">
-                      Ordenando tiendas según color, silueta y textura de la prenda
+                      {inputType === "estilo" ? "Ordenando tiendas según los estilos elegidos y su catálogo" : "Ordenando tiendas según color, silueta y textura de la prenda"}
                     </p>
                   </div>
                   {[1, 2, 3].map((n) => (
@@ -1404,6 +1421,11 @@ function VibraApp() {
                             </p>
 
                             {/* Controles operativos en una sola fila compacta */}
+                            {item.searchMode === "estilo" && (
+                              <p className="text-[11px] leading-[17px] text-higo-70 mt-1">
+                                Coincide con {item.matchingStylesCount} de {item.totalSearchedStyles} {item.totalSearchedStyles === 1 ? "estilo elegido" : "estilos elegidos"}
+                              </p>
+                            )}
                             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2">
                               <button
                                 type="button"

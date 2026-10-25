@@ -22,6 +22,7 @@ const { chromium } = require(process.env.VIBRA_PLAYWRIGHT_MODULE || "playwright"
     } }));
     await page.goto(process.env.VIBRA_TEST_URL || "http://localhost:3011");
     await page.getByRole("button", { name: "Por estilo", exact: true }).click();
+    await page.getByRole("button", { name: "Casual", exact: true }).click();
     await page.getByText("Tienda de ejemplo", { exact: true }).click();
     await page.getByText("Última actualización de la ficha", { exact: true }).waitFor();
     assert.equal(await page.locator("time").getAttribute("datetime"), updatedAt);

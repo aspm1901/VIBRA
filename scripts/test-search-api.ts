@@ -10,6 +10,10 @@ const request = (body: unknown) => new NextRequest("http://localhost/api/search"
 test("la API rechaza un modo desconocido", async () => {
   assert.equal((await POST(request({ filters: { searchMode: "desconocido" } }))).status, 400);
 });
+test("por estilo exige una elección explícita y no sustituye una selección vacía", async () => {
+  assert.equal((await POST(request({ filters: { searchMode: "estilo", styles: [] } }))).status, 400);
+  assert.equal((await POST(request({ filters: { searchMode: "estilo" } }))).status, 400);
+});
 test("la API rechaza filtros con tipos incorrectos", async () => {
   assert.equal((await POST(request({ filters: { styles: "Oficina" } }))).status, 400);
   assert.equal((await POST(request({ filters: { sizes: [null] } }))).status, 400);

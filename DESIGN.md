@@ -38,6 +38,8 @@ Los valores ejecutables están en `tailwind.config.js` y `app/globals.css`; este
 
 Los estados conservan las superficies y la tipografía existentes. Los errores usan texto explícito y una acción además del color. Los estilos son botones con estado `aria-pressed`; hasta tres seleccionados, con posibilidad de quitar cualquiera para elegir otro. La pestaña fotográfica conserva su propia referencia y resultados.
 
+Al entrar a «Por estilo» se limpia la selección y no se consulta hasta elegir una combinación o al menos un estilo. Los filtros de precio/talla/modalidad no inician búsqueda si todavía no se eligió estilo. Quitar el último estilo cancela la consulta y devuelve la instrucción inicial. Las tarjetas informan cuántos estilos elegidos comparte la tienda; el porcentaje no cambia de fórmula. Cada pestaña fotográfica conserva sus estilos en su propia memoria.
+
 ## Límites
 
 La ficha muestra «Última actualización de la ficha» al inicio del contenido, antes de las fotos, con una superficie Caliza y texto secundario Grafito. Usa la edición exacta más reciente o, si no existe, la fecha de creación de Supabase: el registro inicial es la primera actualización. Las fechas usan hora de Lima y un elemento `time`; solo si tampoco existe registro exacto se informa «Fecha exacta no registrada». El guardado administrativo genera el instante del servidor, no el navegador de la clienta.

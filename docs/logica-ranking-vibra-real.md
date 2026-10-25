@@ -60,6 +60,8 @@ Ejemplo de la fórmula final: coseno 0,82 neutral se calibra a 0,78. Con cobertu
 
 ## Por estilo
 
+La pestaña abre sin selección y sin consultar. Se ejecuta al elegir al menos un estilo o una combinación. No utiliza la foto ni realiza llamadas a Gemini; la API exige una selección explícita. Eliminar el último estilo cancela y limpia. Las tarjetas muestran el número de estilos coincidentes para interpretar el porcentaje.
+
 `resonancia = 0,75 × cobertura declarada + bono insignia + bono catálogo`
 
 Sin coincidencias se descarta. Insignia: +0,06 si el primer estilo declarado está entre los buscados. Catálogo: hasta +0,07 según afinidad promedio de prendas, limitada a [0,1] antes del promedio. Tope 0,99.

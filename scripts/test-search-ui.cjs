@@ -38,6 +38,13 @@ const result = (name) => {
       assert.equal((await page.request.get(`${baseUrl}/${icon}`)).status(), 200, `${icon} debe cargar sin conflicto de rutas`);
     }
     await page.getByRole("button", { name: "Por estilo", exact: true }).click();
+    assert.equal(requests.length, 0, "Abrir Por estilo no debe consultar ni heredar estilos de foto");
+    await page.getByText("Elige los estilos que buscas", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { pressed: true }).count(), 0);
+    assert.ok(await page.getByRole("button", { name: "Selecciona al menos un estilo", exact: true }).isDisabled());
+    await page.getByRole("button", { name: /Económico/ }).click();
+    assert.equal(requests.length, 0, "Los filtros no deben iniciar una búsqueda sin estilos");
+    await page.getByRole("button", { name: "Casual", exact: true }).click();
     await alert.waitFor();
     assert.match(await alert.innerText(), /Reintenta/);
     assert.equal(await page.getByText("No encontramos tiendas con esta combinación.", { exact: false }).count(), 0);
@@ -59,12 +66,14 @@ const result = (name) => {
 
     mode = "slow";
     await page.getByRole("button", { name: "Actualizar ranking por estilo" }).click();
-    await page.getByText("Calculando afinidad visual con los catálogos de Gamarra", { exact: true }).waitFor();
+    await page.getByText("Comparando tus estilos con las tiendas", { exact: true }).waitFor();
     mode = "success";
     await page.getByRole("button", { name: "Elegante", exact: true }).click();
     await page.getByText("Resultado vigente", { exact: true }).waitFor();
     if (slowRoute) await slowRoute.fulfill({ status: 200, json: result("Resultado obsoleto") }).catch(() => {});
     assert.equal(await page.getByText("Resultado obsoleto", { exact: true }).count(), 0);
+    await page.getByRole("button", { name: "Urbano", exact: true }).click();
+    await page.getByText("Resultado vigente", { exact: true }).waitFor();
     assert.ok(await page.getByRole("button", { name: "Fiesta", exact: true }).isDisabled());
     assert.ok(await page.getByRole("button", { name: "Elegante", exact: true }).isEnabled());
     console.log("PASÓ: solicitudes anteriores no reemplazan resultados nuevos; máximo tres estilos.");
@@ -98,6 +107,24 @@ const result = (name) => {
     await page.getByText("Sube una foto para ver el ranking de tiendas", { exact: true }).waitFor();
     assert.equal(await page.getByText("Calculando afinidad visual con los catálogos de Gamarra", { exact: true }).count(), 0);
     console.log("PASÓ: pulsar la pestaña activa conserva la búsqueda; cambiar de modo la cancela.");
+    const beforeStyleEntry = requests.length;
+    await page.getByRole("button", { name: "Por estilo", exact: true }).click();
+    await page.getByText("Elige los estilos que buscas", { exact: true }).waitFor();
+    assert.equal(requests.length, beforeStyleEntry, "Volver desde look tampoco busca ni hereda estilos");
+    await page.getByRole("button", { name: "Casual", exact: true }).click();
+    assert.equal(requests.length, beforeStyleEntry + 1);
+    await page.getByRole("button", { name: "Casual", exact: true }).click();
+    await page.getByText("Elige los estilos que buscas", { exact: true }).waitFor();
+    assert.equal(requests.length, beforeStyleEntry + 1, "Quitar el último estilo cancela, no busca estilos predeterminados");
+    if (slowRoute) await slowRoute.fulfill({ status: 200, json: result("No debe aparecer") }).catch(() => {});
+    assert.equal(await page.getByText("No debe aparecer", { exact: true }).count(), 0);
+    mode = "success";
+    await page.getByRole("button", { name: "Noche y fiesta", exact: false }).click();
+    await page.getByText("Resultado vigente", { exact: true }).waitFor();
+    assert.deepEqual(requests.at(-1).filters.styles, ["Fiesta", "Elegante"]);
+    await page.getByRole("button", { name: "Una prenda", exact: true }).click();
+    assert.equal(await page.getByAltText("Referencia de búsqueda").getAttribute("src"), failedPhotoRequest.image);
+    console.log("PASÓ: entrada por estilo limpia, selección explícita y limpieza al quitar el último estilo.");
     assert.deepEqual(runtimeErrors, []);
     console.log("PASÓ: vista móvil sin desborde, cambio de pestaña y foco de teclado; sin errores React.");
     console.log(`Evidencia visual: ${outputDir}`);

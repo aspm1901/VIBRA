@@ -76,16 +76,17 @@ export async function POST(req: NextRequest) {
     const searchMode: "prenda" | "look" | "estilo" =
       filters.searchMode || (image || exampleId ? "prenda" : "estilo");
 
+    if (searchMode === "estilo" && !filters.styles?.length) {
+      return NextResponse.json({ error: "Elige al menos un estilo para buscar tiendas." }, { status: 400 });
+    }
+
     // 1. Obtener vector y análisis de estilos
     const stores = await getAllStores();
     const allGarments = stores.flatMap((s) => s.garments);
 
     if (searchMode === "estilo") {
       // Búsqueda 100% por estilo (sin requerir imagen)
-      const requestedStyles =
-        filters.styles && filters.styles.length > 0
-          ? filters.styles
-          : ["Casual", "Urbano"];
+      const requestedStyles = filters.styles!;
 
       detectedInfo = {
         category: "Búsqueda por estilo",
