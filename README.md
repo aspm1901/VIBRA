@@ -20,7 +20,7 @@ Abre http://localhost:3000 y configura `.env.local` a partir de `.env.example`. 
 - **Por estilo:** hasta tres estilos; cobertura declarada más bonos de especialidad y catálogo.
 - Filtros múltiples de precio y talla con OR. **Estándar es independiente de XS/S/M/L/XL.**
 - Ficha, WhatsApp y recorrido por galería y piso; guardado local y sincronización de cuenta cuando está configurada.
-- Fecha y hora de Lima en la ficha: última actualización exacta, o «Registrada el» usando la fecha de creación de Supabase cuando no hay fecha precisa de edición. Los nuevos guardados registran el instante real.
+- «Última actualización de la ficha» muestra fecha y hora de Lima: usa la edición exacta más reciente o, si no existe, el registro inicial conservado por Supabase. Los nuevos guardados registran el instante real.
 - Panel `/admin` con edición y carga de prendas con vectorización.
 
 Next.js 15, React 19, TypeScript y Tailwind. Gemini usa `gemini-embedding-2-preview` para embeddings y los modelos de visión configurados en `lib/ai/gemini.ts` para familia, título, estilos y color.

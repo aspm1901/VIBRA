@@ -16,10 +16,10 @@ export function formatStoreUpdatedAt(value?: string): { dateTime: string; label:
 import type { Store } from "@/types";
 
 
-/** La fecha de registro es respaldo informativo, nunca se presenta como una edición. */
+/** El registro inicial es la primera actualización; una edición exacta posterior tiene prioridad. */
 export function getStoreActivityDate(store: Pick<Store, "updatedAt" | "createdAt">) {
   const updated = formatStoreUpdatedAt(store.updatedAt);
   if (updated) return { ...updated, title: "Última actualización de la ficha" };
   const created = formatStoreUpdatedAt(store.createdAt);
-  return created ? { ...created, title: "Registrada el" } : null;
+  return created ? { ...created, title: "Última actualización de la ficha" } : null;
 }

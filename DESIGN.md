@@ -40,6 +40,6 @@ Los estados conservan las superficies y la tipografía existentes. Los errores u
 
 ## Límites
 
-La ficha muestra la última actualización exacta al inicio del contenido, antes de las fotos, con una superficie Caliza y texto secundario Grafito. Si no existe una fecha precisa de edición, usa la fecha de creación de Supabase con la etiqueta «Registrada el». Las fechas usan hora de Lima y un elemento `time`; solo si tampoco existe registro exacto se informa «Fecha exacta no registrada». La creación no se presenta como actualización. El guardado administrativo genera el instante del servidor, no el navegador de la clienta.
+La ficha muestra «Última actualización de la ficha» al inicio del contenido, antes de las fotos, con una superficie Caliza y texto secundario Grafito. Usa la edición exacta más reciente o, si no existe, la fecha de creación de Supabase: el registro inicial es la primera actualización. Las fechas usan hora de Lima y un elemento `time`; solo si tampoco existe registro exacto se informa «Fecha exacta no registrada». El guardado administrativo genera el instante del servidor, no el navegador de la clienta.
 
 Proyecto universitario: esta intervención mejora el buscador y su demostración. No supone una auditoría completa de accesibilidad ni una migración de todos los flujos administrativos.

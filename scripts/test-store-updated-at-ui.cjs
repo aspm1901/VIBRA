@@ -36,7 +36,7 @@ const { chromium } = require(process.env.VIBRA_PLAYWRIGHT_MODULE || "playwright"
     updatedAt = "Actualizada recientemente";
     await page.getByRole("button", { name: "Actualizar ranking por estilo" }).click();
     await page.getByText("Tienda de ejemplo", { exact: true }).click();
-    await page.getByText("Registrada el", { exact: true }).waitFor();
+    await page.getByText("Última actualización de la ficha", { exact: true }).waitFor();
     assert.equal(await page.locator("time").getAttribute("datetime"), "2026-10-22T21:37:25.864Z");
     assert.match(await page.locator("time").innerText(), /22 de octubre de 2026.*4:37/);
     await page.screenshot({ path: path.join(outputDir, "registro-mobile.png") });
@@ -48,7 +48,7 @@ const { chromium } = require(process.env.VIBRA_PLAYWRIGHT_MODULE || "playwright"
     assert.equal(await page.locator("time").count(), 0);
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("button", { name: "Cerrar ficha de tienda" }).count(), 0);
-    console.log("PASÓ: edición exacta tiene prioridad; fichas históricas muestran registro de Supabase en hora de Lima; sin datos no se inventa fecha.");
+    console.log("PASÓ: etiqueta unificada, edición exacta tiene prioridad y registro inicial usa la fecha de Supabase en hora de Lima.");
     console.log(`Capturas: ${outputDir}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -26,9 +26,9 @@ test("una fecha imposible se trata como información no disponible", () => {
   assert.equal(formatStoreUpdatedAt("2026-99-99T25:99:00Z"), null);
 });
 
-test("una ficha histórica muestra el registro exacto de Supabase, con su etiqueta propia", () => {
+test("el registro inicial también se presenta como última actualización de la ficha", () => {
   const result = getStoreActivityDate({ updatedAt: "Actualizada recientemente", createdAt: "2026-10-22T21:37:25.864552+00:00" });
-  assert.equal(result?.title, "Registrada el");
+  assert.equal(result?.title, "Última actualización de la ficha");
   assert.equal(result?.dateTime, "2026-10-22T21:37:25.864Z");
   assert.match(result?.label || "", /22 de octubre de 2026.*4:37/);
 });
