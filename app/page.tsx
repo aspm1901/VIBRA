@@ -144,6 +144,10 @@ function VibraApp() {
   // Resultados
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [selectedGalleryFilter, setSelectedGalleryFilter] = useState<string>("todas");
+  const [visibleResultsCount, setVisibleResultsCount] = useState(5);
+  useEffect(() => {
+    setVisibleResultsCount(5);
+  }, [results, selectedGalleryFilter]);
 
   // Memoria independiente por pestaña ("prenda" vs "look") para que cambiar de pestaña
   // no arrastre la foto de una prenda individual hacia "Look completo" ni re-ejecute la IA en vano.
@@ -1316,7 +1320,7 @@ function VibraApp() {
               {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
               {!isSearching && !searchError && displayedResults.length > 0 && (
                 <div className="space-y-3.5 animate-vibra-fade" key={selectedGalleryFilter}>
-                  {displayedResults.map((item, idx) => {
+                  {displayedResults.slice(0, visibleResultsCount).map((item, idx) => {
                     const isRank1 = idx === 0;
                     const inRoute = isInRoute(item.store.id);
                     const percentageScore = `${Math.round(item.resonanceScore * 100)}%`;
@@ -1515,6 +1519,20 @@ function VibraApp() {
                       </article>
                     );
                   })}
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <p role="status" className="text-[13px] text-grafito-55 tabular-nums">
+                      Mostrando {Math.min(visibleResultsCount, displayedResults.length)} de {displayedResults.length} tiendas
+                    </p>
+                    {visibleResultsCount < displayedResults.length && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleResultsCount((count) => count + 5)}
+                        className="neu-elevated px-6 py-3 rounded-full text-[14px] font-semibold text-higo-70 transition-all hover:bg-caliza-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-higo-70"
+                      >
+                        Ver {Math.min(5, displayedResults.length - visibleResultsCount)} {displayedResults.length - visibleResultsCount === 1 ? "tienda más" : "tiendas más"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
