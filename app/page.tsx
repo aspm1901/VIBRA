@@ -144,9 +144,10 @@ function VibraApp() {
   // Resultados
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [selectedGalleryFilter, setSelectedGalleryFilter] = useState<string>("todas");
-  const [visibleResultsCount, setVisibleResultsCount] = useState(5);
+  const [resultsPage, setResultsPage] = useState(1);
+  const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    setVisibleResultsCount(5);
+    setResultsPage(1);
   }, [results, selectedGalleryFilter]);
 
   // Memoria independiente por pestaña ("prenda" vs "look") para que cambiar de pestaña
@@ -550,6 +551,17 @@ function VibraApp() {
     selectedGalleryFilter === "todas"
       ? results
       : results.filter((r) => r.store.gallery === selectedGalleryFilter);
+  const totalResultsPages = Math.max(1, Math.ceil(displayedResults.length / 5));
+  const activeResultsPage = Math.min(resultsPage, totalResultsPages);
+  const resultsPageStart = (activeResultsPage - 1) * 5;
+  const changeResultsPage = (page: number) => {
+    setResultsPage(page);
+    resultsHeadingRef.current?.focus({ preventScroll: true });
+    resultsHeadingRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      block: "start",
+    });
+  };
 
   const hasUploadedPhoto = !!currentImagePreview && inputType === "foto";
 
@@ -1195,7 +1207,9 @@ function VibraApp() {
               {/* H2 Sección (Escala modular pág. 10 y 12) */}
               <div>
                 <h2
-                  className="font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
+                  ref={resultsHeadingRef}
+                  tabIndex={-1}
+                  className="scroll-mt-24 font-display font-semibold text-[28px] leading-[32px] sm:text-[36px] sm:leading-[40px] text-basalto-90"
                   style={{ letterSpacing: "-0.025em" }}
                 >
                   {searchError
@@ -1320,7 +1334,8 @@ function VibraApp() {
               {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
               {!isSearching && !searchError && displayedResults.length > 0 && (
                 <div className="space-y-3.5 animate-vibra-fade" key={selectedGalleryFilter}>
-                  {displayedResults.slice(0, visibleResultsCount).map((item, idx) => {
+                  {displayedResults.slice(resultsPageStart, resultsPageStart + 5).map((item, pageIdx) => {
+                    const idx = resultsPageStart + pageIdx;
                     const isRank1 = idx === 0;
                     const inRoute = isInRoute(item.store.id);
                     const percentageScore = `${Math.round(item.resonanceScore * 100)}%`;
@@ -1521,16 +1536,14 @@ function VibraApp() {
                   })}
                   <div className="flex flex-col items-center gap-3 py-4">
                     <p role="status" className="text-[13px] text-grafito-55 tabular-nums">
-                      Mostrando {Math.min(visibleResultsCount, displayedResults.length)} de {displayedResults.length} tiendas
+                      Mostrando tiendas {resultsPageStart + 1}–{Math.min(resultsPageStart + 5, displayedResults.length)} de {displayedResults.length}
                     </p>
-                    {visibleResultsCount < displayedResults.length && (
-                      <button
-                        type="button"
-                        onClick={() => setVisibleResultsCount((count) => count + 5)}
-                        className="neu-elevated px-6 py-3 rounded-full text-[14px] font-semibold text-higo-70 transition-all hover:bg-caliza-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-higo-70"
-                      >
-                        Ver {Math.min(5, displayedResults.length - visibleResultsCount)} {displayedResults.length - visibleResultsCount === 1 ? "tienda más" : "tiendas más"}
-                      </button>
+                    {totalResultsPages > 1 && (
+                      <nav aria-label="Páginas de resultados" className="flex items-center justify-center gap-2 sm:gap-4">
+                        <button type="button" disabled={activeResultsPage === 1} onClick={() => changeResultsPage(activeResultsPage - 1)} className="neu-elevated min-h-11 px-4 py-2 rounded-full text-[13px] font-semibold text-higo-70 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-higo-70">Anterior</button>
+                        <span className="text-[13px] text-grafito-55 tabular-nums">Página {activeResultsPage} de {totalResultsPages}</span>
+                        <button type="button" disabled={activeResultsPage === totalResultsPages} onClick={() => changeResultsPage(activeResultsPage + 1)} className="neu-elevated min-h-11 px-4 py-2 rounded-full text-[13px] font-semibold text-higo-70 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-higo-70">Siguiente</button>
+                      </nav>
                     )}
                   </div>
                 </div>

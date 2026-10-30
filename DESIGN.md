@@ -42,7 +42,7 @@ Al entrar a «Por estilo» se limpia la selección y no se consulta hasta elegir
 
 ## Límites
 
-El ranking muestra inicialmente las primeras cinco tiendas de la galería seleccionada. El botón «Ver 5 tiendas más» revela los siguientes resultados ya recibidos, sin nuevas consultas a la API. El contador informa cuántas tiendas están visibles del total filtrado. Un nuevo conjunto de resultados o cambio de galería reinicia la lista a cinco; el orden de afinidad y los totales de los filtros se conservan.
+El ranking muestra cinco tiendas por página, con «Anterior», «Siguiente», número de página y rango visible del total filtrado. Cambiar de página reemplaza las tarjetas sin consultas a la API y devuelve el foco y la vista al encabezado del ranking, respetando movimiento reducido. Un nuevo conjunto de resultados o cambio de galería reinicia a la primera página; el orden de afinidad, los puestos y los totales se conservan.
 
 La ficha muestra «Última actualización de la ficha» al inicio del contenido, antes de las fotos, con una superficie Caliza y texto secundario Grafito. Usa la edición exacta más reciente o, si no existe, la fecha de creación de Supabase: el registro inicial es la primera actualización. Las fechas usan hora de Lima y un elemento `time`; solo si tampoco existe registro exacto se informa «Fecha exacta no registrada». El guardado administrativo genera el instante del servidor, no el navegador de la clienta.
 
