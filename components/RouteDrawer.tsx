@@ -15,6 +15,7 @@ import {
   Compass,
 } from "lucide-react";
 import { RouteItem } from "@/types";
+import { buildMapRouteSegments, getMapStop } from "@/lib/maps-route";
 
 export const RouteDrawer: React.FC = () => {
   const {
@@ -72,6 +73,19 @@ export const RouteDrawer: React.FC = () => {
 
   const totalCount = routeItems.length;
   const visitedCount = routeItems.filter((i) => i.visited).length;
+  const mapRoute = useMemo(() => {
+    const stops = Object.values(groupedByGallery).map(items => {
+      const withCoordinates = items.find(item =>
+        typeof item.store.latitude === "number" && Number.isFinite(item.store.latitude) &&
+        typeof item.store.longitude === "number" && Number.isFinite(item.store.longitude));
+      return getMapStop((withCoordinates || items[0]).store);
+    });
+    try {
+      return { segments: buildMapRouteSegments(stops), error: "", count: stops.length };
+    } catch {
+      return { segments: [], error: "No pudimos preparar la ruta completa. Revisa las direcciones o abre cada galería por separado.", count: stops.length };
+    }
+  }, [groupedByGallery]);
 
   const handleShareOnWhatsApp = () => {
     if (routeItems.length === 0) return;
@@ -125,7 +139,7 @@ export const RouteDrawer: React.FC = () => {
               {totalCount === 1 ? "parada" : "paradas"}
             </h2>
             <p className="text-[11px] leading-[17px] text-grafito-55 mt-0.5">
-              Ordenada por galería y piso para optimizar tramos caminados
+              Agrupada por galería y piso, en el orden de tu lista
             </p>
           </div>
 
@@ -241,6 +255,31 @@ export const RouteDrawer: React.FC = () => {
 
         {/* Listado de paradas con espina continua Neblina 30 por galería (Pág. 13) */}
         <div className="flex-1 overflow-y-auto p-5">
+          {totalCount > 0 && (
+            <div className="mb-6 p-4 rounded-2xl border border-neblina-30 bg-caliza-10 space-y-3">
+              <div>
+                <h3 className="font-display text-[18px] font-medium">Tu recorrido en Google Maps</h3>
+                <p className="text-[12px] leading-[18px] text-grafito-55 mt-1">
+                  {mapRoute.count} {mapRoute.count === 1 ? "galería" : "galerías"} en el orden de la lista. Una parada por edificio, aunque visites varias tiendas.
+                </p>
+              </div>
+              {mapRoute.error && <p role="alert" className="text-[12px] text-oxido-65">{mapRoute.error}</p>}
+              {mapRoute.segments.length > 1 && <p className="text-[12px] text-neblina-70">Tu ruta se divide en {mapRoute.segments.length} tramos para incluir todas las galerías. Ábrelos en orden.</p>}
+              <div className="space-y-2">
+                {mapRoute.segments.map((segment, index) => (
+                  <div key={index}>
+                    <a href={segment.url} target="_blank" rel="noopener noreferrer" className="inline-flex w-full justify-center items-center gap-2 rounded-full bg-neblina-70 text-white min-h-11 px-4 py-2 text-[13px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neblina-70">
+                      <Navigation className="w-4 h-4" />
+                      {mapRoute.segments.length === 1 ? "Ver ruta completa" : `Abrir tramo ${index + 1} de ${mapRoute.segments.length}`}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    {mapRoute.segments.length > 1 && <p className="mt-1 text-[11px] leading-[17px] text-grafito-55">{[...(segment.origin ? [segment.origin.name] : []), ...segment.stops.map(stop => stop.name)].join(" → ")}</p>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] leading-[17px] text-grafito-55">El recorrido empieza en la primera galería de la lista. Puedes revisar el medio de transporte en Maps. El piso y stand se consultan aquí.</p>
+            </div>
+          )}
           {totalCount === 0 ? (
             <div className="h-full min-h-[280px] flex flex-col items-center justify-center text-center p-6">
               <div className="w-12 h-12 rounded-full bg-neblina-30 flex items-center justify-center text-neblina-70 mb-3">
