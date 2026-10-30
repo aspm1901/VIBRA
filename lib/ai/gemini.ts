@@ -129,13 +129,8 @@ export interface GarmentAnalysisResult {
   isFallback?: boolean;
 }
 
-// Cascada EXCLUSIVA con los 4 modelos de alta cuota en tu cuenta de AI Studio (~29,800 RPD totales):
-// 1. gemini-3.1-flash-lite-preview -> 500 RPD | 15 RPM
-// 2. gemini-3.5-flash-lite         -> 500 RPD | 15 RPM
-// 3. gemma-4-26b-a4b-it            -> 14,400 RPD | 30 RPM
-// 4. gemma-4-31b-it                -> 14,400 RPD | 30 RPM
+// Modelo principal y respaldos para el análisis del catálogo.
 const VISION_MODEL_CASCADE = [
-  "gemini-3.1-flash-lite-preview",
   "gemini-3.5-flash-lite",
   "gemma-4-26b-a4b-it",
   "gemma-4-31b-it",
@@ -329,16 +324,11 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     };
   };
 
-  // En búsqueda en vivo del usuario (fastSearch = true), competimos en paralelo entre
-  // los dos modelos de 500 RPD (Gemini 3.1 Flash Lite y Gemini 3.5 Flash Lite) en una sola espera
-  // para no sumar esperas en cadena si uno de los dos está lento o da 503.
+  // En búsqueda en vivo usamos el modelo vigente, con respaldo por catálogo si falla.
   if (fastSearch) {
     try {
       const fastWinner = await withTimeout(
-        Promise.any([
-          callModel("gemini-3.1-flash-lite-preview"),
-          callModel("gemini-3.5-flash-lite"),
-        ]),
+        callModel("gemini-3.5-flash-lite"),
         14500,
         null
       );
@@ -346,7 +336,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
         return fastWinner;
       }
     } catch {
-      // Si ambos dan 503 simultáneo, intentamos Gemma 4 26B (14,400 RPD) o respaldo por vector
+      // Si falla la visión, se usa el respaldo por similitud del catálogo.
     }
     return { ...fallback, isFallback: true };
   }
