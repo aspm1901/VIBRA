@@ -282,7 +282,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
     const isGemma = modelName.startsWith("gemma");
-    const is31Lite = modelName.startsWith("gemini-3.1");
+    const isFlashLite = modelName.includes("flash-lite");
     const response = await client.models.generateContent({
       model: modelName,
       contents: [
@@ -295,14 +295,28 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
         },
       ],
       config: isGemma
-        ? { temperature: 0.1 }
+        ? { temperature: 0.1, maxOutputTokens: 1024 }
         : {
             responseMimeType: "application/json",
             responseSchema: responseSchema as any,
             temperature: 0.1,
-            ...(is31Lite ? { thinkingConfig: { thinkingLevel: "MINIMAL" as any } } : {}),
+            maxOutputTokens: 1024,
+            ...(isFlashLite ? { thinkingConfig: { thinkingLevel: "MINIMAL" as any } } : {}),
           },
     });
+
+    // Registrar solo métricas: nunca la imagen ni la respuesta de la clienta.
+    console.info("VIBRA vision usage", {
+      model: modelName,
+      searchMode,
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+      thinkingTokens: response.usageMetadata?.thoughtsTokenCount,
+      finishReason: response.candidates?.[0]?.finishReason,
+    });
+    if (response.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+      throw new Error(`Respuesta incompleta de ${modelName}: límite de tokens`);
+    }
 
     let text = response.text?.trim() || "";
     if (!text) throw new Error(`Respuesta vacía de ${modelName}`);
