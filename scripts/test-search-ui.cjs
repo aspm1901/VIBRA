@@ -90,6 +90,8 @@ const result = (name) => {
     assert.equal(await page.getByRole("button", { name: "Elegir una foto", exact: true }).evaluate(el => el === document.activeElement), true);
     mode = "error";
     await page.locator('input[type="file"]').setInputFiles(path.resolve("public/images/garments/blusa_beige.jpg"));
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await page.getByRole("button", { name: "Usar sin recortar" }).click();
     await alert.waitFor();
     const failedPhotoRequest = requests.at(-1);

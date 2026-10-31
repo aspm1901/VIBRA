@@ -13,6 +13,8 @@ const item=(partial)=>({store:{id:partial?'partial':'full',name:partial?'Tienda 
   await page.goto(base);
   await page.getByRole('button',{name:'Look completo',exact:true}).click();
   await page.locator('input[type=file]').setInputFiles(path.resolve('public/images/garments/blusa_beige.jpg'));
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Continuar',exact:true}).click();
   await page.getByRole('button',{name:'Usar sin recortar'}).click();
   await page.getByText('Opciones para 3 de 3 prendas de ropa',{exact:false}).waitFor();
   await page.getByText('Opciones para 1 de 3 prendas de ropa',{exact:false}).waitFor();

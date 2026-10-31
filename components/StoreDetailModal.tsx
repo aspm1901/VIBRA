@@ -440,6 +440,9 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
             <MessageCircle className="w-4 h-4 text-white" />
             <span>Escribir por WhatsApp</span>
           </a>
+          <p className="text-[11px] leading-[17px] text-grafito-55 mt-2 text-center">
+            Confirma precio, talla y disponibilidad con la tienda.
+          </p>
         </div>
         </div>
       </div>

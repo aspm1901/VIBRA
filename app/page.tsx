@@ -114,6 +114,8 @@ function VibraApp() {
 
   // Estado de la imagen subida por el usuario (null al inicio = pozo limpio)
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
+  const [pendingConsentImage, setPendingConsentImage] = useState<string | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
   const [currentImageBase64, setCurrentImageBase64] = useState<string | null>(null);
   const [currentImagePreview, setCurrentImagePreview] = useState<string | null>(null);
   const [garmentTitle, setGarmentTitle] = useState<string>("");
@@ -409,6 +411,45 @@ function VibraApp() {
     });
   };
 
+  const PHOTO_CONSENT_STORAGE_KEY = "vibra_photo_consent";
+  const PHOTO_CONSENT_VERSION = "2026-10-31";
+
+  const hasAcceptedPhotoConsent = (): boolean => {
+    try {
+      const raw = window.localStorage.getItem(PHOTO_CONSENT_STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return parsed?.version === PHOTO_CONSENT_VERSION && Boolean(parsed?.acceptedAt);
+    } catch {
+      return false;
+    }
+  };
+
+  const queuePhotoForCrop = (optimizedBase64: string) => {
+    if (hasAcceptedPhotoConsent()) {
+      setRawImageForCrop(optimizedBase64);
+    } else {
+      setConsentChecked(false);
+      setPendingConsentImage(optimizedBase64);
+    }
+  };
+
+  const handleAcceptPhotoConsent = () => {
+    if (!consentChecked || !pendingConsentImage) return;
+    try {
+      window.localStorage.setItem(
+        PHOTO_CONSENT_STORAGE_KEY,
+        JSON.stringify({ version: PHOTO_CONSENT_VERSION, acceptedAt: new Date().toISOString() })
+      );
+    } catch {
+      // Ignorar si el almacenamiento local está bloqueado
+    }
+    const nextImage = pendingConsentImage;
+    setPendingConsentImage(null);
+    setConsentChecked(false);
+    setRawImageForCrop(nextImage);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -417,7 +458,7 @@ function VibraApp() {
     reader.onload = async () => {
       const rawBase64 = reader.result as string;
       const optimizedBase64 = await compressImageClient(rawBase64);
-      setRawImageForCrop(optimizedBase64);
+      queuePhotoForCrop(optimizedBase64);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -432,7 +473,7 @@ function VibraApp() {
     reader.onload = async () => {
       const rawBase64 = reader.result as string;
       const optimizedBase64 = await compressImageClient(rawBase64);
-      setRawImageForCrop(optimizedBase64);
+      queuePhotoForCrop(optimizedBase64);
     };
     reader.readAsDataURL(file);
   };
@@ -857,7 +898,7 @@ function VibraApp() {
                 )}
 
                 <p className="text-[11px] leading-[17px] text-grafito-55 mt-4">
-                  Comparamos tu foto con las imágenes publicadas por cada tienda. No consultamos su inventario.
+                  Comparamos tu foto con imágenes publicadas por cada tienda. No consultamos su inventario. Usamos IA y puede equivocarse. VIBRA no guarda tu foto.
                 </p>
               </div>
 
@@ -1199,7 +1240,7 @@ function VibraApp() {
               <p className="text-[14px] sm:text-[15px] leading-[23px] text-grafito-55 mt-2 max-w-md font-normal">
                 {inputType === "estilo"
                   ? "Selecciona una combinación o marca de 1 a 3 estilos. Después verás las tiendas que coinciden con tu elección."
-                  : "Usa el recuadro de la izquierda para subir una foto de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con los catálogos reales de Gamarra."}
+                  : "Usa el recuadro de la izquierda para subir una foto de la prenda o del look que buscas. Vibra calculará el porcentaje de afinidad con las tiendas registradas."}
               </p>
             </div>
           ) : (
@@ -1334,6 +1375,9 @@ function VibraApp() {
               {/* Listado de Tarjetas de Ranking (Anatomía fija de 3 zonas, pág. 12) */}
               {!isSearching && !searchError && displayedResults.length > 0 && (
                 <div className="space-y-3.5 animate-vibra-fade" key={selectedGalleryFilter}>
+                  <p className="text-[12px] leading-[18px] text-grafito-55">
+                    Afinidad visual con fotos publicadas por cada tienda. No confirma stock, talla ni precio: confirma por WhatsApp antes de ir.
+                  </p>
                   {displayedResults.slice(resultsPageStart, resultsPageStart + 5).map((item, pageIdx) => {
                     const idx = resultsPageStart + pageIdx;
                     const isRank1 = idx === 0;
@@ -1527,6 +1571,9 @@ function VibraApp() {
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
+                            <p className="text-[11px] leading-[16px] text-grafito-55 mt-1">
+                              Confirma precio, talla y disponibilidad con la tienda.
+                            </p>
                           </div>
                         </div>
 
@@ -1571,6 +1618,80 @@ function VibraApp() {
           item={selectedStoreItem}
           onClose={() => setSelectedStoreItem(null)}
         />
+      )}
+
+      {/* Ventanita de consentimiento en la primera subida de foto */}
+      {pendingConsentImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-basalto-90/75 backdrop-blur-sm animate-vibra-fade"
+          onClick={() => {
+            setPendingConsentImage(null);
+            setConsentChecked(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="photo-consent-title"
+            className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 text-basalto-90 border border-caliza-20 shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p
+              id="photo-consent-title"
+              className="text-[14px] sm:text-[15px] leading-[22px] text-basalto-90 font-normal"
+            >
+              Enviamos tu foto a la IA de Google solo para buscar tiendas parecidas. Si puedes, recórtala para mostrar solo la prenda.
+            </p>
+
+            <label className="flex items-start gap-2.5 cursor-pointer select-none text-[13px] leading-[19px] text-basalto-90 pt-1">
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(e) => setConsentChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-caliza-30 accent-higo-70 shrink-0 cursor-pointer"
+              />
+              <span>
+                Tengo 18 años o más y acepto los{" "}
+                <Link
+                  href="/terminos"
+                  target="_blank"
+                  className="text-higo-70 underline hover:text-basalto-90 font-medium"
+                >
+                  Términos
+                </Link>{" "}
+                y la{" "}
+                <Link
+                  href="/privacidad"
+                  target="_blank"
+                  className="text-higo-70 underline hover:text-basalto-90 font-medium"
+                >
+                  Política de privacidad
+                </Link>
+              </span>
+            </label>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingConsentImage(null);
+                  setConsentChecked(false);
+                }}
+                className="px-4 py-2.5 rounded-full neu-chip text-[13px] font-medium text-grafito-55 hover:text-basalto-90 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!consentChecked}
+                onClick={handleAcceptPhotoConsent}
+                className="px-6 py-2.5 rounded-full bg-higo-70 hover:bg-vibra-600 text-white text-[13px] font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de Recorte Táctil */}
