@@ -51,6 +51,12 @@ export interface SearchResultItem {
   totalSearchedStyles: number;
   band: ResonanceBand;
   searchMode?: "prenda" | "look" | "estilo";
+  lookMatch?: {
+    matchedPieces: number;
+    totalPieces: number;
+    matchedNames: string[];
+    missingPieces: string[];
+  };
 }
 
 export interface SearchFilters {

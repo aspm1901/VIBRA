@@ -49,3 +49,7 @@ El ranking muestra cinco tiendas por página, con «Anterior», «Siguiente», n
 La ficha muestra «Última actualización de la ficha» al inicio del contenido, antes de las fotos, con una superficie Caliza y texto secundario Grafito. Usa la edición exacta más reciente o, si no existe, la fecha de creación de Supabase: el registro inicial es la primera actualización. Las fechas usan hora de Lima y un elemento `time`; solo si tampoco existe registro exacto se informa «Fecha exacta no registrada». El guardado administrativo genera el instante del servidor, no el navegador de la clienta.
 
 Proyecto universitario: esta intervención mejora el buscador y su demostración. No supone una auditoría completa de accesibilidad ni una migración de todos los flujos administrativos.
+
+## Look completo por prendas
+
+Las fotografías reales de look se analizan por hasta tres prendas principales de ropa; se excluyen zapatos, bolsos y accesorios. Las tarjetas conservan su composición e informan cuántas piezas coinciden, indicando «Look parcial» cuando falta alguna. La ficha detalla las piezas sin coincidencia y muestra las opciones del catálogo. El porcentaje prioriza parecido por recorte y cobertura; las etiquetas generales de estilo son un complemento. Si no se pueden separar o comparar las prendas, se muestra un error con reintento, sin sustituir silenciosamente la consulta por el vector del collage. Las vistas de prenda y estilo mantienen sus reglas.

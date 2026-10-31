@@ -1,5 +1,11 @@
 import type { SearchResultItem, Store, StoreGarment } from "@/types";
 import {
+  describeOfferedGarment,
+  isCompatibleLookPiece,
+  isCompositeLookPhoto,
+  topSleeveKind,
+} from "@/lib/look-compatibility";
+import {
   cosineSimilarity,
   calculateStyleMatch,
   calculateGarmentStyleAffinity,
@@ -90,7 +96,7 @@ const COLOR_RESONANCE_BONUS = 0.05;
  */
 export function garmentContainsFamily(garment: StoreGarment, family: GarmentFamily): boolean {
   if (family === "otro") return true;
-  const text = `${garment.name} ${garment.category || ""}`.toLowerCase();
+  const text = stripAccents(`${garment.name} ${garment.category || ""}`);
   switch (family) {
     case "vestido":
       return /\b(vestidos?|enterizos?|mamelucos?|jumpsuits?)\b/.test(text);
@@ -168,6 +174,91 @@ export interface PrendaQuery {
   queryFamily: GarmentFamily;
   primaryColor: string;
   activeStyles: string[];
+  queryTitle?: string;
+}
+
+const STRAPLESS_RE = /\b(strapless|bandeau|palabra\s+de\s+honor)\b/;
+const SHOULDER_TOP_RE =
+  /\b(sin\s+mangas|mangas?\s+cortas?|mangas?\s+largas?|cuello\s+(?:alto|redondo|v|cerrado|cuadrado|barco|halter)|halter|un\s+solo\s+hombro|asimetric[oa]s?|botones|acanalad[oa]s?|polos?|camisetas?|t-shirts?|musculosas?)\b/;
+const HALTER_RE = /\b(halter)\b/;
+const NON_HALTER_NECK_RE =
+  /\b(cuello\s+(?:redondo|v|cerrado|cuadrado|barco|alto)|escote\s+(?:redondo|v|cuadrado|corazon)|botones\s+laterales)\b/;
+const GRAPHIC_PRINT_RE =
+  /\b(estampad[oa]s?|grafic[oa]s?|graphic|frases?|letras|calaveras?|dragon|corazones|parches|texto)\b/;
+const PARTY_SPARKLE_RE =
+  /\b(lentejuelas|pedreria|cristales|brillantes|brillos|cadenas|holografic[oa]s?)\b/;
+const PLAIN_TOP_RE =
+  /\b(punto|acanalad[oa]s?|drapead[oa]s?|basic[oa]s?|sastre|botones|estructurad[oa]s?|liso|lisa)\b/;
+
+const STRUCTURAL_DETAIL_PATTERNS: RegExp[] = [
+  /\bsin\s+mangas\b/,
+  /\b(?:tirantes|tiras)\b/,
+  /\bbotones\s+laterales\b/,
+  /\bpeplum\b/,
+  /\bacanalad[oa]s?\b/,
+  /\b(?:tejid[oa]s?|de\s+punto)\b/,
+  /\bdrapead[oa]s?\b/,
+  /\b(?:escote|cuello)\s+cuadrado\b/,
+  /\bcuello\s+alto\b/,
+  /\b(?:un\s+(?:solo\s+)?hombro|asimetric[oa]s?)\b/,
+  /\b(?:encaje|crochet|broderie|bordad[oa]s?)\b/,
+  /\b(?:volantes|volados)\b/,
+];
+
+function countSharedStructuralDetails(queryTitle: string, garment: StoreGarment): number {
+  const title = stripAccents((queryTitle || "").trim());
+  if (!title) return 0;
+  const offered = describeOfferedGarment(garment);
+  let count = 0;
+  for (const re of STRUCTURAL_DETAIL_PATTERNS) {
+    if (re.test(title) && re.test(offered)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+export function hasPrendaSubtypeConflict(
+  queryTitle: string,
+  queryFamily: GarmentFamily,
+  primaryColor: string,
+  garment: StoreGarment
+): boolean {
+  const title = stripAccents((queryTitle || "").trim());
+  if (!title) return false;
+  if (queryFamily !== "conjunto" && isCompositeLookPhoto(garment)) {
+    return true;
+  }
+  if (
+    !isCompatibleLookPiece(
+      { name: queryTitle, garmentFamily: queryFamily, primaryColor, box: [0, 0, 1000, 1000] },
+      garment
+    )
+  ) {
+    return true;
+  }
+  if (queryFamily === "polo_top" || queryFamily === "blusa") {
+    const offered = describeOfferedGarment(garment);
+    if (STRAPLESS_RE.test(offered) && !STRAPLESS_RE.test(title) && SHOULDER_TOP_RE.test(title)) {
+      return true;
+    }
+    if (STRAPLESS_RE.test(title) && !STRAPLESS_RE.test(offered) && SHOULDER_TOP_RE.test(offered)) {
+      return true;
+    }
+    if (HALTER_RE.test(offered) && !HALTER_RE.test(title) && NON_HALTER_NECK_RE.test(title)) {
+      return true;
+    }
+    if (HALTER_RE.test(title) && !HALTER_RE.test(offered) && NON_HALTER_NECK_RE.test(offered)) {
+      return true;
+    }
+    if (GRAPHIC_PRINT_RE.test(offered) && !GRAPHIC_PRINT_RE.test(title) && PLAIN_TOP_RE.test(title)) {
+      return true;
+    }
+    if (PARTY_SPARKLE_RE.test(offered) && !PARTY_SPARKLE_RE.test(title) && PLAIN_TOP_RE.test(title)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem | null {
@@ -180,27 +271,54 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
   let bestGarment = store.garments[0];
   let maxPhotoSim = 0;
   let bestFamilyRelation: FamilyRelation = "neutral";
+  let bestSubtypeConflict = false;
   let additionalMatchesCount = 0;
   let maxComparisonScore = -1;
+  const wantedSleeve = q.queryTitle ? topSleeveKind(q.queryTitle) : undefined;
 
   for (const garment of store.garments) {
     if (!garment.embedding || garment.embedding.length !== q.queryVector.length) continue;
     const sim =
       q.queryVector && q.queryVector.length > 0 ? cosineSimilarity(q.queryVector, garment.embedding) : 0;
     if (sim <= 0) continue;
-    const familyRelation = getFamilyRelation(q.queryFamily, garment);
+    let familyRelation = getFamilyRelation(q.queryFamily, garment);
+    const subtypeConflict = hasPrendaSubtypeConflict(
+      q.queryTitle || "",
+      q.queryFamily,
+      q.primaryColor,
+      garment
+    );
 
-    // Conteo de prendas del mismo tipo con similitud aceptable (para bono de variedad)
-    if (familyRelation === "same" && sim >= 0.65) {
+    if (
+      familyRelation === "neutral" &&
+      !subtypeConflict &&
+      (q.queryFamily === "polo_top" || q.queryFamily === "blusa") &&
+      wantedSleeve &&
+      topSleeveKind(describeOfferedGarment(garment)) === wantedSleeve
+    ) {
+      familyRelation = "same";
+    }
+
+    // Conteo de prendas del mismo tipo y subtipo compatible con similitud aceptable (para bono de variedad)
+    if (familyRelation === "same" && !subtypeConflict && sim >= 0.65) {
       additionalMatchesCount++;
     }
 
-    // Prioridad semántica + afinidad de color en la selección de la prenda ganadora
+    // Prioridad semántica + afinidad de color + coherencia de subtipo en la selección de la prenda ganadora
     let comparisonScore = sim;
     if (familyRelation === "same") {
       comparisonScore = sim * 1.35;
-      if (hasColorAffinity(q.primaryColor, garment)) {
+      if (!subtypeConflict && hasColorAffinity(q.primaryColor, garment)) {
         comparisonScore *= COLOR_SELECTION_BOOST;
+      }
+      if (!subtypeConflict && q.queryTitle) {
+        const sharedDetails = Math.min(2, countSharedStructuralDetails(q.queryTitle, garment));
+        if (sharedDetails > 0) {
+          comparisonScore *= 1 + sharedDetails * 0.03;
+        }
+      }
+      if (subtypeConflict) {
+        comparisonScore *= 0.80;
       }
     } else if (familyRelation === "different") {
       comparisonScore = sim * 0.65;
@@ -211,6 +329,7 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
       maxPhotoSim = sim;
       bestGarment = garment;
       bestFamilyRelation = familyRelation;
+      bestSubtypeConflict = subtypeConflict;
     }
   }
 
@@ -232,14 +351,29 @@ export function scorePrendaStore(store: Store, q: PrendaQuery): SearchResultItem
     "prenda"
   );
 
-  // Bono de color si coinciden tonos en prendas del mismo tipo
-  if (bestFamilyRelation === "same" && hasColorAffinity(q.primaryColor, bestGarment)) {
-    resonance += COLOR_RESONANCE_BONUS;
+  // Bono de color si coinciden tonos en prendas del mismo tipo y subtipo compatible
+  if (bestFamilyRelation === "same" && !bestSubtypeConflict && hasColorAffinity(q.primaryColor, bestGarment)) {
+    resonance += q.queryTitle ? 0.06 : COLOR_RESONANCE_BONUS;
+  }
+
+  // Bono de precisión si la prenda ganadora comparte rasgos estructurales explícitos (ej. sin mangas, botones laterales)
+  if (bestFamilyRelation === "same" && !bestSubtypeConflict && q.queryTitle) {
+    const sharedDetails = countSharedStructuralDetails(q.queryTitle, bestGarment);
+    if (sharedDetails >= 2) {
+      resonance += 0.02;
+    } else if (sharedDetails === 1) {
+      resonance += 0.01;
+    }
   }
 
   // Bono de alternativas: +0.02 por cada prenda adicional del mismo tipo con coseno >= 0.65 (máx +0.06)
   if (additionalMatchesCount > 1) {
     resonance += Math.min(0.06, (additionalMatchesCount - 1) * 0.02);
+  }
+
+  // Penalización si la mejor prenda de la tienda difiere en subtipo explícito (ej. manga corta, strapless o deportivo frente a top sin mangas)
+  if (bestSubtypeConflict) {
+    resonance -= 0.09;
   }
 
   resonance = roundScore(Math.min(MAX_RESONANCE, resonance));

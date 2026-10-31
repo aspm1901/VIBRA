@@ -135,13 +135,24 @@ export const StoreDetailModal: React.FC<StoreDetailModalProps> = ({ item, onClos
           </div>
         </div>
 
+        {item.lookMatch && (
+          <div className="mt-4 text-[12px] leading-[18px] text-grafito-55">
+            <p className="font-medium text-higo-70">
+              Opciones para {item.lookMatch.matchedPieces} de {item.lookMatch.totalPieces} prendas de ropa del look. El porcentaje resume la afinidad; no indica que sean idénticas.
+            </p>
+            {item.lookMatch.missingPieces.length > 0 && (
+              <p>Sin coincidencia suficiente en esta tienda: {item.lookMatch.missingPieces.join(", ")}.</p>
+            )}
+          </div>
+        )}
+
         {/* Rejilla fotográfica sobre el pliegue: Imagen principal 4:5 + mampostería de 3 columnas (Pág. 13) */}
         {item.searchMode === "look" && matchingGarments && matchingGarments.length > 1 ? (
           <div className="mt-5">
             <span className="text-[13px] font-medium text-basalto-90 block mb-2.5">
               Prendas para armar tu look en esta tienda ({matchingGarments.length})
             </span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid ${matchingGarments.length >= 3 ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
               {matchingGarments.map((g) => (
                 <div
                   key={g.id}

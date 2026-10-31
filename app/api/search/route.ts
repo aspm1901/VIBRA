@@ -9,6 +9,9 @@ import {
 } from "@/lib/search-scoring";
 import { generateImageEmbedding, detectGarmentStyles } from "@/lib/ai/gemini";
 import { SearchFilters, SearchResultItem } from "@/types";
+import { hasIncompleteLookPieces, sanitizeLookPieces, type LookPieceQuery } from "@/lib/look-pieces";
+import { prepareLookImage, embedLookPieces } from "@/lib/ai/look-pieces";
+import { scoreLookPiecesStore } from "@/lib/look-scoring";
 
 export const maxDuration = 60; // 60s timeout for AI calls
 
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
     };
 
     let queryVector: number[] | null = null;
+    let lookPieces: LookPieceQuery[] = [];
     let analysisSource: "vision" | "catalog" | "styles" | "example" = "styles";
     let detectedInfo: {
       category: string;
@@ -63,6 +67,7 @@ export async function POST(req: NextRequest) {
       garmentTitle: string;
       primaryColor: string;
       description: string;
+      pieces?: { name: string; garmentFamily: string; primaryColor: string }[];
     } = {
       category: filters.category || "Prenda de referencia",
       garmentFamily: "otro",
@@ -94,6 +99,37 @@ export async function POST(req: NextRequest) {
         garmentTitle: `Estilo: ${requestedStyles.join(", ")}`,
         primaryColor: "",
         description: "Filtrado directo por estética y especialidad de tiendas en Gamarra",
+      };
+    } else if (image && searchMode === "look") {
+      analysisSource = "vision";
+      let prepared: string;
+      try {
+        prepared = await prepareLookImage(image);
+      } catch {
+        return NextResponse.json({ error: "No pudimos leer la foto del look. Prueba otra imagen." }, { status: 422 });
+      }
+      const analysis = await detectGarmentStyles(prepared, "image/jpeg", "look", true);
+      if (analysis.isFallback || hasIncompleteLookPieces(analysis.pieces)) {
+        return NextResponse.json({ error: "No pudimos identificar las prendas del look en este momento. Reintenta o busca una prenda con un recorte." }, { status: 503 });
+      }
+      const pieces = sanitizeLookPieces(analysis.pieces);
+      if (!pieces.length) {
+        return NextResponse.json({ error: "No identificamos prendas de ropa para comparar. Usa una foto donde se vean el top, la falda, el pantalón o el vestido." }, { status: 422 });
+      }
+      try {
+        lookPieces = await embedLookPieces(prepared, pieces, generateImageEmbedding);
+      } catch (error) {
+        console.warn("No se completó la comparación de prendas del look:", error instanceof Error ? error.message : "error de recorte o vector");
+        return NextResponse.json({ error: "No pudimos comparar todas las prendas del look. Reintenta la búsqueda o recorta una prenda." }, { status: 503 });
+      }
+      detectedInfo = {
+        category: "Look completo / Ropa",
+        garmentFamily: pieces[0].garmentFamily,
+        styles: isManualFilterRefinement && filters.styles?.length ? filters.styles : analysis.styles,
+        garmentTitle: pieces.map(p => p.name).join(" + "),
+        primaryColor: analysis.primaryColor || "",
+        description: analysis.description || "",
+        pieces: pieces.map(({ name, garmentFamily, primaryColor }) => ({ name, garmentFamily, primaryColor })),
       };
     } else if (image) {
       analysisSource = "vision";
@@ -252,7 +288,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (searchMode !== "estilo" && (!queryVector || queryVector.length === 0)) {
+    if (searchMode !== "estilo" && lookPieces.length === 0 && (!queryVector || queryVector.length === 0)) {
       if (detectedInfo.category && detectedInfo.category !== "Prenda de referencia") {
         return NextResponse.json(
           { error: "La referencia no tiene un vector visual disponible. Intenta con otra foto o busca por estilo." },
@@ -350,7 +386,10 @@ export async function POST(req: NextRequest) {
       // CASO B: MODO LOOK COMPLETO (outfit entero)
       // ==========================================
       if (searchMode === "look") {
-        const item = scoreLookStore(store, { queryVector, activeStyles });
+        // Los ejemplos antiguos conservan su referencia; las fotos reales siempre se comparan por piezas.
+        const item = lookPieces.length
+          ? scoreLookPiecesStore(store, { pieces: lookPieces, activeStyles })
+          : scoreLookStore(store, { queryVector, activeStyles });
         if (item) rankedItems.push(item);
         continue;
       }
@@ -361,14 +400,20 @@ export async function POST(req: NextRequest) {
       const item = scorePrendaStore(store, {
         queryVector,
         queryFamily,
-        primaryColor: detectedInfo.primaryColor,
+        primaryColor: detectedInfo.primaryColor || detectedInfo.garmentTitle,
         activeStyles,
+        queryTitle: `${detectedInfo.garmentTitle || ""} ${detectedInfo.category || ""}`.trim(),
       });
       if (item) rankedItems.push(item);
     }
 
     // 3. Ordenar de mayor a menor resonancia y quitar vectores pesados (3072 floats) antes de enviar al cliente
-    rankedItems.sort((a, b) => b.resonanceScore - a.resonanceScore);
+    rankedItems.sort(
+      (a, b) =>
+        b.resonanceScore - a.resonanceScore ||
+        (b.lookMatch?.matchedPieces ?? 0) - (a.lookMatch?.matchedPieces ?? 0) ||
+        b.photoSimilarity - a.photoSimilarity
+    );
     const stripGarment = (g: any) => {
       if (!g) return g;
       const { embedding, ...rest } = g;

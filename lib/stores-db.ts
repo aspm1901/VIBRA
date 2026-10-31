@@ -362,12 +362,14 @@ export async function saveStore(store: Store): Promise<void> {
       const adminClient = getSupabaseAdmin();
       if (adminClient) {
         const activeFiles = new Set<string>();
+        // Los parámetros de caché no forman parte del nombre guardado en Storage.
+        // Sin quitarlos, una foto activa como foto.jpg?v=2 se consideraría huérfana.
         if (store.standPhotoUrl) {
-          activeFiles.add(store.standPhotoUrl.split("/").pop() || "");
+          activeFiles.add(store.standPhotoUrl.split(/[?#]/, 1)[0].split("/").pop() || "");
         }
         for (const g of store.garments || []) {
           if (g.photoUrl) {
-            activeFiles.add(g.photoUrl.split("/").pop() || "");
+            activeFiles.add(g.photoUrl.split(/[?#]/, 1)[0].split("/").pop() || "");
           }
         }
         const { data: files } = await adminClient.storage

@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import sharp from "sharp";
+import { LOOK_CLOTHING_FAMILIES, hasIncompleteLookPieces, sanitizeLookPieces, type LookPiece } from "@/lib/look-pieces";
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -127,6 +128,7 @@ export interface GarmentAnalysisResult {
   primaryColor?: string;
   description?: string;
   isFallback?: boolean;
+  pieces?: LookPiece[];
 }
 
 // Modelo principal y respaldos para el análisis del catálogo.
@@ -225,13 +227,20 @@ export async function detectGarmentStyles(
       ? `
 Eres un estilista y clasificador experto de moda para VIBRA (buscador de moda en Gamarra).
 La imagen contiene un LOOK COMPLETO / OUTFIT (foto de cuerpo entero, modelo vestida o collage de prendas de Pinterest).
-Tu tarea es analizar el outfit como un TODO:
+Tu tarea es identificar la ROPA del outfit y su estética general:
 1. "category": "Look completo / Outfit"
 2. "garmentFamily": La familia de la prenda protagonista o superior del look (una de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto, otro)
 3. "styles": Máximo 2 o 3 estilos que describan la estética general del outfit completo, seleccionados ÚNICAMENTE de: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo
 4. "garmentTitle": Título del outfit indicando sus prendas clave (ej. 'Look sastre: Blazer marfil con top y palazzo')
 5. "primaryColor": Paleta predominante de colores del conjunto (ej. 'Marfil y tonos neutros')
 6. "description": Breve descripción del estilo general y la vibra del look
+7. "pieces": De 1 a 3 prendas principales de ROPA visibles, con nombre, familia, color y caja de ubicación.
+El nombre de CADA pieza debe precisar los rasgos visibles que la distinguen: tipo de top (halter, corset, strapless, cuello alto), largo de falda (mini, midi, larga), corte y tejido si se aprecian. No inventes materiales ni detalles ocultos. Ejemplo: "Top halter marrón sin mangas" y "Falda larga satinada marfil", no solo "Top" y "Falda".
+IGNORA zapatos, bolsos, carteras, joyas, uñas, cinturones, sombreros y cualquier accesorio; NO son prendas a buscar.
+Separa las piezas: un top y una falda son dos prendas; un blazer, blusa y pantalón son tres. Un vestido es una sola.
+No inventes prendas tapadas ni agrupes todo como "conjunto". Si no hay ropa identificable, devuelve pieces: [].
+La caja "box" encierra solo la prenda correspondiente y usa [ymin, xmin, ymax, xmax] con coordenadas de 0 a 1000 respecto de TODA la imagen.
+En collages, ubica cada foto de prenda por separado. No incluyas otros objetos en su caja si se pueden excluir.
 
 Devuelve ESTRICTAMENTE un objeto JSON con este formato:
 {
@@ -240,25 +249,30 @@ Devuelve ESTRICTAMENTE un objeto JSON con este formato:
   "styles": ["Elegante", "Oficina"],
   "garmentTitle": "Look sastre: Blazer marfil y pantalón palazzo",
   "primaryColor": "Marfil / Beige",
-  "description": "Outfit completo sastre contemporáneo con prendas fluidas"
+  "description": "Outfit completo sastre contemporáneo con prendas fluidas",
+  "pieces": [
+    {"name": "Blazer marfil", "garmentFamily": "casaca", "primaryColor": "Marfil", "box": [50, 50, 550, 450]},
+    {"name": "Pantalón palazzo", "garmentFamily": "pantalon_jean", "primaryColor": "Negro", "box": [550, 50, 950, 450]}
+  ]
 }
 `
       : `
 Eres un estilista y clasificador experto de moda para VIBRA (buscador visual de ropa en Gamarra).
 Analiza la prenda principal en la imagen.
+En "category" y "garmentTitle" precisa siempre los rasgos visibles que distinguen el subtipo: tipo de manga o tirante en prendas superiores (sin mangas, de tirantes, strapless, halter, manga corta, manga larga), largo en faldas o vestidos (corto/mini, midi, largo) y detalles clave de corte o textura si se aprecian (acanalado, de punto, drapeado, peplum, botones laterales, sastre).
 Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
 {
-  "category": "Tipo de prenda en lenguaje natural y preciso (ej. 'Casaca denim', 'Blazer sastre', 'Polo básico', 'Vestido de noche', 'Jean wide leg', 'Chompa de punto')",
+  "category": "Tipo de prenda en lenguaje natural y preciso (ej. 'Top sin mangas de punto', 'Polo básico de manga corta', 'Blazer sastre', 'Vestido largo de noche', 'Jean wide leg', 'Chompa de punto')",
   "garmentFamily": "Una sola de: casaca, polo_top, blusa, chompa, pantalon_jean, vestido, falda_short, conjunto, otro",
   "styles": ["Máximo 2 o 3 estilos seleccionados ÚNICAMENTE de: Casual, Elegante, Urbano, Fiesta, Oficina, Minimalista, Boho, Romántico, Y2K, Vintage, Playa, Deportivo"],
-  "garmentTitle": "Título descriptivo corto y preciso de la prenda (ej. 'Casaca denim clásica', 'Vestido burdeos de fiesta')",
+  "garmentTitle": "Título descriptivo corto y preciso de la prenda (ej. 'Top sin mangas acanalado con botones laterales', 'Vestido largo burdeos de fiesta')",
   "primaryColor": "Color principal de la prenda (ej. 'Blanco', 'Azul denim', 'Burdeos', 'Negro', 'Beige')",
   "description": "Una frase corta sobre el corte, material y silueta"
 }
 `;
 
   // Esquema estricto para modelos Gemini
-  const responseSchema = {
+  const responseSchema: any = {
     type: "OBJECT",
     properties: {
       category: { type: "STRING" },
@@ -277,8 +291,24 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
       primaryColor: { type: "STRING" },
       description: { type: "STRING" },
     },
-    required: ["category", "garmentFamily", "styles", "garmentTitle"],
+    required: ["category", "garmentFamily", "styles", "garmentTitle", "primaryColor"],
   };
+  if (searchMode === "look") {
+    responseSchema.properties.pieces = {
+      type: "ARRAY", maxItems: 3,
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          garmentFamily: { type: "STRING", enum: [...LOOK_CLOTHING_FAMILIES] },
+          primaryColor: { type: "STRING" },
+          box: { type: "ARRAY", items: { type: "NUMBER" }, minItems: 4, maxItems: 4 },
+        },
+        required: ["name", "garmentFamily", "primaryColor", "box"],
+      },
+    };
+    responseSchema.required.push("pieces");
+  }
 
   const callModel = async (modelName: string): Promise<GarmentAnalysisResult> => {
     const isGemma = modelName.startsWith("gemma");
@@ -324,6 +354,9 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
     const parsed = JSON.parse(text);
+    if (searchMode === "look" && hasIncompleteLookPieces(parsed.pieces)) {
+      throw new Error("La detección del look contiene prendas sin una ubicación válida.");
+    }
 
     const rawColor = String(parsed.primaryColor || "").trim();
     const cleanColor = rawColor.length > 40 ? rawColor.split(/[.,;]/)[0].slice(0, 40).trim() : rawColor;
@@ -335,6 +368,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con este formato:
       garmentTitle: parsed.garmentTitle || "Prenda analizada",
       primaryColor: cleanColor,
       description: parsed.description || "",
+      ...(searchMode === "look" ? { pieces: sanitizeLookPieces(parsed.pieces) } : {}),
     };
   };
 

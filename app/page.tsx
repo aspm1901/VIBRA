@@ -1356,11 +1356,11 @@ function VibraApp() {
                             item.matchingGarments &&
                             item.matchingGarments.length > 1 ? (
                               <div className="flex items-center -space-x-4">
-                                {item.matchingGarments.slice(0, 2).map((mg, gIdx) => (
+                                {item.matchingGarments.slice(0, 3).map((mg, gIdx) => (
                                   <div
                                     key={mg.id}
                                     className={`relative w-[68px] h-[86px] sm:w-[76px] sm:h-[96px] flex items-center justify-center p-1.5 overflow-hidden photo-frame ${
-                                      gIdx === 1 ? "z-10 ring-2 ring-[#F4F5F0]" : "z-0"
+                                      gIdx >= 1 ? "z-10 ring-2 ring-[#F4F5F0]" : "z-0"
                                     }`}
                                     title={mg.name}
                                   >
@@ -1435,9 +1435,16 @@ function VibraApp() {
                               {searchMode === "look" &&
                               item.matchingGarments &&
                               item.matchingGarments.length > 1
-                                ? `${item.matchingGarments[0].name} + ${item.matchingGarments[1].name}`
+                                ? item.matchingGarments.map(g => g.name).join(" + ")
                                 : item.bestGarment.name}
                             </p>
+
+                            {item.lookMatch && (
+                              <p className="text-[11px] leading-[17px] text-higo-70 mt-1">
+                                Opciones para {item.lookMatch.matchedPieces} de {item.lookMatch.totalPieces} {item.lookMatch.totalPieces === 1 ? "prenda de ropa" : "prendas de ropa"}
+                                {item.lookMatch.matchedPieces < item.lookMatch.totalPieces ? " · Look parcial" : " · Revisa el parecido de cada pieza"}
+                              </p>
+                            )}
 
                             {/* Controles operativos en una sola fila compacta */}
                             {item.searchMode === "estilo" && (
