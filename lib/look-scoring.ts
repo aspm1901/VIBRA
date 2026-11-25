@@ -1,6 +1,6 @@
 import type { SearchResultItem, Store, StoreGarment } from "@/types";
 import type { LookPieceQuery } from "@/lib/look-pieces";
-import { calculateStyleMatch, cosineSimilarity, determineBand, roundScore, scalePerceptualSimilarity } from "@/lib/ranking";
+import { calculateStyleMatch, cosineSimilarity, determineBand, extractGarmentFamily, roundScore, scalePerceptualSimilarity } from "@/lib/ranking";
 import { getFamilyRelation, hasColorAffinity } from "@/lib/search-scoring";
 import { isCompatibleLookPiece, isCompositeLookPhoto } from "@/lib/look-compatibility";
 
@@ -12,13 +12,15 @@ export function scoreLookPiecesStore(
 ): SearchResultItem | null {
   const { pieces, activeStyles } = query;
   if (!pieces.length || pieces.length > 3 || !pieces.every(p => p.queryVector?.length && p.queryVector.every(Number.isFinite) && p.queryVector.some(n => n !== 0))) return null;
-  const candidates = pieces.map(piece => store.garments.flatMap(garment => {
+  const candidates = pieces.map(piece => {
+    const eligible = store.garments.flatMap(garment => {
     if (garment.embedding?.length !== piece.queryVector.length) return [];
     const relation = getFamilyRelation(piece.garmentFamily, garment);
+    const offeredFamily = extractGarmentFamily(garment.name, garment.category, garment.garmentFamily);
     const isTopBlusaCross =
       relation === "neutral" &&
-      ((piece.garmentFamily === "polo_top" && garment.garmentFamily === "blusa") ||
-        (piece.garmentFamily === "blusa" && garment.garmentFamily === "polo_top"));
+      ((piece.garmentFamily === "polo_top" && offeredFamily === "blusa") ||
+        (piece.garmentFamily === "blusa" && offeredFamily === "polo_top"));
     if (relation !== "same" && !isTopBlusaCross) return [];
     if (!isCompatibleLookPiece(piece, garment, pieces)) return [];
     const cosine = cosineSimilarity(piece.queryVector, garment.embedding!);
@@ -30,9 +32,15 @@ export function scoreLookPiecesStore(
     if (effectiveVisual < 0.5) return [];
     const color = hasColorAffinity(piece.primaryColor, garment) ? 1 : 0;
     return [{ garment, visual, color, selection: effectiveVisual + color * 0.03, composite }];
-  }).sort((a, b) => b.selection - a.selection).slice(0, 4));
+    }).sort((a, b) => b.selection - a.selection);
+    // No dejar que cuatro conjuntos oculten prendas sueltas que sí pueden combinarse.
+    return [
+      ...eligible.filter(m => !m.composite).slice(0, 4),
+      ...eligible.filter(m => m.composite).slice(0, 4),
+    ];
+  });
 
-  // Hasta 5³ combinaciones. Una misma foto no completa dos piezas diferentes,
+  // Hasta 9³ combinaciones. Una misma foto no completa dos piezas diferentes,
   // ni se mezcla una foto de conjunto con otra prenda suelta para evitar duplicar piezas en la tarjeta.
   let best: (Match | null)[] = [];
   let bestUtility = -1;

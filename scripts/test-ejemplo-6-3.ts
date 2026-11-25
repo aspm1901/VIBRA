@@ -5,6 +5,9 @@
  * Ejecutar con: npx.cmd tsx scripts/test-ejemplo-6-3.ts
  */
 import { determineBand, roundScore, scalePerceptualSimilarity } from "../lib/ranking";
+import { scoreLookPiecesStore } from "../lib/look-scoring";
+import type { Store, StoreGarment } from "../types";
+import type { LookPieceQuery } from "../lib/look-pieces";
 import {
   ESTILO_COINCIDENCIA_PESO,
   ESTILO_BONO_INSIGNIA,
@@ -27,22 +30,27 @@ assert(visA === 0.86, `0.82 crudo misma familia (chaleco) mapea a 0.86 calibrado
 const visB = scalePerceptualSimilarity(0.60, "different");
 assert(visB === 0.20, `0.60 crudo familia distinta (short vs chaleco) mapea a 0.20 calibrado (obtenido: ${visB})`);
 
-console.log("\n=== 2. Ejemplo 6.3: Tienda A (Beige Studio - Look Completo) ===");
-const pesoFoto = 0.30;
-const pesoEstilo = 0.70;
-const coberturaA = 1.0;
-const especialidadA = 1.0;
-const estiloScoreA = 0.50 * coberturaA + 0.50 * especialidadA;
-const resonanciaA = roundScore(pesoFoto * visA + pesoEstilo * estiloScoreA);
-assert(resonanciaA === 0.96, `Tienda A obtiene exactamente 0.96 (96 %) (obtenido: ${resonanciaA})`);
-assert(determineBand(resonanciaA) === "Alta", `Tienda A pertenece a Banda Alta`);
-
-console.log("\n=== 3. Ejemplo 6.3: Tienda B (Urbana Chic - Descartada) ===");
-const estiloScoreB = 0.00;
-const resonanciaB = roundScore(pesoFoto * visB + pesoEstilo * estiloScoreB);
-assert(resonanciaB === 0.06, `Tienda B obtiene exactamente 0.06 (6 %) (obtenido: ${resonanciaB})`);
-assert(resonanciaB < PUBLISH_THRESHOLD.look, `Tienda B (0.06) no supera el umbral de publicación de Look (${PUBLISH_THRESHOLD.look})`);
-assert(visB < 0.45, `Tienda B (0.20) no supera el Candado de Afinidad Mínima (0.45)`);
+console.log("\n=== 2. Ejemplo 6.3 actual: dos prendas comparadas por separado ===");
+const pieces: LookPieceQuery[] = [
+  { name: "Chaleco marfil", garmentFamily: "casaca", primaryColor: "Marfil", box: [0,0,500,1000], queryVector: [1,0] },
+  { name: "Short marfil", garmentFamily: "falda_short", primaryColor: "Marfil", box: [500,0,1000,1000], queryVector: [0,1] },
+];
+const styles = ["Elegante", "Oficina"];
+const garments: StoreGarment[] = [
+  { id: "chaleco", storeId: "ejemplo", name: "Chaleco marfil", category: "Chaleco", garmentFamily: "casaca", primaryColor: "Marfil", styles, photoUrl: "/ejemplo.jpg", embedding: [.84, Math.sqrt(1-.84*.84)] },
+  { id: "short", storeId: "ejemplo", name: "Short marfil", category: "Short", garmentFamily: "falda_short", primaryColor: "Marfil", styles, photoUrl: "/ejemplo-short.jpg", embedding: [Math.sqrt(1-.795*.795), .795] },
+];
+const baseStore: Store = { id: "ejemplo", name: "Tienda A", gallery: "Ejemplo", galleryAddress: "", floor: "1", stand: "1", referenceLocation: "", whatsapp: "", priceLevel: "medio", styles, categories: ["Chaleco", "Short"], sizes: ["M"], purchaseType: "presencial", standPhotoUrl: "", updatedAt: "", garments };
+assert(scalePerceptualSimilarity(.84, "neutral") === .80, "El chaleco aporta 0,80 de parecido visual");
+assert(scalePerceptualSimilarity(.795, "neutral") === .75, "El short aporta 0,75 de parecido visual");
+const a = scoreLookPiecesStore(baseStore, { pieces, activeStyles: styles });
+assert(a?.resonanceScore === .85 && a.band === "Alta", "Tienda A obtiene 85 % usando la función real de Look completo");
+assert(a?.lookMatch?.matchedPieces === 2, "A ofrece opciones para las dos piezas");
+const b = scoreLookPiecesStore({ ...baseStore, name: "Tienda B", garments: garments.slice(0,1) }, { pieces, activeStyles: styles });
+assert(b?.resonanceScore === .69 && b.band === "Media", "Tienda B queda en 69 % por el tope de look parcial");
+assert(b?.lookMatch?.missingPieces[0] === "Short marfil", "Se informa que falta el short");
+const noStyle = scoreLookPiecesStore({ ...baseStore, styles: ["Urbano"], garments: garments.map(g => ({ ...g, styles: ["Urbano"] })) }, { pieces, activeStyles: styles });
+assert(noStyle === null, "Una tienda sin estilos compartidos se descarta en Look completo");
 
 console.log("\n=== 4. Progresión limpia de bandas en modo «Por estilo» ===");
 // 0 estilos

@@ -12,13 +12,11 @@ const nonCorsetTop = /\b(polos?|camisetas?|t-shirts?|cuello\s+alto|halter|un\s+s
 const basicNonCorsetOffered = /\b(polos?|camisetas?|t-shirts?|cuello\s+alto|mangas?\s+largas?|mangas?\s+cortas?|musculosas?|bividis?|camisas?|camiser[oa]s?|basico|basica)\b/;
 const swim = /\b(bikinis?|trikinis?|banadores?|ropa de bano|trajes? de bano)\b/;
 const jumpsuit = /\b(enterizos?|mamelucos?|jumpsuits?|monos?)\b/;
-const sport = /\b(deportiv[oa]s?|gym|fitness|running|entrenamiento|dry\s*fit|lycra)\b/;
+const sport = /\b(deportiv[oa]s?|gym|fitness|running|entrenamiento|dry\s*fit)\b/;
 const vest = /\b(chalecos?)\b/;
 const bolero = /\b(boleros?|toreras?)\b/;
 const sleevedOuterwear = /\b(blazers?|casacas?|chaquetas?|abrigos?|bombers?|gabardinas?|parkas?|sacos?|cardigans?)\b/;
-const longSleeveShirt = /\b(camisas?|camiser[oa]s?|mangas?\s+largas?)\b/;
-const shortSleeveTop = /\b(mangas?\s+cortas?|mangas?\s+abullonadas?|mangas?\s+acampanadas?|con\s+mangas|raglan|polos?|camisetas?|t-shirts?)\b/;
-const sleevelessTop = /\b(strapless|tirantes|tiras|sin\s+mangas|halter|un\s+solo\s+hombro|un\s+hombro|bandeau|musculosas?|tank|bividis?|cadenas|pedreria|panuelo)\b/;
+const sleevelessTop = /\b(strapless|tirantes|tiras|sin\s+mangas|halter|un\s+solo\s+hombro|un\s+hombro|bandeau|musculosas?|tank|bividis?)\b/;
 
 /**
  * Rasgos visuales de mangas verificados en las 28 prendas superiores del catálogo
@@ -62,12 +60,15 @@ export function describeOfferedGarment(garment: StoreGarment): string {
 
 export function topSleeveKind(text: string): "sleeveless" | "short" | "long" | undefined {
   const norm = normalize(text);
-  const isSleeveless = sleevelessTop.test(norm);
-  const isShort = shortSleeveTop.test(norm);
-  const isLong = longSleeveShirt.test(norm);
-  if (isSleeveless && !isShort && !isLong) return "sleeveless";
-  if (isLong && !isSleeveless) return "long";
-  if (isShort && !isSleeveless && !isLong) return "short";
+  // Solo rasgos explícitos: tanto polos como camisas pueden tener mangas cortas o largas.
+  const explicit = [
+    [sleevelessTop.test(norm), "sleeveless"],
+    [/\bmangas?\s+cortas?\b/.test(norm), "short"],
+    [/\bmangas?\s+largas?\b/.test(norm), "long"],
+  ] as const;
+  const kinds = explicit.filter(([matches]) => matches).map(([, kind]) => kind);
+  if (kinds.length === 1) return kinds[0];
+  if (kinds.length > 1) return undefined;
   return undefined;
 }
 
@@ -78,7 +79,7 @@ export function isCompositeLookPhoto(garment: StoreGarment): boolean {
 function skirtLength(text: string): "short" | "long" | undefined {
   // Leer el largo en todas las menciones de la falda (nombre y categoría), sin confundirse con mangas o top.
   const fragment = text.match(/\b(?:minifaldas?|faldas?|skirts?)\b[^+;,]{0,65}/g)?.join(" ") || "";
-  if (/\b(minifaldas?|mini|cortas?|short|pareos?|con\s+capas|con\s+flecos|asimetric[oa]s?\s+de\s+encaje)\b/.test(fragment)) return "short";
+  if (/\b(minifaldas?|mini|cortas?|short)\b/.test(fragment)) return "short";
   if (/\b(midi|maxi|largas?|long)\b/.test(fragment)) return "long";
 }
 

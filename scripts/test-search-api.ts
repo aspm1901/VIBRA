@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { NextRequest } from "next/server";
 import { POST } from "../app/api/search/route";
+import sharp from "sharp";
 
 const request = (body: unknown) => new NextRequest("http://localhost/api/search", {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -31,8 +32,9 @@ test("sin vector de imagen la API explica la falla de IA y permite reintentar", 
   const originalKey = process.env.GEMINI_API_KEY;
   delete process.env.GEMINI_API_KEY;
   try {
+    const validImage = await sharp({ create: { width: 32, height: 32, channels: 3, background: "white" } }).png().toBuffer();
     const response = await POST(request({
-      image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=",
+      image: `data:image/png;base64,${validImage.toString("base64")}`,
       filters: { searchMode: "look" },
     }));
     assert.equal(response.status, 503);

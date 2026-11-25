@@ -16,8 +16,8 @@ function getClient(): GoogleGenAI | null {
 }
 
 /**
- * Optimiza y redimensiona la imagen a resolución óptima (máx 640px y ~40-60KB).
- * Permite que Google Gemini procese la imagen en 2-3s en lugar de 28s sin perder textura ni corte.
+ * Normaliza la orientación EXIF y reduce imágenes grandes a un máximo de 448 px.
+ * El reconocimiento y el embedding reciben la misma orientación visible en el celular.
  */
 export async function optimizeImageForAi(
   base64Data: string
@@ -28,16 +28,19 @@ export async function optimizeImageForAi(
 
   try {
     const buffer = Buffer.from(rawClean, "base64");
+    const metadata = await sharp(buffer).metadata();
 
     // Si ya pesa menos de 35KB y es JPEG/PNG/WebP no hace falta re-comprimir
     if (
       buffer.length < 35 * 1024 &&
+      (!metadata.orientation || metadata.orientation === 1) &&
       ["image/jpeg", "image/png", "image/webp"].includes(originalMime)
     ) {
       return { cleanBase64: rawClean, mimeType: originalMime };
     }
 
     const resizedBuffer = await sharp(buffer)
+      .rotate()
       .resize(448, 448, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: 76 })
       .toBuffer();
